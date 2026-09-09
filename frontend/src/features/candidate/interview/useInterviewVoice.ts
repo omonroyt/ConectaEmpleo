@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BrowserVoiceGateway, type VoiceGateway } from "@/voice";
+import { BrowserVoiceGateway, ServerVoiceGateway, type VoiceGateway } from "@/voice";
 
 /**
  * Error de voz recuperable: la UI debe caer a modo texto **sin perder el turno**
@@ -52,12 +52,21 @@ function isVoiceSupported(): boolean {
  * - Al desmontar: cancela TTS, cierra STT, detiene las pistas del micrófono
  *   (`gateway.dispose()`) y cierra el `AudioContext`.
  *
- * La fase backend puede sustituir `BrowserVoiceGateway` por `ServerVoiceGateway`
- * (misma interfaz, WebSocket) sin tocar la máquina de estados ni las pantallas.
+ * Selección de gateway (B12): con `VITE_API_MODE=http` y voz disponible en el
+ * backend se usa `ServerVoiceGateway` (ElevenLabs: Scribe + Flash v2.5); si no,
+ * `BrowserVoiceGateway` (Web Speech APIs). La comprobación de disponibilidad es
+ * una llamada de red, así que se resuelve **una vez al montar** y se guarda: la
+ * construcción del gateway tiene que seguir siendo síncrona porque la máquina de
+ * estados la invoca dentro de un turno.
+ *
+ * Ambas implementaciones cumplen la misma interfaz, así que ni la máquina de
+ * estados ni las pantallas cambian. La persona de voz aquí es "interviewer"
+ * (Daniel); el perfilador usa "profiler" (Sofía).
  */
 export function useInterviewVoice(): InterviewVoice {
   const [analyser, setAnalyser] = useState<AnalyserNode | null>(null);
-  const [available] = useState<boolean>(() => isVoiceSupported());
+  const [browserVoice] = useState<boolean>(() => isVoiceSupported());
+  const [serverVoice, setServerVoice] = useState(false);
 
   const contextRef = useRef<AudioContext | null>(null);
   const gatewayRef = useRef<VoiceGateway | null>(null);
@@ -65,11 +74,35 @@ export function useInterviewVoice(): InterviewVoice {
   const cancelledRef = useRef(false);
   const listeningRef = useRef(false);
   const disposedRef = useRef(false);
+  const serverVoiceRef = useRef(false);
+
+  // La voz del servidor cubre navegadores sin Web Speech, así que basta con que
+  // cualquiera de las dos esté disponible.
+  const available = browserVoice || serverVoice;
+
+  useEffect(() => {
+    if (import.meta.env.VITE_API_MODE !== "http") return;
+    let cancelled = false;
+    void ServerVoiceGateway.checkAvailable().then((ok) => {
+      if (cancelled || disposedRef.current) return;
+      serverVoiceRef.current = ok;
+      setServerVoice(ok);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const getGateway = useCallback((): VoiceGateway => {
     if (!gatewayRef.current) {
       if (!contextRef.current) contextRef.current = new AudioContext();
-      gatewayRef.current = new BrowserVoiceGateway({ audioContext: contextRef.current });
+      gatewayRef.current = serverVoiceRef.current
+        ? new ServerVoiceGateway({
+            persona: "interviewer",
+            audioContext: contextRef.current,
+            available: true,
+          })
+        : new BrowserVoiceGateway({ audioContext: contextRef.current });
     }
     return gatewayRef.current;
   }, []);

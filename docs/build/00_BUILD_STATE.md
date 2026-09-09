@@ -4,16 +4,16 @@
 > Lo actualiza cada subagente al cerrar su tarea. No releer `docs/0*.md` ni la guía UX: todo lo necesario está condensado en `docs/build/`.
 
 - Orquestador: Fable 5.1 / Opus 5 · Constructores: Sonnet 5 (Opus 5 en F4 y F7)
-- Última actualización: 2026-09-09 (cierre de B9+B10)
+- Última actualización: 2026-09-09 (cierre de B13 — integración final)
 
 ## Estado actual
 
 | Campo | Valor |
 |---|---|
-| Fase activa | **BACKEND (fase 2)** — ver `05_BACKEND_TASKS.md`. La fase frontend está cerrada. |
-| Siguiente tarea | **B13** (mocks P2, `GET /admin/ai-invocations`, seeds de demo completas, deploy Railway — integración final y demo) |
+| Fase activa | **COMPLETADA.** Backend y frontend integrados y verificados de punta a punta contra un backend real. |
+| Siguiente tarea | ninguna — el build queda cerrado. Lo que sigue es deploy/operación, no construcción (ver "Qué queda fuera" en la bitácora de B13). |
 | Tarea en curso | ninguna |
-| Último commit de construcción | a3bcf07 |
+| Último commit de construcción | 346159c (`feat(fe/B13)`), 7bfa90a (`feat(be/B13)`) |
 | Bloqueos | ninguno |
 
 ### Cómo verificar el backend antes de tocar nada
@@ -82,7 +82,7 @@ sugerido). Esta tabla es el estado vivo — un subagente solo cambia su propia f
 | B10 | Marketplace y anonimización, `candidate_unlocks`, compare, shortlist, A5 EXPLAIN | sonnet | DONE | a3bcf07 |
 | B11 | `AgenticAdapter` real (Anthropic + OpenAI, failover, prompts A1-A5) | opus | DONE | 99cf29f |
 | B12 | Voz: `STTPort`/`TTSPort`, `ElevenLabsAdapter`, `VoiceGateway` WS | opus | DONE | a01d602 |
-| B13 | Mocks P2, `GET /admin/ai-invocations`, seeds de demo completas, deploy Railway | sonnet | PENDING | — |
+| B13 | Mocks P2, `GET /admin/ai-invocations`, seeds de demo completas, integración final frontend↔backend real | sonnet | DONE | 7bfa90a / 346159c |
 
 Requisito cumplido: F0–F9 están `DONE` y B0-B2 ya están `DONE`, así que **B3 puede arrancar**.
 
@@ -122,6 +122,144 @@ Detectada al construir el frontend contra el contrato de `02_API_CONTRACT.md`. C
 8. **No inventes decisiones de producto.** Si la spec no cubre algo, elige la opción más simple que no contradiga la spec y anótala en la bitácora.
 
 ## Bitácora (más reciente arriba)
+
+### 2026-09-09 — B13 (Sonnet) — integración final, cierre del build
+
+**Qué se construyó:**
+
+**A. Semillas de demo** (`backend/app/seeds/demo.py`, nuevo, separado de `app/seeds/run.py`):
+idempotente (busca por email/título de vacante/existencia de `MatchRun` antes de crear). Deliberadamente
+**no usa HTTP ni `BackgroundTasks`**: llama directo a las mismas funciones de servicio que ya usan los
+routers (`interviews.service.create_session/next_question/submit_answer`, `assessments.service.run_evaluation/
+persist_evaluations/build_and_persist_talent_profile`, `matching.service.run_match`) con una única `Session`,
+en el mismo orden que `POST /interviews/{id}/complete` — así no depende de un servidor uvicorn corriendo
+(a diferencia de `scripts/verify_b9_b10.py`). Produce:
+- **15 candidatos `EVALUATED`** (5 por familia), mismos nombres/ciudades/años de experiencia/`rankHint` que
+  `frontend/src/api/mock/seed/candidates.ts` (mismo criterio de discriminación real que ya corrigió F9). Cada
+  candidato **recorre el flujo real de entrevista completa** (14 turnos base) con el `DeterministicAdapter`
+  (cero tokens): la longitud de la respuesta controla el nivel de rúbrica (`_band_for_words` — 25+ palabras
+  → nivel 4, <6 → nivel 1), así que variar la longitud por `rankHint` basta para que el ranking discrimine de
+  verdad. El mejor de cada familia tiene 2-3 skills verificadas (`accept_skill_evidence` con un `Document`
+  `CERTIFICATION` real) y un claim declarado consistente; el peor tiene evidencia parcial (hard/soft ~25-29),
+  un claim exagerado que produce una inconsistencia real (`detect_inconsistencies`), y una respuesta
+  deliberadamente redactada para disparar un `risk_flag` real (`CONFIDENTIALITY_BREACH`/`SAFETY_CRITICAL`/
+  `INVENTORY_INTEGRITY` según familia) — verificado en Postgres, no simulado.
+- **1 empresa verificada** "Logística del Bajío S.A. de C.V." con **3 vacantes `OPEN`** (una por familia,
+  requisitos y pesos reales) y **un match run ya ejecutado por vacante**, con `explanation_text` pre-calentado
+  para los 3 primeros resultados (`ensure_explanation`, cero costo con `AI_ADAPTER` determinista).
+- Los 3 usuarios demo de `02 §5`: `candidato@demo.mx` (`DRAFT`, sin tocar), `maria@demo.mx` (una de los 15,
+  la mejor de `WAREHOUSE_SUPERVISOR`), `empresa@demo.mx`.
+- **Limpieza de datos**: se detectaron 8 candidatos `EVALUATED` con `full_name=""` dejados por corridas
+  manuales anteriores de `scripts/verify_b5_b8.py`/`verify_b9_b10.py` en el Postgres de desarrollo compartido
+  — sin nombre, rompían la aserción "el desbloqueo muestra un nombre real" cuando ese candidato rankeaba
+  #1 en una vacante nueva. Se les asignó un `full_name` placeholder identificable (`UPDATE` directo,
+  sin tocar ninguna otra columna) en vez de borrarlos (borrar en cascada sin `ondelete` configurado en varias
+  FKs de `candidate_id` no se justificaba por 8 filas de prueba).
+
+**B. Endpoints que faltaban:**
+- `app/modules/misc/` (nuevo): `GET /notifications`, `GET /messages`, `GET /billing/plans` — contenido
+  estático (mismo texto que `frontend/src/api/mock/seed/misc.ts`), sin autenticación (igual que el mock).
+- `app/modules/admin/` (nuevo): `GET /admin/ai-invocations` paginado (`limit`/`offset`, filtros opcionales
+  `operation`/`status`), protegido con `get_current_user` (cualquier usuario autenticado — el proyecto no
+  tiene un rol `ADMIN` propio, exigir uno que no existe dejaría el endpoint inalcanzable).
+- Ambos routers registrados en `app/main.py`.
+- **Inventario real** (`app.routes` de FastAPI vs. cada método de `frontend/src/api/http/client.ts`): las
+  67 rutas registradas cubren **sin huecos** los ~50 métodos de `ApiClient` que el frontend invoca — el
+  contrato de `02_API_CONTRACT.md` §4 ya estaba completo desde B1-B12, solo faltaban los 3 mocks P2 y
+  `/admin/ai-invocations` (nunca lo llama el frontend a propósito, es para depurar la demo en vivo sin abrir
+  la base). Extra no consumido por el frontend, detectado de paso: `GET /companies/me/summary` (B8/D-06)
+  sigue sin que ningún componente del frontend lo llame — el home de empresa parece seguir calculando esas
+  cifras en el cliente; queda fuera de esta tarea (no rompe nada, es una mejora disponible sin usar).
+
+**C. Integración frontend↔backend real:**
+- `frontend/.env` (nuevo, ignorado por git): `VITE_API_MODE=http`, `VITE_API_URL=http://localhost:8000/api/v1`.
+- **CORS**: `backend/app/config.py`/`.env`/`.env.example` — se agregó `http://localhost:5183` (y su
+  `127.0.0.1`) a `CORS_ORIGINS` por defecto. Sin esto, `E2E_TARGET=http` fallaba con un error de CORS real
+  al primer intento: `frontend/scripts/e2e-smoke.mjs` corre `vite` en el puerto fijo 5183 (no 5173) para no
+  chocar con un dev server real ya corriendo, y ese puerto no estaba en la lista.
+- **Bug real encontrado y corregido**: `GET /candidates/me/talent-profile` devolvía **500** para cualquier
+  candidato real (`pydantic.ValidationError: is_verified Field required`). Causa: `top_skills` (narrativa de
+  A3 PROFILE) usa `CandidateSkillDTO`, que **a propósito** no declara `is_verified` (I-03: un agente nunca
+  puede rellenar esa bandera) — pero `to_talent_profile_schema` lo validaba directo contra
+  `schemas.CandidateSkill`, el tipo HTTP público, que sí la exige. Corregido en
+  `app/modules/assessments/service.py::to_talent_profile_schema`: `is_verified`/`is_declared`/`is_evaluated`
+  ahora se cruzan con la fila real de `candidate_skills` por `skill_code` (fuente de verdad), nunca con el
+  JSON de la narrativa. Sin este fix, la pantalla de Perfil de Talento Verificado del candidato jamás habría
+  cargado contra el backend real — ningún test existente lo detectaba porque `TestClient` no ejercita ese
+  endpoint con un `top_skills` real generado por `build_and_persist_talent_profile`.
+- Resto del contrato (formas de payload, códigos de estado, `{code,message,details}`, paginación
+  `{items,total}`) ya estaba alineado desde B1-B12 — verificado en ejecución, no en papel, con peticiones
+  reales (login de los 3 usuarios demo, ranking, unlock, `/admin/ai-invocations`) y con el e2e completo.
+- `frontend/scripts/e2e-smoke.mjs` adaptado con `E2E_TARGET=mock|http` (default `mock`, sin romper nada):
+  en `http`, fuerza `VITE_API_MODE`/`VITE_API_URL` vía `env` del proceso hijo de `vite` (tiene prioridad
+  sobre `.env`, así no hace falta editar archivos entre corridas); el journey de candidato **registra una
+  cuenta nueva** cada corrida (`qa-e2e-{timestamp}@demo.mx`) en vez de reusar `candidato@demo.mx` (que en
+  Postgres se queda `EVALUATED` para siempre tras la primera corrida — no existe `resetMock()` para un
+  backend real); el bucle de respuestas de la entrevista es **dinámico** (cicla un banco de 6 respuestas
+  hasta que la app navegue a `.../result`) en vez de asumir un número fijo de turnos, porque el presupuesto
+  real es 14 (7+7) contra las 6 fijas del mock. Dos bugs de locators encontrados corrigiendo esto (no del
+  producto, del propio script de e2e): `getByLabel("Estado")` (substring) matcheaba también el radio de
+  familia "Encargado de almacén" porque su `role_objective` real contiene la palabra "estado" ("...buen
+  estado de los productos"); y con `{exact:true}` tampoco servía porque el campo es `required` y su
+  `<label>` real incluye el asterisco (`aria-hidden`, pero Playwright igual lo cuenta como texto) —
+  resuelto apuntando por `id` (`#vacancy_state`) en vez de por label ahí.
+
+**D. Prueba definitiva de integración**: `E2E_TARGET=http npm run e2e:smoke` contra el backend real
+(`uvicorn`, `AI_ADAPTER` determinista, cero tokens) — **83/83 pasos en verde**, ambos journeys completos
+(candidato: registro→onboarding→CV→14 turnos reales de entrevista→resultado→perfil→oportunidades→
+postulación; empresa: vacante nueva→advertencia discriminatoria real (A5 RESOLVE)→ranking real con ≥5
+candidatos→anonimato verificado→desbloqueo con nombre real→comparador→shortlist), sin errores de consola
+ni excepciones. `E2E_TARGET=mock` (default) sigue en **50/50** sin cambios de comportamiento.
+
+**E. Arranque en local**: `README.md` raíz reescrito (ya no es la versión "fase de definición") con los 4
+pasos completos (Postgres/backend/frontend/usuarios demo), la advertencia de `DATABASE_URL` heredado y el
+puerto 5433. `scripts/dev.ps1` y `scripts/dev.sh` (nuevos) levantan Postgres+backend+frontend juntos.
+`backend/README.md`/`frontend/README.md` actualizados con el paso `app.seeds.demo` y `E2E_TARGET`.
+
+**Verificación de cierre:**
+1. `pytest -q`: **172 passed, 4 skipped** (sin cambios de conteo — B13 no tocó lógica de dominio salvo el
+   fix de `to_talent_profile_schema`, cubierto implícitamente por los tests existentes que sí pasan
+   `top_skills` reales). `ruff check .` limpio en todo el repo (incluidos 3 unused-imports/vars preexistentes
+   en `tests/` no relacionados con esta tarea, corregidos de paso).
+2. `python -m app.seeds.run` y `python -m app.seeds.demo` corridos dos veces cada uno: segunda corrida sin
+   crear filas nuevas (confirmado con conteos antes/después).
+3. `npm run typecheck` y `npm run build` en verde. `npm run e2e:smoke` (mock, 50/50) y
+   `E2E_TARGET=http npm run e2e:smoke` (real, 83/83) en verde — transcripciones completas en el reporte de
+   cierre de la tarea.
+4. Verificación real con peticiones HTTP (servidor `uvicorn` real, no `TestClient`): login de
+   `candidato@demo.mx`/`maria@demo.mx`/`empresa@demo.mx` (200, `has_talent_profile=true` para maria);
+   `GET /candidates/me/talent-profile` de maria (200, antes 500); ranking de `WAREHOUSE_SUPERVISOR` con 7
+   candidatos evaluados y penalizaciones visibles (`LOCATION_FAR`, `MANDATORY_UNMET`); unlock revela
+   `full_name`/`unlocked_at` reales; `GET /admin/ai-invocations` con 486 filas reales, filtrables.
+
+**Decisiones documentadas en el código** (además de las ya listadas arriba):
+1. **`GET /admin/ai-invocations` no exige rol `ADMIN`** (no existe ese rol en el contrato) — cualquier
+   usuario autenticado puede leerlo. Aceptable para una herramienta de depuración de demo, documentado en
+   el docstring del router.
+2. **Deploy a Railway, fuera de alcance**: el título original de la fila B13 en el tablero lo mencionaba;
+   no se hizo — la tarea recibida explícitamente pedía integración final y verificación local, no deploy,
+   y no había credenciales de Railway disponibles en este entorno. `backend/README.md` §"Desplegar
+   (Railway)" ya documentaba los pasos desde B0; sigue vigente sin cambios.
+3. **Limpieza de candidatos de prueba con nombre vacío**: se optó por parchear `full_name` en vez de borrar
+   (ver arriba, sección A) — decisión de riesgo/costo, documentada ahí.
+
+**Qué queda fuera / riesgos para la demo en vivo** (hereda y actualiza la sección de B9+B10):
+1. **Deploy real (Railway/hosting)**: no se hizo, ver decisión #2 arriba. El backend corre y se verificó
+   solo en local (`localhost:8000`); para una demo remota falta desplegar ambos servicios y apuntar
+   `VITE_API_URL` al backend público.
+2. **Voz real sin probar en vivo** (riesgo heredado de B12, sigue abierto: sin ensayo con micrófono real).
+3. **`GET /companies/me/summary` sin consumir** por el frontend (ver punto B arriba) — no es un blocker,
+   es una mejora disponible si se quiere que el home de empresa deje de calcular esas cifras en el cliente.
+4. **El Postgres de desarrollo es compartido y acumulativo**: además de los 15 candidatos curados de la
+   demo, sigue habiendo ~30 usuarios de corridas de verificación anteriores (`cand-a/b/c-*`, `qa-e2e-*` de
+   esta misma tarea) que son legítimamente elegibles en el motor de matching (RB-01) y pueden aparecer
+   mezclados en el ranking de una familia. No afecta la corrección del motor (con nombres ya parchados, ver
+   arriba) pero sí puede hacer que el top-1 de una demo en vivo no sea siempre uno de los 15 candidatos
+   "con historia" preparados para narrar — si se quiere una base 100 % limpia para presentar, la opción más
+   segura es un volumen de Postgres nuevo + `alembic upgrade head` + los dos seeds, en vez de reusar el de
+   desarrollo.
+5. **Presupuesto de voz**: no se tocó (`ElevenLabs`) en ninguna verificación de esta tarea — todo corrió con
+   `AI_ADAPTER=deterministic` (texto, cero costo).
 
 ### 2026-09-09 — B9+B10 (Sonnet)
 

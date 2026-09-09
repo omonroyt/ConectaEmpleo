@@ -11,9 +11,9 @@
 | Campo | Valor |
 |---|---|
 | Fase activa | **FRONTEND** (fase 1). Backend es fase 2, ver `05_BACKEND_TASKS.md` |
-| Siguiente tarea | **F1 y F2 (en paralelo)** |
+| Siguiente tarea | **F3, F4, F5, F6, F7 (en paralelo)** |
 | Tarea en curso | ninguna |
-| Último commit de construcción | 669e012 |
+| Último commit de construcción | PENDING_F2_HASH |
 | Bloqueos | ninguno |
 
 ## Cola de tareas — frontend
@@ -24,7 +24,7 @@ Estados: `PENDING` · `IN_PROGRESS` · `DONE` · `BLOCKED`. Un subagente solo ca
 |---|---|---|---|---|---|---|
 | F0 | Scaffold Vite+React+TS+Tailwind v4, tokens, assets WebP, extracción del Orb, router esqueleto | sonnet | — | 01 §1-§6, §9 | DONE | e2e36fd |
 | F1 | Design system: componentes `ui/`, `layout/`, `brand/`, primitives de motion | sonnet | F0 | 01 §5-§8 | DONE | 669e012 |
-| F2 | Capa API: tipos del contrato, `ApiClient`, mock con datos semilla, hooks TanStack Query, store de sesión, `VoiceGateway` browser | sonnet | F0 | 02 completo | PENDING | |
+| F2 | Capa API: tipos del contrato, `ApiClient`, mock con datos semilla, hooks TanStack Query, store de sesión, `VoiceGateway` browser | sonnet | F0 | 02 completo | DONE | PENDING_F2_HASH |
 | F3 | Candidato A: landing, auth (login/registro), onboarding, home, carga de CV, CV conversacional, revisión de claims | sonnet | F1, F2 | 03 §C0-§C7 | PENDING | |
 | F4 | Candidato B: preparación de entrevista, entrevista en curso con Orb, resultado | **opus** | F1, F2 | 03 §C8-§C10 | PENDING | |
 | F5 | Candidato C: Perfil de Talento Verificado, perfil editable, oportunidades, detalle, postulación | sonnet | F1, F2 | 03 §C11-§C14 | PENDING | |
@@ -52,6 +52,51 @@ Ver `05_BACKEND_TASKS.md`. No se arranca hasta que F0–F7 estén `DONE`.
 8. **No inventes decisiones de producto.** Si la spec no cubre algo, elige la opción más simple que no contradiga la spec y anótala en la bitácora.
 
 ## Bitácora (más reciente arriba)
+
+### 2026-09-09 — F2 (Sonnet)
+
+**Qué se construyó** (`src/api/**`, `src/store/**`, `src/voice/**`, `public/demo/**`, `frontend/scripts/{smoke-mock,generate-demo-cv}.mjs`, y ediciones aditivas a `app/router.tsx`/`app/providers.tsx`/`vite-env.d.ts`/`package.json`):
+
+- `src/api/types.ts`: copia literal del bloque de `02 §3` + utilidades al final (`ID`, `Nullable<T>`, `PageParams`). No se tocó ningún tipo existente.
+- `src/api/client.ts`: `interface ApiClient` (namespaces y firmas exactas de `02 §4`) + `class ApiClientError extends Error { code; status; details }`.
+- `src/api/mock/`: implementación completa.
+  - `seed/catalog.ts`: 3 familias (ids `jf_admin_assistant`, `jf_heavy_machinery`, `jf_warehouse_supervisor`), 24 competencias (8/familia, códigos y core exactos de `02 §2`, descripción de una línea c/u), 39 skills (`EXCEL_INTERMEDIATE`, `FORKLIFT_OPERATION`, `SAP_WMS`, etc.), pesos por defecto.
+  - `seed/geo.ts`: 15 ciudades con lat/lng aproximada + haversine + `geoBandFor`.
+  - `seed/candidates.ts`: **15 candidatos EVALUATED** (5/familia), `anon_code CND-XXXX`, nombres mexicanos, ubicaciones variadas, `CandidateSkill[]` con mezcla declarada/evaluada/verificada, `CompetencyEvaluation[]` completo por competencia de su familia (justificación con frase citada + `evidence_turn_ids`), `TalentProfile`/`FeedbackReport`/`LearningPath` completos. `MARIA_ANON_SUFFIX="4F82"` vincula a `maria@demo.mx`.
+  - `seed/company.ts`: "Logística del Bajío S.A. de C.V." VERIFIED + 3 vacantes OPEN (una por familia, `VACANCY_IDS.ADMIN/HEAVY/WAREHOUSE`) + 1 DRAFT (`VACANCY_IDS.DRAFT`), todas con `requirements`/`weights` por defecto.
+  - `seed/interviewBank.ts`: 7 preguntas/familia (≤2 oraciones, ~35 palabras), 4 core + 1 `PROBE` (con `{{prev_excerpt}}`, la de WAREHOUSE usa literalmente el ejemplo de `02 §5`) + 2 genéricas.
+  - `seed/cvBuilderScript.ts`: 8 turnos de "Sofía" + repregunta si <6 palabras + cierre.
+  - `seed/learningCatalog.ts`: 20 filas (Platzi/Coursera/CONOCER/STPS/Google/edX) mapeadas por `competency_code`, con fallback genérico.
+  - `seed/misc.ts` / `seed/users.ts`: notificaciones, hilos, 3 planes; 3 usuarios demo (ver abajo).
+  - `state.ts`: `MockDB` en memoria + persistencia `localStorage["ce-mock-v1"]`; `resetMock()` reconstruye la semilla; expuesto en dev como `window.__ce.resetMock()` (tipado en `vite-env.d.ts`).
+  - `jobs.ts`: cola con `setTimeout`, 4 ticks (~4 s), `progress` 0→100, `DONE`/`FAILED`.
+  - `engine/matching.ts`: fórmula exacta `total=clamp(Σ(peso/100×raw)−Σpenalties,0,100)` con los 6 componentes descritos en el prompt (TECHNICAL/BEHAVIORAL atenuados por confianza, EXPERIENCE con ajuste por familia ×0.85, EVIDENCE por conteo declarada/evaluada/verificada, SALARY por solape/distancia <20%, LOCATION por `geo_band` vía haversine) y penalizaciones `MANDATORY_UNMET −8`/`SALARY_OUT_OF_RANGE −5`/`LOCATION_FAR −5`.
+  - `engine/explain.ts`: plantilla ≤120 palabras con posición relativa, fortalezas, brechas y penalizaciones; `assertExplanation()` verifica que ningún `%` del texto sea distinto a `total_score` (se ejecuta siempre al generar, lanza si se viola).
+  - `engine/resolve.ts`: mapeo por keywords a competencia/skill + `warnings` por patrones discriminatorios (edad máx/mín, sexo/género, "buena presentación", estado civil, "sin hijos", nacionalidad) + `suggested_weights` por defecto.
+  - `engine/interview.ts`: `question_budget=6`, prioriza core `UNTOUCHED`, luego `PROBE` sobre la respuesta más larga ya contestada (o forzada en el penúltimo turno si aún no se usó), nunca rubric_level 0 (mínimo 1 con confianza baja + `limitations`).
+  - `engine/cv.ts`: `uploadCV` genera extracción plausible por familia (usa el nombre de archivo, no lee contenido); CV builder arma la extracción heurísticamente por campo de turno (logística/salario van a `claims` por no tener campo propio en `CVExtraction`).
+- `src/api/http/client.ts`: implementación `fetch` completa sobre `VITE_API_URL`, Bearer desde el store, `multipart()` para uploads, `withQuery()` para paginación/ids, mapeo de errores → `ApiClientError`. No probada contra servidor real (no existe aún); compila.
+- `src/api/index.ts`: selector `VITE_API_MODE` (default mock). `src/api/queryClient.ts`: instancia única (`retry:1, staleTime:10_000`) importada por `app/providers.tsx` y por `store/session.ts` (para `logout()`).
+- `src/api/queryKeys.ts` + `src/api/hooks/{queries,mutations,useJob}.ts` (barrel en `hooks/index.ts`). Hooks de lectura: `useJobFamilies, useCompetencies(familyId), useSkillsCatalog, useCandidateMe, useCandidateStatus, useTalentProfile, useCandidateSkills, useFeedback, useLearningPath, useExtraction, useInterview(id), useInterviewProgress(id), useCompanyMe, useVerification, useVacancies, useVacancy(id), useMatchResults(runId,page), useMatchResult(id), useFullProfile(id), useCompare(vacancyId,ids), useShortlist(vacancyId), useOpportunities, useOpportunity(id), useNotifications, useMessages, usePlans` (todos devuelven el `UseQueryResult` de TanStack con la forma del contrato; los que dependen de un id soportan `id: null|undefined` con `enabled` automático). Mutaciones: `useLogin/useRegister` (llaman `useSessionStore.login()` en `onSuccess`), `useUpdateCandidate, useSetJobFamily, useUploadCV, useConfirmExtraction, useCvBuilder()` (devuelve `{createSession,sendMessage,finalize}`), `useCreateInterview, useAnswer, useCompleteInterview, useUpdateCompany, useCreateVacancy, useUpdateVacancy, useResolveRequirements, useSetRequirements, useSetWeights, useRunMatch, useUnlock, useSetShortlistStage, useApply` — todas invalidan las `queryKeys` relevantes. `useJob(jobId,{onDone,onFailed})`: `refetchInterval` 1500 ms hasta `DONE`/`FAILED`, dispara el callback una sola vez.
+- `src/store/session.ts`: zustand + `persist` (`ce-session`): `token, user, login(AuthResponse), logout()` (limpia sesión y llama `queryClient.clear()`), selectores `useRole()/useIsAuthenticated()`, y `homePathForRole(role)` (usado también por el router).
+- `src/voice/`: `VoiceGateway.ts` (interfaz literal de `02 §6`), `BrowserVoiceGateway.ts` (TTS `speechSynthesis` es-MX rate .95 con selección de voz en español si existe; STT con `webkitSpeechRecognition`/`SpeechRecognition` si existe, si no `transcript` siempre `""`; mic vía `getUserMedia`+`connectAudio()` del Orb; tipos mínimos propios para las Speech APIs no estándar, sin `any`), `useMicrophone.ts` (`request()/level 0-1 a ~12fps/stop()/error`), `index.ts`.
+- `public/demo/cv-ejemplo.pdf`: PDF mínimo válido generado a mano por `scripts/generate-demo-cv.mjs` (~50 líneas, sin dependencias).
+
+**Usuarios demo** (`demo1234` para los tres): `candidato@demo.mx` (CANDIDATE, perfil `DRAFT` vacío, golden path desde cero) · `maria@demo.mx` (CANDIDATE, ya `EVALUATED`, familia `WAREHOUSE_SUPERVISOR`, es una de las 5 candidatas seed de esa familia) · `empresa@demo.mx` (COMPANY, "Logística del Bajío", `VERIFIED`). **Resetear el mock**: en dev, consola del navegador → `window.__ce.resetMock()` (borra `localStorage["ce-mock-v1"]"` y reconstruye la semilla; recargar después).
+
+**Decisiones del motor / desviaciones**:
+1. El mock no mantiene su propia noción de "sesión actual": lee el token de `useSessionStore` (zustand) en cada llamada y lo decodifica (`mock.<base64 userId>.<rand>`) — evita duplicar estado de sesión entre el store y el mock, y hace que `http/client.ts` y `mock/index.ts` compartan la misma fuente de verdad para el Bearer.
+2. `EXPERIENCE` del matching: "ajustado por familia" se implementó como ×0.85 cuando ninguna experiencia del candidato tiene `skills` asociadas (proxy simple de relevancia, la spec no detalla la fórmula exacta).
+3. Las respuestas de logística/salario del CV builder no tienen campo propio en `CVExtraction` (solo experience/education/skills/certifications/claims): se guardan como `claims` con `source:"CONVERSATION"` y `needs_validation:true`.
+4. Prueba de humo: la spec pedía `tsx` (no instalado, fuera de la lista de dependencias permitidas) o, si no, un `runSmoke()` disparado desde `/dev/api`. Se optó por una tercera vía más simple: `scripts/smoke-mock.mjs` usa `esbuild` (ya presente como dependencia transitiva de Vite) para empaquetar `src/api/mock/__smoke__.ts` con los alias `@/*` resueltos vía `tsconfig.json`, y lo ejecuta con Node (con un shim mínimo de `localStorage`/`window` y `define` para las 3 referencias a `import.meta.env` usadas en el árbol de imports del golden path). Comando: `npm run smoke:mock` (agregada esa entrada a `package.json`, aditiva).
+5. `queryClient` centralizado en `src/api/queryClient.ts` (pedido por el prompt): `app/providers.tsx` se ajustó para importarlo en vez de crear su propia instancia (F1 ya había envuelto ahí `<ToastProvider>`, se conservó tal cual). `staleTime` quedó en `10_000` (spec de F2) en vez de los `30_000` que tenía el `QueryClient` original de F0/F1.
+6. `documents.uploadCV` no lee el archivo real: genera una extracción plausible según `job_family_id` del candidato y usa `file.name` para el `DocumentRef`/claim, tal como pedía la spec.
+
+**Resultado de la prueba de humo** (`npm run smoke:mock`, 22 pasos, todos en verde): registro candidato → familia `WAREHOUSE_SUPERVISOR` → update → uploadCV (job DONE) → extraction → confirmExtraction (→ `CV_READY`) → interview create → 6 preguntas respondidas (PROBE con `references_turn_id` confirmado) → complete (job DONE) → `talentProfile` (`overall_score=95`, "Evidencia sólida") → login empresa → createVacancy → resolveRequirements (texto con "máximo 30 años" + "buena presentación" → 2 `warnings`) → setRequirements → setWeights (suma 100) → runMatch (job DONE) → results (6 candidatos, orden desc verificado) → result → unlock (María José Hernández López) → fullProfile → compare → shortlist. `npm run typecheck` y `npm run build` en verde (bundle ~969 KB / 279 KB gzip, mismo aviso de chunk grande de Vite ya señalado por F0, sin acción en esta tarea). Sin `any` ni `console.log` en `src/`.
+
+**Archivos compartidos tocados** (fuera de mis rutas exclusivas): `app/router.tsx` (agregado `RequireRole({role})` y `RedirectIfAuthenticated`, envolviendo `/candidate`, `/employer`, `/login`, `/register`; se conservó `devRoutes`/`/dev/ui` de F1 sin tocarlo), `app/providers.tsx` (ahora importa `queryClient` desde `@/api/queryClient` en vez de crear uno local; se conservó el `<ToastProvider>` de F1), `vite-env.d.ts` (tipado de `ImportMetaEnv` y `Window.__ce`), `package.json` (agregado script `smoke:mock`, aditivo). No se tocó `tokens.css`, `components/ui`, `components/layout` ni `lib/motion.ts`.
+
+**Advertencias para F3–F7** (ids de semilla útiles para deep links/pruebas manuales): familias `jf_admin_assistant`/`jf_heavy_machinery`/`jf_warehouse_supervisor`; vacantes OPEN seed `vac_admin_open`/`vac_heavy_open`/`vac_warehouse_open` (+ `vac_draft_admin2` en DRAFT) — **no tienen `last_match_run_id` hasta que alguien llame `runMatch`** (no hay match runs precalculados en la semilla; F7 debe disparar "Ejecutar matching" al menos una vez, o llamar `resetMock()`+`runMatch` en un `useEffect` de desarrollo si necesita datos ya listos). `maria@demo.mx` = candidata `cand_4F82` (WAREHOUSE_SUPERVISOR) para probar el Perfil de Talento Verificado sin pasar por el golden path completo. El candidato demo nuevo (`candidato@demo.mx`) arranca en `DRAFT` sin `job_family_id`. `useJob` no expone `progress` con mensajes contextuales por sí mismo — eso es UI de F3/F4 (`ProcessingStatus` de F1) leyendo `job.progress`.
 
 ### 2026-09-09 — F1 (Sonnet)
 - **`src/lib/motion.ts`**: `easings` (`outSmooth/standard/inOut`, arrays bezier) y `durations` (`fast .16/normal .32/slow .56`, segundos) coherentes con los tokens. Variantes `fadeUp`, `fadeIn`, `slideInRight`, `slideInLeft`, `scaleIn`, `cardEntrance`, `staggerContainer(stagger=.06, delayChildren=.1)`, `pageSequence` (container con `staggerChildren:.12`). Hooks `useCountUp(value, durationMs=900, enabled=true)` (rAF + ease-out cubic, devuelve el valor final de inmediato si `prefers-reduced-motion` o `enabled=false`), `useInViewOnce(ref, margin='-80px')` (IntersectionObserver, dispara una sola vez) y `useMotionSafe()` (degrada las variantes de arriba a opacidad `.15s` cuando hay reduced-motion; los contenedores de stagger degradan a `staggerChildren:0`). Usa `useReducedMotion` de `@/lib/a11y` (no la de `motion/react`) para mantener una sola fuente de verdad ya establecida por F0.

@@ -13,8 +13,10 @@ from app.core.jobs import Job  # noqa: F401
 from app.modules.candidates import models as candidates_models  # noqa: F401
 from app.modules.catalog import models as catalog_models  # noqa: F401
 from app.modules.companies import models as companies_models  # noqa: F401
+from app.modules.cv_builder import models as cv_builder_models  # noqa: F401
 from app.modules.documents import models as documents_models  # noqa: F401
 from app.modules.identity import models as identity_models  # noqa: F401
+from app.modules.vacancies import models as vacancies_models  # noqa: F401
 
 config = context.config
 

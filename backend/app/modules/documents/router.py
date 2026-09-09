@@ -1,4 +1,5 @@
-"""`POST /candidates/me/cv` · `POST /candidates/me/certifications` · `GET /candidates/me/documents`.
+"""`POST /candidates/me/cv` · `POST /candidates/me/certifications` · `GET /candidates/me/documents`
+· `GET/PATCH /candidates/me/cv/extraction`.
 
 `docs/build/02_API_CONTRACT.md` §4. `GET .../documents?type=` resuelve la
 deuda D-01 de `docs/build/00_BUILD_STATE.md` (listar certificaciones ya
@@ -16,9 +17,10 @@ from sqlalchemy.orm import Session
 from app.core.jobs import run_job
 from app.core.security import require_candidate
 from app.database import get_db
-from app.modules.documents import service
+from app.modules.candidates.service import get_profile_by_user_id
+from app.modules.documents import cv_extraction_service, service
 from app.modules.documents.models import Document
-from app.modules.documents.schemas import DocumentRef, DocumentType
+from app.modules.documents.schemas import CVExtraction, CVExtractionPatch, DocumentRef, DocumentType
 from app.modules.documents.service import cv_parse_worker
 from app.modules.documents.storage import get_storage
 from app.modules.identity.models import User
@@ -77,3 +79,23 @@ def list_my_documents(
 ) -> list[DocumentRef]:
     documents = service.list_documents(db, owner_user_id=current_user.id, type_filter=type)
     return [_to_ref(d) for d in documents]
+
+
+@router.get("/cv/extraction", response_model=CVExtraction)
+def get_my_cv_extraction(
+    current_user: User = Depends(require_candidate),
+    db: Session = Depends(get_db),
+) -> CVExtraction:
+    profile = get_profile_by_user_id(db, user_id=current_user.id)
+    extraction = cv_extraction_service.get_latest_extraction(db, candidate_id=profile.id)
+    return cv_extraction_service.to_schema(db, extraction)
+
+
+@router.patch("/cv/extraction", response_model=CVExtraction)
+def confirm_my_cv_extraction(
+    patch: CVExtractionPatch,
+    current_user: User = Depends(require_candidate),
+    db: Session = Depends(get_db),
+) -> CVExtraction:
+    profile = get_profile_by_user_id(db, user_id=current_user.id)
+    return cv_extraction_service.confirm_extraction(db, profile=profile, patch=patch)

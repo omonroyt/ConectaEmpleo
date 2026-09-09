@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app.modules.candidates.models import CandidateProfile
 from app.modules.catalog.models import JobFamily
-from app.modules.documents.models import Document
+from app.modules.documents.models import CVExtraction, Document
 
 
 def _register_candidate(client: TestClient, email: str) -> tuple[str, str]:
@@ -130,6 +130,7 @@ def test_status_next_step_review_claims_when_cv_parsed(
         json={"job_family_id": str(family.id)},
         headers=_auth_headers(token),
     )
+    profile = db_session.query(CandidateProfile).filter(CandidateProfile.user_id == user_id).one()
     document = Document(
         owner_user_id=uuid.UUID(user_id),
         type="CV",
@@ -140,10 +141,51 @@ def test_status_next_step_review_claims_when_cv_parsed(
         status="PARSED",
     )
     db_session.add(document)
+    db_session.flush()
+
+    # Desde B5 la señal de "hay algo que revisar" es la extracción sin
+    # confirmar, no el estado del documento: un CV puede quedar `PARSED` y
+    # aun así no haber nada que el candidato deba revisar todavía.
+    db_session.add(
+        CVExtraction(
+            document_id=document.id,
+            candidate_id=profile.id,
+            status="PARSED",
+            confidence=0.8,
+            confirmed_by_candidate=False,
+        )
+    )
     db_session.commit()
 
     resp = client.get("/api/v1/candidates/me/status", headers=_auth_headers(token))
     assert resp.json()["next_step"] == "REVIEW_CLAIMS"
+
+
+def test_status_stays_on_cv_when_extraction_already_confirmed(
+    client: TestClient, db_session: Session, unique_email: str
+) -> None:
+    """Una extracción ya confirmada no debe volver a pedir revisión."""
+
+    token, user_id = _register_candidate(client, unique_email)
+    family = db_session.query(JobFamily).first()
+    client.post(
+        "/api/v1/candidates/me/job-family",
+        json={"job_family_id": str(family.id)},
+        headers=_auth_headers(token),
+    )
+    profile = db_session.query(CandidateProfile).filter(CandidateProfile.user_id == user_id).one()
+    db_session.add(
+        CVExtraction(
+            candidate_id=profile.id,
+            status="PARSED",
+            confidence=0.9,
+            confirmed_by_candidate=True,
+        )
+    )
+    db_session.commit()
+
+    resp = client.get("/api/v1/candidates/me/status", headers=_auth_headers(token))
+    assert resp.json()["next_step"] == "CV"
 
 
 def test_status_next_step_for_each_remaining_profile_status(

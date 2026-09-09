@@ -15,8 +15,11 @@ from app.core.logging import install_logging
 from app.database import get_db
 from app.modules.candidates.router import router as candidates_router
 from app.modules.catalog.router import router as catalog_router
+from app.modules.companies.router import router as companies_router
+from app.modules.cv_builder.router import router as cv_builder_router
 from app.modules.documents.router import router as documents_router
 from app.modules.identity.router import router as identity_router
+from app.modules.vacancies.router import router as vacancies_router
 
 settings = get_settings()
 
@@ -42,6 +45,9 @@ app.include_router(identity_router, prefix=API_PREFIX)
 app.include_router(catalog_router, prefix=API_PREFIX)
 app.include_router(candidates_router, prefix=API_PREFIX)
 app.include_router(documents_router, prefix=API_PREFIX)
+app.include_router(cv_builder_router, prefix=API_PREFIX)
+app.include_router(companies_router, prefix=API_PREFIX)
+app.include_router(vacancies_router, prefix=API_PREFIX)
 app.include_router(jobs_router, prefix=API_PREFIX)
 
 if settings.storage_provider == "local":

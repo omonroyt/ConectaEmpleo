@@ -1,21 +1,20 @@
 """Servicios de dominio para `documents` (docs/04 §5.3).
 
 `upload_cv` es asíncrono (202 + `job_id`, docs/04 §9): el parseo real ocurre
-en `run_cv_parse_job`, que corre en `BackgroundTasks` vía `app/core/jobs.py`.
+en `cv_parse_worker`, que corre en `BackgroundTasks` vía `app/core/jobs.py`.
 `upload_certification` es síncrono (el contrato HTTP la devuelve como
 `DocumentRef` directo, sin job).
 
-**Límite de alcance con B5**: `run_cv_parse_job` ejercita `AIPort.parse_cv` de
-punta a punta (job `CV_PARSE` completo, `ai_invocations` poblada) pero usa un
-texto de marcador de posición derivado del nombre del archivo como
-`document_text` — igual que hace `frontend/src/api/mock/engine/cv.ts`, que
-tampoco lee el contenido real. La extracción real de texto (`pypdf` /
-`python-docx`) y la persistencia en `cv_extractions`/`claims` son alcance de
-B5 (`docs/build/05_BACKEND_TASKS.md` fila B5). Este worker solo garantiza que
-el documento termina en `PARSED`/`FAILED` y dispara la operación de IA
-correspondiente; B5 debe reemplazar el texto de marcador de posición y
-agregar la persistencia de la extracción, sin tener que tocar el contrato del
-job ni el endpoint de subida.
+**B5**: `cv_parse_worker` lee el archivo real del `StoragePort`, extrae texto
+con `extraction.py` (`pypdf`/`python-docx`) y llama a `AIPort.parse_cv` con
+ese texto real. Un PDF escaneado, dañado o una imagen sin texto seleccionable
+no rompen el job: `CVTextExtractionError` se traduce en `Document.status =
+FAILED` con un mensaje accionable en `Job.error`, **sin tocar el perfil**
+(HU-C03) — ni siquiera se llega a invocar `AIPort.parse_cv`. Si la extracción
+de texto sí produce contenido utilizable, el resultado validado de
+`parse_cv` se persiste como `CVExtraction` + `claims`
+(`cv_extraction_service.py`), separado del perfil hasta que el candidato la
+confirme (`PATCH /candidates/me/cv/extraction`, HU-C05).
 """
 
 from __future__ import annotations
@@ -28,10 +27,13 @@ from sqlalchemy.orm import Session
 
 from app.ai.contracts.profiling import CVParseRequest, CVParseResult
 from app.ai.invoke import invoke
+from app.ai.models import AIInvocation
 from app.core.errors import AIProviderError, AIValidationError
 from app.core.jobs import Job, create_job
 from app.modules.candidates.models import CandidateProfile
 from app.modules.catalog.models import JobFamily
+from app.modules.documents import cv_extraction_service
+from app.modules.documents.extraction import CVTextExtractionError, extract_text
 from app.modules.documents.models import Document
 from app.modules.documents.storage import get_storage
 from app.modules.documents.validation import validate_upload
@@ -92,7 +94,7 @@ def upload_certification(
 
 
 def cv_parse_worker(db: Session, job: Job) -> str | None:
-    """Worker del job `CV_PARSE`. Ver límite de alcance con B5 en el docstring del módulo."""
+    """Worker del job `CV_PARSE`. Ver docstring del módulo para el alcance de B5."""
 
     document_id = uuid.UUID(job.payload["document_id"])
     document = db.get(Document, document_id)
@@ -102,20 +104,30 @@ def cv_parse_worker(db: Session, job: Job) -> str | None:
     document.status = "PROCESSING"
     db.flush()
 
-    job_family_code = None
     profile = db.execute(
         select(CandidateProfile).where(CandidateProfile.user_id == document.owner_user_id)
     ).scalar_one_or_none()
-    if profile is not None and profile.job_family_id is not None:
+    if profile is None:
+        raise ValueError(f"No existe un perfil de candidato para el usuario {document.owner_user_id}.")
+
+    job_family_code = None
+    if profile.job_family_id is not None:
         family = db.get(JobFamily, profile.job_family_id)
         job_family_code = family.code if family else None
 
-    placeholder_text = (
-        f"Documento subido por el candidato: {document.original_filename}. "
-        "Extracción real de texto (pypdf/python-docx) es alcance de B5; este backend "
-        "usa un texto de marcador de posición para ejercitar AIPort.parse_cv y el runner de jobs."
-    )
-    request = CVParseRequest(document_id=str(document.id), job_family_code=job_family_code, document_text=placeholder_text)
+    storage = get_storage()
+    content = storage.load(document.storage_key)
+
+    try:
+        document_text = extract_text(mime_type=document.mime_type, content=content)
+    except CVTextExtractionError:
+        # HU-C03: texto insuficiente (PDF escaneado, imagen, archivo dañado) -> FAILED,
+        # el perfil no se toca, y ni siquiera se invoca AIPort.parse_cv con basura.
+        document.status = "FAILED"
+        db.commit()
+        raise
+
+    request = CVParseRequest(document_id=str(document.id), job_family_code=job_family_code, document_text=document_text)
 
     try:
         result = invoke(db, "parse_cv", request, CVParseResult, prompt_version="v1")
@@ -124,5 +136,27 @@ def cv_parse_worker(db: Session, job: Job) -> str | None:
         db.commit()  # commit explícito: si no, el rollback de run_job() lo descartaría (ver app/core/jobs.py)
         raise
 
-    document.status = "PARSED" if result.status == "PARSED" else "FAILED"
-    return str(document.id)
+    if result.status != "PARSED":
+        document.status = "FAILED"
+        db.commit()
+        raise AIValidationError(
+            "El análisis de IA no pudo extraer un CV utilizable de este documento."
+        )
+
+    document.status = "PARSED"
+
+    ai_invocation = db.execute(
+        select(AIInvocation)
+        .where(AIInvocation.operation == "parse_cv")
+        .order_by(AIInvocation.created_at.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+
+    extraction = cv_extraction_service.persist_extraction_from_parse(
+        db,
+        document=document,
+        candidate_id=profile.id,
+        result=result,
+        ai_invocation_id=ai_invocation.id if ai_invocation is not None else None,
+    )
+    return str(extraction.id)

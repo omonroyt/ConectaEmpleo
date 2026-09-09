@@ -24,6 +24,14 @@ class StoragePort(Protocol):
         """Persiste `content` y devuelve el `storage_key` con el que se puede recuperar después."""
         ...
 
+    def load(self, storage_key: str) -> bytes:
+        """Lee de vuelta el contenido guardado bajo `storage_key` (B5: extracción real de texto)."""
+        ...
+
+    def save_text(self, *, owner_user_id: uuid.UUID, doc_type: str, filename: str, text: str) -> str:
+        """Guarda `text` (utf-8) y devuelve el `storage_key`. Usado por el CV descargable de B5."""
+        ...
+
     def url_for(self, storage_key: str) -> str | None:
         """URL pública (o `None` si el adaptador no puede exponer una)."""
         ...
@@ -51,6 +59,18 @@ class LocalStorageAdapter:
         destination = self._base_dir / relative_key
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(content)
+        return relative_key
+
+    def load(self, storage_key: str) -> bytes:
+        return (self._base_dir / storage_key).read_bytes()
+
+    def save_text(self, *, owner_user_id: uuid.UUID, doc_type: str, filename: str, text: str) -> str:
+        extension = Path(filename).suffix.lower() or ".html"
+        safe_name = f"{uuid.uuid4().hex}{extension}"
+        relative_key = f"{owner_user_id}/{doc_type.lower()}/{safe_name}"
+        destination = self._base_dir / relative_key
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(text, encoding="utf-8")
         return relative_key
 
     def url_for(self, storage_key: str) -> str | None:

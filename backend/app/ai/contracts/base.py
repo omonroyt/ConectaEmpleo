@@ -102,6 +102,10 @@ class ClaimDTO(AIBaseModel):
     statement: str
     claimed_level: Literal[1, 2, 3, 4] | None = None
     source: Literal["CV", "CONVERSATION", "MANUAL"] = "CV"
+    # B5: apunta al fragmento que originó el claim (docs/05 §7 A1: "cada skill
+    # detectada genera un claim con source_ref"). Opcional y por defecto None
+    # para no romper contratos v1.1 ya emitidos por B4 que no lo llenaban.
+    source_ref: dict | None = None
 
 
 class TurnDTO(AIBaseModel):

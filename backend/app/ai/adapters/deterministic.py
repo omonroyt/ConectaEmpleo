@@ -62,6 +62,7 @@ from app.ai.contracts.profiling import (
     CVParseResult,
     EducationItemDTO,
     ExperienceItemDTO,
+    SkillClaimDTO,
 )
 from app.ai.contracts.base import ClaimDTO
 
@@ -82,6 +83,57 @@ _FAMILY_TITLES: dict[str, str] = {
     "HEAVY_MACHINERY_OPERATOR": "operador de maquinaria pesada",
     "WAREHOUSE_SUPERVISOR": "encargado de almacén",
 }
+
+# Detección de skills por palabra clave en el texto real del CV (docs/build/02
+# §2, mismos códigos de catálogo). Deliberadamente simple (sin NLP): el
+# `DeterministicAdapter` nunca inventa nada que no esté en el texto de
+# entrada, así que basta con un escaneo de literales para producir una skill
+# "detectada" con evidencia citable (docs/05 §7 A1: "cada skill detectada
+# genera un claim con source_ref"). B11 puede sustituir esto por comprensión
+# semántica real sin tocar el contrato.
+_SKILL_KEYWORDS: list[tuple[str, str, re.Pattern[str]]] = [
+    ("OFFICE_TOOLS", "Herramientas de oficina", re.compile(r"excel|word|office|correo electr", re.I)),
+    ("DOCUMENT_CONTROL", "Control documental y archivo", re.compile(r"archivo|control document|expediente", re.I)),
+    ("CUSTOMER_SERVICE", "Atención a clientes", re.compile(r"atenci[oó]n a client|servicio al client", re.I)),
+    ("MACHINERY_OPERATION", "Operación de maquinaria", re.compile(r"maquinaria|retroexcavadora|gr[uú]a", re.I)),
+    ("SAFETY_PROTOCOLS", "Protocolos de seguridad", re.compile(r"protocolos? de seguridad|seguridad industrial", re.I)),
+    ("LOAD_HANDLING", "Manejo de cargas", re.compile(r"manejo de carga", re.I)),
+    ("INVENTORY_CONTROL", "Control de inventarios", re.compile(r"inventario", re.I)),
+    ("FORKLIFT_SAFETY", "Seguridad en montacargas", re.compile(r"montacargas", re.I)),
+    ("RECEIVING_DISPATCH", "Recepción y despacho", re.compile(r"recepci[oó]n y despacho|recibo de mercan", re.I)),
+    ("WMS_ERP_SYSTEMS", "Sistemas WMS / ERP", re.compile(r"\bwms\b|\berp\b|sistema de almac[eé]n", re.I)),
+]
+
+
+def _detect_skill_claims(text: str) -> list[tuple[SkillClaimDTO, ClaimDTO]]:
+    """Escanea `text` por palabras clave de catálogo y arma skill + claim citables.
+
+    Cada coincidencia produce **una** `SkillClaimDTO` y **un** `ClaimDTO` con
+    `source_ref.excerpt` apuntando al fragmento real que lo originó — nunca
+    un nivel o una skill que no tenga texto de respaldo.
+    """
+
+    found: list[tuple[SkillClaimDTO, ClaimDTO]] = []
+    for code, name, pattern in _SKILL_KEYWORDS:
+        match = pattern.search(text)
+        if not match:
+            continue
+        start = max(0, match.start() - 40)
+        end = min(len(text), match.end() + 40)
+        excerpt = text[start:end].strip()
+        found.append(
+            (
+                SkillClaimDTO(code=code, name=name, level=2),
+                ClaimDTO(
+                    skill_code=code,
+                    statement=f'El documento menciona "{name.lower()}".',
+                    claimed_level=2,
+                    source="CV",
+                    source_ref={"excerpt": excerpt},
+                ),
+            )
+        )
+    return found
 
 # Guion base de A1 modo BUILD (docs/05 §7 A1): 8 turnos, adaptativo en la
 # orquestación real (B5), aquí es la secuencia estable que el adaptador
@@ -211,11 +263,21 @@ class DeterministicAdapter:
         if re.search(r"certificaci[oó]n|licencia|constancia", text, re.I):
             certifications.append(CertificationDTO(name="Certificación mencionada en el CV", issuer=None, year=None))
 
-        claim = ClaimDTO(
-            skill_code=None,
-            statement=f'El documento menciona experiencia como "{title}".',
-            claimed_level=2,
-            source="CV",
+        skill_claim_pairs = _detect_skill_claims(text)
+        skills = [pair[0] for pair in skill_claim_pairs]
+        claims = [pair[1] for pair in skill_claim_pairs]
+
+        # Siempre se registra al menos un claim general de experiencia, citando
+        # el propio fragmento usado para "position" (nunca un texto inventado),
+        # aunque no se haya detectado ninguna skill puntual por palabra clave.
+        claims.append(
+            ClaimDTO(
+                skill_code=None,
+                statement=f'El documento menciona experiencia como "{title}".',
+                claimed_level=2,
+                source="CV",
+                source_ref={"excerpt": _excerpt(text, 15)} if text else None,
+            )
         )
 
         return CVParseResult(
@@ -223,9 +285,9 @@ class DeterministicAdapter:
             confidence=confidence,
             experience=experience,
             education=education,
-            skills=[],
+            skills=skills,
             certifications=certifications,
-            claims=[claim],
+            claims=claims,
         )
 
     # ------------------------------------------------------------------

@@ -166,29 +166,27 @@ def set_job_family(db: Session, profile: CandidateProfile, *, job_family_id: uui
 def compute_status_view(db: Session, profile: CandidateProfile) -> CandidateStatusView:
     """Calcula `next_step` con la misma máquina de estados que el mock del frontend.
 
-    (`frontend/src/api/mock/index.ts`, `candidate.status()`). Simplificación
-    documentada: `cv_extractions` no existe todavía (es B5), así que la señal
-    "hay una extracción sin confirmar" se aproxima con el último documento
-    `CV` en estado `PARSED` — en cuanto B5 construya la confirmación real,
-    puede reemplazar esta señal sin cambiar la forma de `CandidateStatusView`.
+    (`frontend/src/api/mock/index.ts`, `candidate.status()`). Desde B5,
+    "hay una extracción sin confirmar" usa la señal real
+    `cv_extractions.confirmed_by_candidate` (antes era una aproximación con
+    `Document.status == "PARSED"`, documentada como deuda en B3-B4).
     `interview_session_id` y `has_talent_profile` quedan `None`/`False` hasta
     B6/B7, que son quienes crean esas tablas.
     """
 
-    from app.modules.documents.models import Document  # import local: evita ciclo candidates<->documents
+    from app.modules.documents.cv_extraction_service import (  # import local: evita ciclo candidates<->documents
+        get_pending_extraction,
+    )
 
     next_step: str
     if profile.status == "DRAFT":
         if not profile.job_family_id:
             next_step = "ONBOARDING"
         else:
-            latest_cv = db.execute(
-                select(Document)
-                .where(Document.owner_user_id == profile.user_id, Document.type == "CV")
-                .order_by(Document.uploaded_at.desc())
-                .limit(1)
-            ).scalar_one_or_none()
-            next_step = "REVIEW_CLAIMS" if latest_cv is not None and latest_cv.status == "PARSED" else "CV"
+            extraction = get_pending_extraction(db, candidate_id=profile.id)
+            next_step = (
+                "REVIEW_CLAIMS" if extraction is not None and not extraction.confirmed_by_candidate else "CV"
+            )
     elif profile.status in ("CV_READY", "INTERVIEWING"):
         next_step = "INTERVIEW"
     elif profile.status == "PENDING_EVALUATION":

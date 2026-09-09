@@ -41,3 +41,25 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* Skeleton (components/ui/Skeleton.tsx): shimmer 1.6s, ver §5 */
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background-color: var(--color-surface-soft);
+  background-image: linear-gradient(
+    90deg,
+    var(--color-surface-soft) 25%,
+    rgba(255, 255, 255, 0.7) 50%,
+    var(--color-surface-soft) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.6s ease-in-out infinite;
+}

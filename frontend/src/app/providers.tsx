@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ToastProvider } from "@/components/ui/Toast";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -14,9 +15,11 @@ export interface AppProvidersProps {
   children: ReactNode;
 }
 
-/** Providers globales de la app: TanStack Query. Toaster se agrega en F1. */
+/** Providers globales de la app: TanStack Query + cola de Toasts (`useToast`). */
 export function AppProviders({ children }: AppProvidersProps) {
   return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>{children}</ToastProvider>
+    </QueryClientProvider>
   );
 }

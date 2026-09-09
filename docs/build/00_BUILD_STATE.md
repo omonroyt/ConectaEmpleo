@@ -13,7 +13,7 @@
 | Fase activa | **BACKEND (fase 2)** — ver `05_BACKEND_TASKS.md`. La fase frontend está cerrada. |
 | Siguiente tarea | **B9** (motor de matching determinista, `match_runs`, `match_results`) |
 | Tarea en curso | ninguna |
-| Último commit de construcción | (ver bitácora) |
+| Último commit de construcción | 5979a99 |
 | Bloqueos | ninguno |
 
 ### Cómo verificar el backend antes de tocar nada
@@ -75,8 +75,8 @@ sugerido). Esta tabla es el estado vivo — un subagente solo cambia su propia f
 | B3 | Perfil de candidato + documentos | sonnet | DONE | c1cfda9 |
 | B4 | `AIPort` v1.1, `invoke.py`, `DeterministicAdapter`, tabla `jobs` + runner | sonnet | DONE | c1cfda9 |
 | B5 | Extracción de CV y claims, `cv-builder` sessions | sonnet | DONE | 05ab4ef |
-| B6 | Entrevista: sesiones, turnos, orquestador, Guardián de Equidad | opus | DONE | (ver bitácora) |
-| B7 | Evaluación y perfil: A3, `competency_evaluations`, `candidate_skills`, `talent_profiles`, A4 | opus | DONE | (ver bitácora) |
+| B6 | Entrevista: sesiones, turnos, orquestador, Guardián de Equidad | opus | DONE | 5979a99 |
+| B7 | Evaluación y perfil: A3, `competency_evaluations`, `candidate_skills`, `talent_profiles`, A4 | opus | DONE | 5979a99 |
 | B8 | Empresa y vacantes: `companies` (extendido), `vacancies`, `vacancy_requirements`, A5 RESOLVE | sonnet | DONE | 05ab4ef |
 | B9 | Motor de matching determinista, `match_runs`, `match_results` | opus | PENDING | — |
 | B10 | Marketplace y anonimización, `candidate_unlocks`, compare, shortlist, A5 EXPLAIN | sonnet | PENDING | — |

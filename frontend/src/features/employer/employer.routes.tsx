@@ -1,5 +1,4 @@
 import type { RouteObject } from "react-router";
-import { RoutePlaceholder } from "@/app/RoutePlaceholder";
 import { EmployerShellRoute } from "./EmployerShellRoute";
 
 /**
@@ -16,11 +15,95 @@ import { EmployerShellRoute } from "./EmployerShellRoute";
 // ---- F7: vacancies/:id/talent, vacancies/:id/compare, vacancies/:id/shortlist,
 //          candidates/:matchResultId, candidates/:matchResultId/full ---------------
 const shellRoutes: RouteObject[] = [
-  { index: true, element: <RoutePlaceholder name="Empresa — Inicio (F6)" /> },
+  {
+    index: true,
+    lazy: async () => {
+      const { HomePage } = await import("@/features/employer/home/HomePage");
+      return { Component: HomePage };
+    },
+  },
+  {
+    path: "company",
+    lazy: async () => {
+      const { CompanyProfilePage } = await import("@/features/employer/company/CompanyProfilePage");
+      return { Component: CompanyProfilePage };
+    },
+  },
+  {
+    path: "vacancies",
+    lazy: async () => {
+      const { VacanciesPage } = await import("@/features/employer/vacancies/VacanciesPage");
+      return { Component: VacanciesPage };
+    },
+  },
+  {
+    path: "vacancies/:id",
+    lazy: async () => {
+      const { VacancyDetailPage } = await import("@/features/employer/vacancies/VacancyDetailPage");
+      return { Component: VacancyDetailPage };
+    },
+  },
+  {
+    path: "vacancies/:id/talent",
+    lazy: async () => {
+      const { Component } = await import("@/features/employer/talent/TalentPage");
+      return { Component };
+    },
+  },
+  {
+    path: "vacancies/:id/compare",
+    lazy: async () => {
+      const { Component } = await import("@/features/employer/talent/ComparePage");
+      return { Component };
+    },
+  },
+  {
+    path: "vacancies/:id/shortlist",
+    lazy: async () => {
+      const { Component } = await import("@/features/employer/talent/ShortlistPage");
+      return { Component };
+    },
+  },
+  {
+    path: "candidates/:matchResultId",
+    lazy: async () => {
+      const { Component } = await import("@/features/employer/talent/CandidateDetailPage");
+      return { Component };
+    },
+  },
+  {
+    path: "candidates/:matchResultId/full",
+    lazy: async () => {
+      const { Component } = await import("@/features/employer/talent/UnlockedProfilePage");
+      return { Component };
+    },
+  },
 ];
 
 // ---- F6: onboarding, vacancies/new, vacancies/:id/ideal-profile -----------------
-const immersiveRoutes: RouteObject[] = [];
+const immersiveRoutes: RouteObject[] = [
+  {
+    path: "onboarding",
+    lazy: async () => {
+      const { OnboardingPage } = await import("@/features/employer/onboarding/OnboardingPage");
+      return { Component: OnboardingPage };
+    },
+  },
+  {
+    path: "vacancies/new",
+    lazy: async () => {
+      const { NewVacancyPage } = await import("@/features/employer/vacancies/NewVacancyPage");
+      return { Component: NewVacancyPage };
+    },
+  },
+  {
+    path: "vacancies/:id/ideal-profile",
+    lazy: async () => {
+      const { IdealProfilePage } = await import("@/features/employer/vacancies/IdealProfilePage");
+      return { Component: IdealProfilePage };
+    },
+  },
+];
 
 export const employerRoutes: RouteObject[] = [
   { element: <EmployerShellRoute />, children: shellRoutes },

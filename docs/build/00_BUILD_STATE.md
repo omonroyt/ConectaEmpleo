@@ -4,16 +4,16 @@
 > Lo actualiza cada subagente al cerrar su tarea. No releer `docs/0*.md` ni la guía UX: todo lo necesario está condensado en `docs/build/`.
 
 - Orquestador: Fable 5.1 / Opus 5 · Constructores: Sonnet 5 (Opus 5 en F4 y F7)
-- Última actualización: 2026-09-09 (cierre de la fase frontend)
+- Última actualización: 2026-09-09 (cierre de B9+B10)
 
 ## Estado actual
 
 | Campo | Valor |
 |---|---|
 | Fase activa | **BACKEND (fase 2)** — ver `05_BACKEND_TASKS.md`. La fase frontend está cerrada. |
-| Siguiente tarea | **B9** (motor de matching determinista, `match_runs`, `match_results`) |
+| Siguiente tarea | **B13** (mocks P2, `GET /admin/ai-invocations`, seeds de demo completas, deploy Railway — integración final y demo) |
 | Tarea en curso | ninguna |
-| Último commit de construcción | 5979a99 |
+| Último commit de construcción | ver fila B9/B10 de la cola de tareas — backend |
 | Bloqueos | ninguno |
 
 ### Cómo verificar el backend antes de tocar nada
@@ -78,8 +78,8 @@ sugerido). Esta tabla es el estado vivo — un subagente solo cambia su propia f
 | B6 | Entrevista: sesiones, turnos, orquestador, Guardián de Equidad | opus | DONE | 5979a99 |
 | B7 | Evaluación y perfil: A3, `competency_evaluations`, `candidate_skills`, `talent_profiles`, A4 | opus | DONE | 5979a99 |
 | B8 | Empresa y vacantes: `companies` (extendido), `vacancies`, `vacancy_requirements`, A5 RESOLVE | sonnet | DONE | 05ab4ef |
-| B9 | Motor de matching determinista, `match_runs`, `match_results` | opus | PENDING | — |
-| B10 | Marketplace y anonimización, `candidate_unlocks`, compare, shortlist, A5 EXPLAIN | sonnet | PENDING | — |
+| B9 | Motor de matching determinista, `match_runs`, `match_results` | sonnet | DONE | ver bitácora 2026-09-09 |
+| B10 | Marketplace y anonimización, `candidate_unlocks`, compare, shortlist, A5 EXPLAIN | sonnet | DONE | ver bitácora 2026-09-09 |
 | B11 | `AgenticAdapter` real (Anthropic + OpenAI, failover, prompts A1-A5) | opus | DONE | 99cf29f |
 | B12 | Voz: `STTPort`/`TTSPort`, `ElevenLabsAdapter`, `VoiceGateway` WS | opus | DONE | a01d602 |
 | B13 | Mocks P2, `GET /admin/ai-invocations`, seeds de demo completas, deploy Railway | sonnet | PENDING | — |
@@ -93,12 +93,12 @@ Detectada al construir el frontend contra el contrato de `02_API_CONTRACT.md`. C
 | # | Gap | Qué hace falta en el backend |
 |---|---|---|
 | ~~D-01~~ | ~~No hay forma de listar las certificaciones ya subidas por un candidato.~~ | **Resuelto en B3**: `GET /candidates/me/documents?type=CERTIFICATION` → `DocumentRef[]`. |
-| D-02 | `UnlockedCandidateProfile` no trae `unlocked_at`, así que la fecha del badge "Identidad desbloqueada" se sella en el cliente al abrir la pantalla. | Incluir `unlocked_at` (viene de la fila `candidate_unlocks`). |
+| ~~D-02~~ | ~~`UnlockedCandidateProfile` no trae `unlocked_at`~~. | **Resuelto en B10**: `unlocked_at` viene de la fila real de `candidate_unlocks` (`app/modules/marketplace/service.py::build_unlocked_profile`). |
 | D-03 | `interviews.turns` existe en el contrato pero F2 no le dio hook; F4 lo resolvió con un `useQuery` local. | Ninguno en backend: implementar el endpoint como está especificado y, si se quiere, mover el hook a `api/hooks`. |
 | D-04 | `VacancyInput` no tiene campo de tipo de jornada, aunque la spec de pantallas lo pedía. Se omitió en la UI por no tener dónde persistirlo. | Decidir si se agrega `work_schedule` a `vacancies` o si se retira definitivamente del alcance. |
 | D-05 | El peso por requisito individual (`VacancyRequirement.weight`) no se expone en la UI: se envía 0 y el mock lo normaliza. Los pesos que la empresa edita son los seis de `VacancyWeights`. | Mantener la normalización en `PUT /vacancies/{id}/requirements` (RB-07) y aceptar pesos por requisito en 0. |
-| D-06 | El conteo de "Desbloqueos" del home de empresa se calcula en el cliente pidiendo la shortlist de cada vacante. | Ofrecer un resumen (por ejemplo `GET /companies/me/summary`) para evitar N peticiones. |
-| D-07 | El marketplace del candidato (`GET /vacancies/open`, `POST /vacancies/{id}/apply`) es **Should Have**: existe en el contrato y en el mock, pero no está en la arquitectura del documento 04. | Implementarlo en B10 si el tiempo alcanza; si no, el frontend degrada mostrando el estado vacío. |
+| ~~D-06~~ | ~~El conteo de "Desbloqueos" del home de empresa se calcula en el cliente~~. | **Resuelto en B10**: `companies/service.py::build_summary` ahora cuenta `match_results.shortlist_stage != null` y `candidate_unlocks` reales de la empresa. |
+| ~~D-07~~ | ~~El marketplace del candidato no está implementado~~. | **Resuelto en B10**: `GET /vacancies/open`, `GET /vacancies/open/{id}`, `POST /vacancies/{id}/apply`, `GET /candidates/me/applications` (`app/modules/marketplace/`). Compatibilidad se calcula en vivo con el mismo motor de B9 cuando el candidato ya está `EVALUATED` en la familia de la vacante. |
 | D-08 | `ServerVoiceGateway` no existe todavía: la entrevista usa `BrowserVoiceGateway` (speechSynthesis + webkitSpeechRecognition). | En B12, implementar la misma interfaz de `02 §6` sobre el WebSocket de ElevenLabs. La UI de entrevista no debe cambiar. |
 
 ### Riesgos abiertos para la demo
@@ -122,6 +122,258 @@ Detectada al construir el frontend contra el contrato de `02_API_CONTRACT.md`. C
 8. **No inventes decisiones de producto.** Si la spec no cubre algo, elige la opción más simple que no contradiga la spec y anótala en la bitácora.
 
 ## Bitácora (más reciente arriba)
+
+### 2026-09-09 — B9+B10 (Sonnet)
+
+**Qué se construyó** (`backend/app/modules/matching/` y
+`backend/app/modules/marketplace/` — ambos nuevos —, una migración nueva,
+`backend/tests/test_matching_engine.py`, `test_matching_marketplace.py`,
+`test_matching_live_agentic.py`, `backend/scripts/verify_b9_b10.py`; archivos
+compartidos tocados de forma mínima y aditiva: `backend/app/main.py`,
+`backend/alembic/env.py`, `backend/app/modules/vacancies/service.py`
+(`to_schema` ahora resuelve `last_match_run_id`/`shortlist_count` reales),
+`backend/app/modules/companies/service.py` (`build_summary` ahora cuenta
+desbloqueos/finalistas reales, cierra D-06)):
+
+**B9 — motor determinista** (`app/modules/matching/engine.py`, **Python puro,
+sin SQLAlchemy, sin `AIPort`**, I-07): implementa la fórmula exacta de
+`docs/04 §7.1` — `total = clamp(Σ(peso_i/100 × raw_i) − Σ penalties, 0, 100)` —
+puerto 1:1 de `frontend/src/api/mock/engine/matching.ts::computeMatch` para
+que backend y mock compartan semántica:
+- **TECHNICAL/BEHAVIORAL**: promedio de `competency_evaluations` vigentes de
+  ese tipo, atenuado por confianza (`score × (0.7 + 0.3×confidence)` — RB-10:
+  la confianza baja atenúa, nunca anula, ni siquiera en `confidence=0`).
+  **Promediar en vez de sumar** es la respuesta a la advertencia de B2b
+  (`HEAVY_MACHINERY_OPERATOR` tiene 2 competencias conductuales core contra 1
+  en las otras familias): un promedio vive en la misma escala 0-100 sin
+  importar cuántas competencias tenga el bloque, así que ninguna familia
+  queda en desventaja estructural.
+- **EXPERIENCE**: curva no lineal por tramos (2→35, 4→55, 6→70, 9→85, 12→97,
+  16+→100, idéntica a la del mock) sobre años calculados de
+  `candidate_profiles.experience`; ×0.85 si ninguna experiencia declara
+  `skills` (sin relevancia de familia).
+- **EVIDENCE**: mezcla declarada/evaluada/verificada de `candidate_skills`
+  (`0.2×declarada + 0.5×evaluada + 1.0×verificada`, sobre el total de skills)
+  — "skill solo declarada aporta con factor reducido" de docs/04 §7.3.
+- **SALARY**: solapamiento de rangos candidato/vacante (100 si solapan, 60/20
+  según qué tan lejos, 60 neutral si falta un dato).
+- **LOCATION**: bandas por distancia Haversine entre un catálogo fijo de 15
+  ciudades mexicanas (mismo que `frontend/src/api/mock/seed/geo.ts`) — nunca
+  domicilio exacto (RB-06); ciudad desconocida se trata como lejana, nunca
+  como cercana por defecto.
+- **Penalizaciones** (RB-08, nunca eliminación silenciosa): `MANDATORY_UNMET`
+  (-8 pts) por cada requisito obligatorio incumplido, `SALARY_OUT_OF_RANGE`
+  (-5) y `LOCATION_FAR` (-5) — puntos fijos y deterministas, iguales para
+  todos los candidatos de un run. El candidato **sigue apareciendo** en el
+  ranking con el gap y la penalización visibles.
+- **Anonimato estructural (I-05/RB-05)**: `MatchingCandidateView` es un
+  `@dataclass(frozen=True)` que **ni declara** `full_name`/`photo_url`/
+  `birth_date`/`gender` — no se ocultan, no existen como atributos. Reforzado
+  un nivel más abajo: `matching/service.py::_select_candidate_row` arma la
+  vista con `select(CandidateProfile.<columna>, ...)` explícito (nunca
+  `select(CandidateProfile)` completo ni `db.get`), así que esas 4 columnas
+  ni siquiera se piden a Postgres durante el cálculo. Verificado con un test
+  que compila la sentencia SQL real y confirma que esos nombres de columna no
+  aparecen en el texto compilado (`test_matching_candidate_view_query_never_selects_protected_columns`).
+- **Elegibilidad (RB-01)**: `status="EVALUATED"` + `talent_profile.is_current`
+  + **misma `job_family_id` que la vacante** (decisión de B9: competencias de
+  otra familia no calzan contra los requisitos de esta vacante, incluirlas
+  solo generaría ceros ruidosos en TECHNICAL/BEHAVIORAL).
+- **Determinismo comprobable**: mismos insumos → mismo `MatchComputation`
+  (dataclasses `frozen`, comparación estructural completa en el test); el
+  único uso de reloj real (`years_of_experience`) acepta un `today` explícito
+  para pruebas reproducibles. Empates de score se desempatan por
+  `candidate_id` (orden estable de `rank_position`).
+- **Modelos** `match_runs`/`match_results` (`app/modules/matching/models.py`):
+  aditivos sobre docs/04 §5.7 — `MatchResult.vacancy_id` desnormalizado (evita
+  join en cada chequeo de propiedad), `MatchResult.extra` (jsonb: congela
+  `evidence_counts`/`years_experience`/`geo_band`/`salary_band`/`availability`
+  del momento del run, igual que `weights_snapshot`), `shortlist_stage`/
+  `shortlisted_at` (el finalista se marca sobre un resultado de un run
+  concreto; volver a correr el match reconstruye el shortlist sobre los
+  resultados nuevos — decisión documentada en el código).
+- **Job `MATCH_RUN`** (`app/modules/matching/jobs.py`, mismo patrón de
+  `app/core/jobs.py` que `CV_PARSE`/`INTERVIEW_EVALUATE`): `POST
+  /vacancies/{id}/match-runs` → 202 `{job_id}`; `GET
+  /match-runs/{id}/results?limit&offset` paginado y ordenado por
+  `rank_position`.
+
+**B10 — marketplace, anonimización, desbloqueo** (`app/modules/marketplace/`):
+- **Tres DTOs distintos** (`marketplace/schemas.py`): `AnonymousCandidateCard`
+  no declara atributos de identidad; `UnlockedCandidateProfile` los agrega por
+  **herencia** (extiende, no condiciona). Test que serializa
+  `AnonymousCandidateCard.model_fields` y confirma que ninguna llave prohibida
+  existe en la clase (`test_anonymous_candidate_card_json_never_contains_protected_keys`).
+- **`candidate_unlocks`**: única por `(company_id, candidate_id, vacancy_id)`
+  — no por `match_result_id` — para que un desbloqueo siga siendo válido
+  aunque la empresa vuelva a correr el match y el candidato aparezca en un
+  `match_result` nuevo. La presencia de la fila es la única fuente de verdad
+  (`marketplace/service.py::require_unlock`); no hay bandera en
+  `candidate_profiles`. `POST .../unlock` es idempotente (no duplica filas).
+  D-02 resuelto: `unlocked_at` sale de esta fila real.
+- **A5 EXPLAIN bajo demanda** (`ensure_explanation`, en `GET
+  /match-results/{id}`): arma `MatchExplanationRequest` desde el `breakdown`/
+  `penalties`/`strengths`/`gaps` **ya persistidos** (nunca recalculados) +
+  `next_best_score` (el resultado siguiente del mismo run, para que la IA
+  explique el orden relativo) y llama a `invoke("explain_match", ...)` — la
+  misma función que ya usa el resto del backend, con `AI_ADAPTER_MATCHING`
+  decidiendo el adaptador. El texto se genera **una sola vez** y se congela en
+  `match_results.explanation_text`. `explain_match` y su prompt
+  (`app/ai/prompts/analyst/explain_v1.md`) ya existían completos desde B4/B11
+  (incluida la reformulación estructural con `_assert_no_foreign_percentage`
+  en el propio `DeterministicAdapter`) — B10 solo tuvo que invocarlos con los
+  datos reales del motor.
+- **`risk_flags`/`inconsistencies`**: se exponen solo dentro de
+  `talent_profile` en `UnlockedCandidateProfile` (post-desbloqueo) — nunca en
+  `AnonymousCandidateCard`, nunca como penalización del motor (ya lo advertía
+  la bitácora de B7).
+- **Comparador**: `GET /vacancies/{id}/compare?ids=a,b,c` (máx. 3, coma-
+  separado); `key_differences` es un puerto Python de
+  `frontend/.../explain.ts::buildKeyDifferences` (`marketplace/explain.py`,
+  **sin IA**: observaciones derivadas de números ya calculados, no prosa
+  generada) — mismos 4 tipos de observación que el mock (líder general, líder
+  técnico vs. conductual, evidencia más verificada, criterio que más podría
+  voltear la decisión).
+- **Finalistas**: `shortlist_stage`/`shortlisted_at` como columnas mutables de
+  `match_results` (ver justificación arriba); `PUT
+  /match-results/{id}/shortlist` con `stage: null` quita de la selección.
+- **Marketplace del candidato (D-07)**: `GET /vacancies/open`,
+  `/vacancies/open/{id}`, `POST /vacancies/{id}/apply`, `GET
+  /candidates/me/applications`. La "compatibilidad" que ve el candidato se
+  calcula **en vivo** (no persistida, no es un `match_run` de empresa) con el
+  mismo `engine.compute_match` de B9, solo si el candidato ya está
+  `EVALUATED` en la familia de esa vacante — mismo criterio de elegibilidad
+  que RB-01. `company_note` de `UnlockedCandidateProfile` queda `null` a
+  propósito (decisión documentada en el código): invocar A4 en cada apertura
+  de un perfil desbloqueado solo para rellenar un campo opcional del
+  contrato no se justificaba en el tiempo disponible.
+- **Orden de routers en `app/main.py`**: `marketplace_router` se registra
+  **antes** que `vacancies_router` — `GET /vacancies/open` es de un solo
+  segmento, como `GET /vacancies/{vacancy_id}`, y Starlette prueba rutas en
+  orden de registro, no por especificidad. Documentado también en el
+  docstring de `marketplace/router.py`.
+
+**Migración** (`alembic/versions/8e0d0eca8c69_matching_marketplace_b9_b10.py`,
+autogenerada y revisada a mano, una sola cabeza sobre `1ecc63c0a3d4`):
+`match_runs`, `match_results`, `candidate_unlocks`, `applications`.
+
+**Verificación de cierre**:
+1. `alembic upgrade head` limpio, cabeza única `8e0d0eca8c69`. Seeds
+   idempotentes (`python -m app.seeds.run`, segunda corrida sin cambios).
+   `pytest -q`: **172 passed, 4 skipped** (155 previos + 11 de
+   `test_matching_engine.py` + 6 de `test_matching_marketplace.py`, siempre
+   verdes; +1 nuevo gateado por `RUN_LIVE_LLM_SMOKE`, mismo patrón que
+   `test_llm_smoke.py`/`test_interview_live_agentic.py`). Suite estable en
+   corridas repetidas contra el mismo Postgres de desarrollo.
+2. Tests obligatorios de `docs/04 §16`, todos verdes: ningún atributo
+   protegido en `AnonymousCandidateCard` (a nivel de clase Pydantic) ni en la
+   consulta SQL real de `MatchingCandidateView` (a nivel de sentencia
+   compilada); pesos siempre normalizan a 100 (`normalize_weights_dict`, caso
+   par y caso todo-cero); mismos insumos → mismo `total_score` exacto,
+   comprobado con 25 corridas repetidas y comparación estructural completa;
+   requisito obligatorio incumplido → penalización `MANDATORY_UNMET`
+   registrada y el candidato **sigue** en el ranking con la causa visible
+   (`test_mandatory_unmet_requirement_registers_visible_penalty_and_candidate_still_scores`,
+   más el recorrido real con 3 candidatos donde el que incumple queda #3 con
+   penalización, no eliminado); `GET /match-results/{id}/full` sin fila de
+   unlock → 403 `UNLOCK_REQUIRED`, con fila → 200; explicación real
+   (`DeterministicAdapter`) sin ningún % distinto de `total_score`, extraído
+   con regex del texto real de la respuesta HTTP; vacante de otra empresa →
+   404 (mismo criterio de B8, nunca confirmar que un id ajeno existe con un
+   403).
+3. **Recorrido real** contra un servidor `uvicorn` corriendo de verdad (no
+   `TestClient` con fixtures de pytest: el job `MATCH_RUN` corre en
+   `BackgroundTasks` con su propia `SessionLocal()`, misma limitación ya
+   documentada por B5/B7) — `scripts/verify_b9_b10.py`, `AI_ADAPTER` en su
+   default `deterministic`, `INTERVIEW_DEMO_MODE=true` para acelerar (6
+   preguntas por candidato en vez de 14): empresa + vacante ADMIN_ASSISTANT
+   con requisito obligatorio `ADMIN_HA_01 nivel≥4` → 3 candidatos `EVALUATED`
+   reales (golden path completo de B6/B7: registro → familia → entrevista →
+   complete → `INTERVIEW_EVALUATE`+`PROFILE_BUILD`) → `POST /match-runs` →
+   job `DONE` → `GET .../results` con ranking real `[77, 67, 16]` (el
+   candidato con hard bajo, salario fuera de rango y ubicación lejana quedó
+   último con las 3 penalizaciones visibles y su gap) → `GET
+   /match-results/{id}` con `explanation_text` real generado y verificado sin
+   % ajeno → `unlock` → `full` con identidad y `unlocked_at` reales →
+   `compare` con los 3 → `shortlist` marcando finalista → `GET /vacancies/{id}`
+   reflejando `last_match_run_id`/`shortlist_count` reales → `GET
+   /companies/me/summary` con desbloqueos/finalistas reales (D-06) →
+   marketplace de candidato (`/vacancies/open`, `apply`,
+   `/candidates/me/applications`, D-07) → aislamiento entre empresas (404).
+   **51 verificaciones en verde**, transcripción completa pegada en el
+   reporte de cierre de la tarea.
+4. **Corrida real de `explain_match` con `AI_ADAPTER_MATCHING` no aplica
+   aquí** (esa variable solo selecciona el adaptador vía `invoke()`/
+   `get_adapter`); la verificación pedida se hizo llamando a
+   `AgenticAdapter.explain_match` directamente contra `claude-sonnet-5`
+   (`tests/test_matching_live_agentic.py`, gateada por `RUN_LIVE_LLM_SMOKE=1`,
+   mismo patrón que `test_llm_smoke.py`): el texto real respetó la regla dura
+   (ningún % distinto de `total_score=77`; de hecho ni siquiera usó el
+   símbolo "%", dijo "77 puntos" — cumple la regla igual, que prohíbe
+   *inventar* un número, no exige repetirlo con ese símbolo), explicó el
+   orden relativo frente al siguiente candidato, nombró fortalezas y la
+   brecha de experiencia, no sugirió contratar ni predijo desempeño, y quedó
+   dentro del límite de longitud. **Costo real: 2,755 tokens de entrada +
+   311 de salida ≈ $0.0086 USD** (precios de `claude-sonnet-5`:
+   $2.00/$10.00 por millón de tokens).
+
+**Decisiones y desviaciones documentadas en el código** (además de las ya
+listadas arriba: promedio en vez de suma para TECHNICAL/BEHAVIORAL, `extra`
+jsonb en `match_results`, `shortlist_stage` sobre el resultado en vez de tabla
+aparte, unicidad de `candidate_unlocks` por terna en vez de por
+`match_result_id`, `company_note` siempre `null`, orden de routers):
+1. **Penalización de `MANDATORY_UNMET` es un monto fijo (-8)**, no escalado
+   por el peso del requisito ni por cuánto le falta al candidato — igual que
+   `frontend/src/api/mock/engine/matching.ts`, para que la explicación de la
+   IA (que recibe estos mismos números) sea consistente entre backend y
+   mock. Si se necesita una penalización proporcional, es un cambio aislado
+   en `engine.py::_penalties`.
+   `LOCATION` usan la misma banda de ciudades que el mock (15 ciudades
+   mexicanas conocidas); una ciudad fuera de ese catálogo se trata como
+   lejana por seguridad (nunca se asume cercanía sin datos).
+2. **No se agregó una tabla `shortlists`/`candidate_notes` separada** ni un
+   endpoint de notas de la empresa sobre un candidato — fuera del contrato
+   explícito de `docs/build/02_API_CONTRACT.md`, que solo pide `stage` y
+   `company_note` (este último, `null` siempre, ver arriba).
+3. **`scripts/verify_b9_b10.py`** sigue el mismo patrón de
+   `scripts/verify_b5_b8.py` pero contra un servidor `uvicorn` real (no
+   `TestClient`) porque el job `MATCH_RUN` necesita ver commits reales de
+   otra conexión — deja filas reales (empresas/candidatos demo) en la base de
+   desarrollo, igual que ya hacía `verify_b5_b8.py`; el propio
+   `test_matching_marketplace.py` se escribió a propósito para tolerar que
+   ADMIN_ASSISTANT ya tenga otros candidatos `EVALUATED` comiteados por
+   corridas manuales anteriores (identifica sus propios 3 candidatos por
+   `candidate_id`, nunca por posición absoluta ni conteo total exacto) — es
+   la misma garantía que el motor debe dar en producción real.
+
+**Qué necesita saber quien construya B13 (integración final y demo)**:
+- Las 9 operaciones de `AIPort` están completas y cableadas (`explain_match`
+  y `resolve_vacancy_requirements` ya venían de B4/B11); B13 no necesita
+  tocar `app/ai/` salvo para exponer `GET /admin/ai-invocations` (lectura
+  simple de la tabla `ai_invocations`, ya poblada por `invoke()` en cada
+  operación, incluida cada corrida de matching/explain).
+- El "golden path" de matching para una demo en vivo es exactamente el que
+  corre `scripts/verify_b9_b10.py`: usarlo como guion o adaptarlo a semillas
+  fijas (`app/seeds/`) si se quiere un estado reproducible sin depender de
+  crear candidatos en vivo durante la presentación. Con
+  `INTERVIEW_DEMO_MODE=true` cada candidato tarda ~6 preguntas en vez de 14.
+- `Vacancy.shortlist_count`/`last_match_run_id` y
+  `CompanySummary.candidates_in_selection`/`unlocks` ya son reales — el
+  frontend puede dejar de calcularlos en el cliente si todavía lo hace en
+  algún lugar (`frontend/src/features/employer/home`, ver D-06 en la
+  bitácora de B8).
+- `AnonymousCandidateCard`/`UnlockedCandidateProfile` del backend calzan
+  exactamente con los tipos TypeScript de `docs/build/02_API_CONTRACT.md`
+  §3 — B13 solo necesita cambiar `VITE_API_MODE=mock` a `http` y apuntar
+  `VITE_API_URL` (riesgo #4 de la sección "Riesgos abiertos para la demo",
+  arriba) para que el marketplace de empresa y el de candidato usen datos
+  reales en vez del mock.
+- `match_results.explanation_text` se genera perezosamente en el primer `GET
+  /match-results/{id}`; `GET /match-runs/{id}/results` (la lista) nunca la
+  genera (evita N llamadas a IA al abrir el ranking) — si la demo quiere
+  mostrar explicaciones ya listas para varios candidatos, hay que golpear
+  `GET /match-results/{id}` de cada uno una vez antes de la presentación (o
+  agregar un warm-up en B13).
 
 ### 2026-09-09 — B6+B7 (Sonnet)
 

@@ -249,6 +249,26 @@ def to_schema(db: Session, vacancy: Vacancy) -> VacancySchema:
         )
 
     weights_map = {**dict(DEFAULT_WEIGHTS), **(vacancy.weights or {})}
+
+    # B9/B10: import local para evitar un ciclo de imports en tiempo de carga
+    # de módulo (`matching.service` importa `_requirement_code_lookup` de
+    # este archivo; `matching.models` en cambio no importa nada de
+    # `vacancies`, así que este import es seguro aquí).
+    from app.modules.matching.models import MatchResult, MatchRun
+
+    last_run_id = db.execute(
+        select(MatchRun.id).where(MatchRun.vacancy_id == vacancy.id).order_by(MatchRun.executed_at.desc()).limit(1)
+    ).scalar()
+    shortlist_count = 0
+    if last_run_id is not None:
+        shortlist_count = len(
+            db.execute(
+                select(MatchResult.id).where(
+                    MatchResult.match_run_id == last_run_id, MatchResult.shortlist_stage.is_not(None)
+                )
+            ).all()
+        )
+
     return VacancySchema(
         id=vacancy.id,
         company_id=vacancy.company_id,
@@ -264,8 +284,8 @@ def to_schema(db: Session, vacancy: Vacancy) -> VacancySchema:
         created_at=vacancy.created_at,
         requirements=requirement_schemas,
         weights=VacancyWeights(**weights_map),
-        last_match_run_id=None,  # B9 crea `match_runs`
-        shortlist_count=0,  # B10 crea `candidate_unlocks`/shortlist
+        last_match_run_id=last_run_id,  # B9: última corrida de matching, si existe
+        shortlist_count=shortlist_count,  # B10: finalistas marcados en esa última corrida
     )
 
 

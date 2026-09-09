@@ -118,21 +118,33 @@ def compute_verification(company: Company) -> VerificationView:
 def build_summary(db: Session, company: Company) -> CompanySummary:
     """D-06: resumen para el home de empresa, sin que el frontend pida N recursos.
 
-    `candidates_in_selection` (shortlist) y `unlocks` dependen de
-    `match_results`/`candidate_unlocks`, que no existen todavía (B9/B10) —
-    devuelven 0 explícitamente hasta entonces; quien construya B9/B10 solo
-    tiene que reemplazar esos dos conteos por consultas reales, sin tocar la
-    forma de `CompanySummary` ni este endpoint.
+    Resuelto en B9/B10: `candidates_in_selection` cuenta `match_results` con
+    `shortlist_stage != null` de vacantes de esta empresa (a través de todos
+    sus runs, no solo el último -- una empresa puede querer ver el total de
+    finalistas marcados históricamente); `unlocks` cuenta filas de
+    `candidate_unlocks` de esta empresa.
     """
 
-    from app.modules.vacancies.models import Vacancy  # import local: evita ciclo companies<->vacancies
+    # Imports locales: evitan un ciclo companies<->vacancies/matching/marketplace
+    # en tiempo de carga de módulo (esos módulos no importan `companies.service`).
+    from app.modules.marketplace.models import CandidateUnlock
+    from app.modules.matching.models import MatchResult
+    from app.modules.vacancies.models import Vacancy
 
     active_vacancies = db.execute(
         select(Vacancy.id).where(Vacancy.company_id == company.id, Vacancy.status == "OPEN")
     ).all()
 
+    candidates_in_selection = db.execute(
+        select(MatchResult.id)
+        .join(Vacancy, Vacancy.id == MatchResult.vacancy_id)
+        .where(Vacancy.company_id == company.id, MatchResult.shortlist_stage.is_not(None))
+    ).all()
+
+    unlocks = db.execute(select(CandidateUnlock.id).where(CandidateUnlock.company_id == company.id)).all()
+
     return CompanySummary(
         active_vacancies=len(active_vacancies),
-        candidates_in_selection=0,  # B10: contar match_results con shortlist_stage != null
-        unlocks=0,  # B10: contar candidate_unlocks por vacantes de esta empresa
+        candidates_in_selection=len(candidates_in_selection),
+        unlocks=len(unlocks),
     )

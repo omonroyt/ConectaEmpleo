@@ -22,6 +22,8 @@ from app.modules.cv_builder.router import router as cv_builder_router
 from app.modules.documents.router import router as documents_router
 from app.modules.identity.router import router as identity_router
 from app.modules.interviews.router import router as interviews_router
+from app.modules.marketplace.router import router as marketplace_router
+from app.modules.matching.router import router as matching_router
 from app.modules.vacancies.router import router as vacancies_router
 
 settings = get_settings()
@@ -50,7 +52,14 @@ app.include_router(candidates_router, prefix=API_PREFIX)
 app.include_router(documents_router, prefix=API_PREFIX)
 app.include_router(cv_builder_router, prefix=API_PREFIX)
 app.include_router(companies_router, prefix=API_PREFIX)
+# `marketplace_router` DEBE registrarse antes que `vacancies_router`: expone
+# `GET /vacancies/open`, que colisionaría con `GET /vacancies/{vacancy_id}`
+# de `vacancies_router` si ese router matcheara primero (Starlette prueba
+# rutas en orden de registro, no por especificidad). Ver docstring de
+# `app/modules/marketplace/router.py`.
+app.include_router(marketplace_router, prefix=API_PREFIX)
 app.include_router(vacancies_router, prefix=API_PREFIX)
+app.include_router(matching_router, prefix=API_PREFIX)
 app.include_router(interviews_router, prefix=API_PREFIX)
 app.include_router(assessments_router, prefix=API_PREFIX)
 app.include_router(jobs_router, prefix=API_PREFIX)

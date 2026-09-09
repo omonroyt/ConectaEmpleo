@@ -1,5 +1,4 @@
 import type { RouteObject } from "react-router";
-import { RoutePlaceholder } from "@/app/RoutePlaceholder";
 import { CandidateShellRoute } from "./CandidateShellRoute";
 
 /**
@@ -16,12 +15,68 @@ import { CandidateShellRoute } from "./CandidateShellRoute";
 // ---- F3: home ---------------------------------------------------------------
 // ---- F5: profile, opportunities ----------------------------------------------
 const shellRoutes: RouteObject[] = [
-  { index: true, element: <RoutePlaceholder name="Candidato — Inicio (F3)" /> },
+  {
+    index: true,
+    lazy: async () => {
+      const { Component } = await import("@/features/candidate/home/HomePage");
+      return { Component };
+    },
+  },
 ];
 
 // ---- F3: onboarding, cv/* ------------------------------------------------------
 // ---- F4: interview/* -----------------------------------------------------------
-const immersiveRoutes: RouteObject[] = [];
+const immersiveRoutes: RouteObject[] = [
+  {
+    path: "onboarding",
+    lazy: async () => {
+      const { Component } = await import("@/features/candidate/onboarding/OnboardingPage");
+      return { Component };
+    },
+  },
+  {
+    path: "cv/upload",
+    lazy: async () => {
+      const { Component } = await import("@/features/candidate/cv/CvUploadPage");
+      return { Component };
+    },
+  },
+  {
+    path: "cv/build",
+    lazy: async () => {
+      const { Component } = await import("@/features/candidate/cv/CvBuildPage");
+      return { Component };
+    },
+  },
+  {
+    path: "cv/review",
+    lazy: async () => {
+      const { Component } = await import("@/features/candidate/cv/CvReviewPage");
+      return { Component };
+    },
+  },
+  {
+    path: "interview/prepare",
+    lazy: async () => {
+      const { Component } = await import("@/features/candidate/interview/PreparePage");
+      return { Component };
+    },
+  },
+  {
+    path: "interview/:id",
+    lazy: async () => {
+      const { Component } = await import("@/features/candidate/interview/InterviewPage");
+      return { Component };
+    },
+  },
+  {
+    path: "interview/:id/result",
+    lazy: async () => {
+      const { Component } = await import("@/features/candidate/interview/ResultPage");
+      return { Component };
+    },
+  },
+];
 
 export const candidateRoutes: RouteObject[] = [
   { element: <CandidateShellRoute />, children: shellRoutes },

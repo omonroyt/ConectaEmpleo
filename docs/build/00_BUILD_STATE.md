@@ -25,11 +25,11 @@ Estados: `PENDING` · `IN_PROGRESS` · `DONE` · `BLOCKED`. Un subagente solo ca
 | F0 | Scaffold Vite+React+TS+Tailwind v4, tokens, assets WebP, extracción del Orb, router esqueleto | sonnet | — | 01 §1-§6, §9 | DONE | e2e36fd |
 | F1 | Design system: componentes `ui/`, `layout/`, `brand/`, primitives de motion | sonnet | F0 | 01 §5-§8 | DONE | 669e012 |
 | F2 | Capa API: tipos del contrato, `ApiClient`, mock con datos semilla, hooks TanStack Query, store de sesión, `VoiceGateway` browser | sonnet | F0 | 02 completo | DONE | d4eb5e5 |
-| F3 | Candidato A: landing, auth (login/registro), onboarding, home, carga de CV, CV conversacional, revisión de claims | sonnet | F1, F2 | 03 §C0-§C7 | PENDING | |
-| F4 | Candidato B: preparación de entrevista, entrevista en curso con Orb, resultado | **opus** | F1, F2 | 03 §C8-§C10 | PENDING | |
+| F3 | Candidato A: landing, auth (login/registro), onboarding, home, carga de CV, CV conversacional, revisión de claims | sonnet | F1, F2 | 03 §C0-§C7 | DONE | pendiente |
+| F4 | Candidato B: preparación de entrevista, entrevista en curso con Orb, resultado | **opus** | F1, F2 | 03 §C8-§C10 | IN_PROGRESS | |
 | F5 | Candidato C: Perfil de Talento Verificado, perfil editable, oportunidades, detalle, postulación | sonnet | F1, F2 | 03 §C11-§C14 | PENDING | |
 | F6 | Empresa A: auth, onboarding, home, perfil empresa, nueva vacante, perfil ideal (requisitos + pesos), lista y detalle de vacante | sonnet | F1, F2 | 04 §E0-§E7 | PENDING | |
-| F7 | Empresa B: talento compatible (ranking anónimo), detalle anónimo con explicación, comparar, finalistas, desbloqueo, perfil desbloqueado | **opus** | F1, F2 | 04 §E8-§E12 | PENDING | |
+| F7 | Empresa B: talento compatible (ranking anónimo), detalle anónimo con explicación, comparar, finalistas, desbloqueo, perfil desbloqueado | **opus** | F1, F2 | 04 §E8-§E12 | IN_PROGRESS | |
 | F8 | Stubs P2 (notificaciones, mensajes, planes) + polish: responsive, a11y, reduced-motion, loading/empty/error, consistencia | sonnet | F3-F7 | 03 §C15, 04 §E13, 01 §10 | PENDING | |
 
 Paralelismo permitido: F1 ∥ F2 · luego F3 ∥ F4 ∥ F5 ∥ F6 ∥ F7 (carpetas disjuntas, ver protocolo). F8 al final.
@@ -52,6 +52,32 @@ Ver `05_BACKEND_TASKS.md`. No se arranca hasta que F0–F7 estén `DONE`.
 8. **No inventes decisiones de producto.** Si la spec no cubre algo, elige la opción más simple que no contradiga la spec y anótala en la bitácora.
 
 ## Bitácora (más reciente arriba)
+
+### 2026-09-09 — F3 (Sonnet)
+
+**Qué se construyó** (`src/features/auth/**`, `src/features/candidate/onboarding/**`, `src/features/candidate/home/**`, `src/features/candidate/cv/**`, más ediciones aditivas a `app/router.tsx` y `features/candidate/candidate.routes.tsx`):
+
+- `features/auth/auth.schemas.ts`: esquemas `zod` de login/registro + `fieldErrorsFrom()` (mapea `ZodError` a `{campo: mensaje}`). `DemoHint.tsx`: hint de usuarios demo, solo si `import.meta.env.DEV`, reutilizado por login y registro.
+- `LandingPage.tsx` (C0): hero oscuro (`BrandBackground asset="brand-main" presence="hero" priority ambient`) con eyebrow/H1/subtítulo/3 CTAs, `LightSurface` debajo con 3 `Card` de principios, `pageSequence`/`staggerContainer` de `useMotionSafe()`.
+- `LoginPage.tsx` (C1) / `RegisterPage.tsx` (C2): `AuthLayout`, `SegmentedControl`/`RadioCards` para elegir rol/audiencia, validación `zod` + estado local, `useLogin`/`useRegister`, error accionable `aria-live`, respeta `?next=` y `?role=`, navegación post-auth según `user.role` de la respuesta (no del toggle).
+- `onboarding/OnboardingPage.tsx` (C3): wizard de 3 pasos con `ProgressSteps`, transición `slideInRight`/`slideInLeft` según dirección (`AnimatePresence mode="wait"`), paso 1 `RadioCards` de familias (`catalog.jobFamilies` + `setJobFamily`), paso 2 formulario (`candidate.update`: nombre/teléfono/ciudad/estado/disponibilidad en chips/expectativa salarial con dos `Slider`), paso 3 dos `Card` de navegación (subir CV / construir desde cero). Precarga valores desde `candidate.me()` para que sobrevivan un recargado (mock). `onboarding/mexicoStates.ts`: los 32 estados para el `Select`.
+- `home/HomePage.tsx` (C4): redirige a onboarding si `candidate.status().next_step === "ONBOARDING"`; si no, saluda por nombre + `ProgressRing` de `completion_percent`, card oscura "Tu siguiente paso" (copy/CTA por cada valor de `next_step`, `WAITING_EVALUATION` sin CTA), sección "Oportunidades para ti" con 3 `JobCard` (solo si `status === "EVALUATED"`, si no `EmptyState` "Completa tu entrevista para ver tu compatibilidad").
+- `cv/CvUploadPage.tsx` (C5): `FileUploader` con nota de privacidad → `documents.uploadCV` → `useJob` (polling 1.5s) → `ProcessingStatus` con un solo mensaje ligado al rango de `progress` (no rotación temporal falsa) → `DONE` navega a `cv/review`; `FAILED` muestra error accionable con `Intentar de nuevo`/`Crear desde cero`, sin tocar el perfil.
+- `cv/CvBuildPage.tsx` (C6): chat con `cvBuilder.createSession/sendMessage/finalize`, burbujas agente/candidato, "Sofía está escribiendo…", `Turno N de 8` con `ProgressSteps`, panel lateral desktop (`aside` de `ImmersiveLayout`) con `session.draft` en `fadeUp`, botón de micrófono con `BrowserVoiceGateway.startListening/stopListening` (oculto si `!available`), CTA `Revisar mi perfil` cuando `reply.done`.
+- `cv/CvReviewPage.tsx` (C7): `documents.extraction` → estado local editable (experiencia/estudios vía `Modal` con formulario propio, habilidades como filas con selector de nivel 1-4 + eliminar, certificaciones con alta/baja inline), claims `needs_validation` con `EvidenceBadge level="pending"` + nota, texto de confianza (`alta/media/baja` según `confidence`), CTA fijo inferior `Confirmar y continuar` → `confirmExtraction` → `/candidate/interview/prepare`.
+- `app/router.tsx`: reemplazados los 3 placeholders (`/`, `/login`, `/register`) por `lazy` a las pantallas reales; `/login` y `/register` ahora anidan `RedirectIfAuthenticated` (elemento) con un hijo índice `lazy` (no se puede mezclar `element` + `lazy` en el mismo `RouteObject`). Borrado `app/LandingPlaceholder.tsx` (ya sin referencias).
+- `features/candidate/candidate.routes.tsx`: agregadas mis entradas (`index` → `HomePage` en `shellRoutes`; `onboarding`, `cv/upload`, `cv/build`, `cv/review` en `immersiveRoutes`) y quitado el import de `RoutePlaceholder` que quedó sin uso. F4 agregó sus rutas de entrevista en paralelo sobre el mismo archivo sin conflicto (releído justo antes de cada edición, tal como pide el protocolo).
+
+**Desviaciones y por qué** (regla: opción más simple que no contradiga la spec, spec no cubre el detalle):
+1. C0 no reutiliza literalmente `AuthLayout` (que es de dos columnas, pensado para formularios): se compuso a mano con `BrandBackground`+`LightSurface` para lograr el layout que pide la spec (hero completo arriba con eyebrow/H1/2 CTA, superficie clara debajo con 3 cards), siguiendo el mismo patrón "hero oscuro + superficie clara" de `01 §4`.
+2. "Onboarding support en tercio superior": `ImmersiveLayout` no expone un slot fuera de su columna centrada (max-w-760), así que el `BrandBackground asset="onboarding"` se renderiza como una banda absoluta dentro de esa columna (no full-bleed de viewport). Visualmente cumple la intención (imagen de soporte arriba, discreta) pero no ocupa el ancho completo de la pantalla.
+3. C6/C7: edición de experiencia/estudios siempre en `Modal` (no `BottomSheet` en mobile) — un solo componente cubre ambos casos razonablemente bien y evita duplicar formularios; simplificación de alcance.
+4. C7 usa `ImmersiveLayout` (no `CandidateShell`), la alternativa explícita que da la spec ("`CandidateShell` (o Immersive con cerrar)"); se eligió porque la ruta ya vive en el grupo `immersiveRoutes` junto con el resto del flujo de CV.
+5. Mic en C6: no se muestra nivel de audio en vivo (eso es más relevante en C9/entrevista); solo toggle grabar/detener y vuelca el `transcript` al textarea, editable antes de enviar.
+
+**Verificación de cierre**: `npm run typecheck` y `npm run build` en verde (sin errores en ningún archivo, incluidos los de F4/F7 en curso en paralelo). Sin `any` ni `console.log` en los archivos de esta tarea (grep). `npm run dev` respondió `200` en `/`, `/login` y `/register` (curl), servidor detenido después. No se pudo hacer un recorrido manual en navegador real (no hay herramienta de browser/playwright disponible en este entorno de agente); la validación de flujo se apoyó en lectura del mock (`api/mock/engine/cv.ts`, `api/mock/seed/cvBuilderScript.ts`, `api/mock/seed/users.ts`) para confirmar contratos exactos (p. ej. que "no sé" dispara como máximo una repregunta y luego siempre avanza).
+
+**Archivos compartidos tocados**: `app/router.tsx`, `features/candidate/candidate.routes.tsx` (ver arriba), borrado `app/LandingPlaceholder.tsx`. No se tocó `api/`, `store/`, `voice/`, `components/ui`, `components/layout` ni `tokens.css`.
 
 ### 2026-09-09 — F2 (Sonnet)
 

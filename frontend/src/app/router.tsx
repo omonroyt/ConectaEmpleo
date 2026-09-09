@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
 import { createBrowserRouter, Navigate, Outlet, useLocation, type RouteObject } from "react-router";
-import { LandingPlaceholder } from "@/app/LandingPlaceholder";
-import { RoutePlaceholder } from "@/app/RoutePlaceholder";
 import { NotFoundPage } from "@/app/NotFoundPage";
 import { candidateRoutes } from "@/features/candidate/candidate.routes";
 import { employerRoutes } from "@/features/employer/employer.routes";
@@ -49,22 +47,46 @@ function RedirectIfAuthenticated({ children }: { children: ReactNode }) {
 }
 
 export const router = createBrowserRouter([
-  { path: "/", element: <LandingPlaceholder /> },
+  {
+    path: "/",
+    lazy: async () => {
+      const { Component } = await import("@/features/auth/LandingPage");
+      return { Component };
+    },
+  },
   {
     path: "/login",
     element: (
       <RedirectIfAuthenticated>
-        <RoutePlaceholder name="Iniciar sesión" />
+        <Outlet />
       </RedirectIfAuthenticated>
     ),
+    children: [
+      {
+        index: true,
+        lazy: async () => {
+          const { Component } = await import("@/features/auth/LoginPage");
+          return { Component };
+        },
+      },
+    ],
   },
   {
     path: "/register",
     element: (
       <RedirectIfAuthenticated>
-        <RoutePlaceholder name="Crear cuenta" />
+        <Outlet />
       </RedirectIfAuthenticated>
     ),
+    children: [
+      {
+        index: true,
+        lazy: async () => {
+          const { Component } = await import("@/features/auth/RegisterPage");
+          return { Component };
+        },
+      },
+    ],
   },
   { path: "/candidate", element: <RequireRole role="CANDIDATE" />, children: candidateRoutes },
   { path: "/employer", element: <RequireRole role="COMPANY" />, children: employerRoutes },

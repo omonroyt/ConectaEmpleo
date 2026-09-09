@@ -80,8 +80,8 @@ sugerido). Esta tabla es el estado vivo — un subagente solo cambia su propia f
 | B8 | Empresa y vacantes: `companies` (extendido), `vacancies`, `vacancy_requirements`, A5 RESOLVE | sonnet | DONE | 05ab4ef |
 | B9 | Motor de matching determinista, `match_runs`, `match_results` | opus | PENDING | — |
 | B10 | Marketplace y anonimización, `candidate_unlocks`, compare, shortlist, A5 EXPLAIN | sonnet | PENDING | — |
-| B11 | `AgenticAdapter` real (Anthropic + OpenAI, failover, prompts A1-A5) | opus | DONE | (ver bitácora) |
-| B12 | Voz: `STTPort`/`TTSPort`, `ElevenLabsAdapter`, `VoiceGateway` WS | opus | PENDING | — |
+| B11 | `AgenticAdapter` real (Anthropic + OpenAI, failover, prompts A1-A5) | opus | DONE | 99cf29f |
+| B12 | Voz: `STTPort`/`TTSPort`, `ElevenLabsAdapter`, `VoiceGateway` WS | opus | DONE | (ver bitácora) |
 | B13 | Mocks P2, `GET /admin/ai-invocations`, seeds de demo completas, deploy Railway | sonnet | PENDING | — |
 
 Requisito cumplido: F0–F9 están `DONE` y B0-B2 ya están `DONE`, así que **B3 puede arrancar**.

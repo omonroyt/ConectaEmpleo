@@ -4,14 +4,18 @@ from __future__ import annotations
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.core.errors import register_error_handlers
+from app.core.jobs import router as jobs_router
 from app.core.logging import install_logging
 from app.database import get_db
+from app.modules.candidates.router import router as candidates_router
 from app.modules.catalog.router import router as catalog_router
+from app.modules.documents.router import router as documents_router
 from app.modules.identity.router import router as identity_router
 
 settings = get_settings()
@@ -36,8 +40,19 @@ app.add_middleware(
 API_PREFIX = "/api/v1"
 app.include_router(identity_router, prefix=API_PREFIX)
 app.include_router(catalog_router, prefix=API_PREFIX)
-# Nota para B3: agregar aquí `app.modules.candidates.router` cuando exista
-# (GET/PATCH /candidates/me, /status, documentos — fuera de alcance de B0-B2).
+app.include_router(candidates_router, prefix=API_PREFIX)
+app.include_router(documents_router, prefix=API_PREFIX)
+app.include_router(jobs_router, prefix=API_PREFIX)
+
+if settings.storage_provider == "local":
+    # Sirve los archivos de `LocalStorageAdapter` para que `DocumentRef.url` sea navegable
+    # en desarrollo/demo. Sin autenticación (el nombre de archivo es un UUID no adivinable) —
+    # aceptable para B3; `docs/04 §11` pide URLs firmadas de vida corta para producción real
+    # con S3/Supabase, que es cuando ese `StoragePort` se implemente.
+    import os
+
+    os.makedirs(settings.storage_local_dir, exist_ok=True)
+    app.mount("/storage", StaticFiles(directory=settings.storage_local_dir), name="storage")
 
 
 @app.get("/health")

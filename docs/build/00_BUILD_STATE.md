@@ -11,9 +11,9 @@
 | Campo | Valor |
 |---|---|
 | Fase activa | **BACKEND (fase 2)** — ver `05_BACKEND_TASKS.md`. La fase frontend está cerrada. |
-| Siguiente tarea | **B3** (perfil de candidato + documentos: `candidate_profiles` CRUD, `documents`, storage, upload de CV/certificaciones) |
+| Siguiente tarea | **B5** (extracción de CV y claims: `cv_extractions`, `claims`, confirmación, `cv-builder` sessions) |
 | Tarea en curso | ninguna |
-| Último commit de construcción | 38df003 |
+| Último commit de construcción | (por asignar al cerrar el commit de B3+B4 — ver bitácora) |
 | Bloqueos | ninguno |
 
 ### Cómo verificar el frontend antes de tocar nada
@@ -57,8 +57,8 @@ sugerido). Esta tabla es el estado vivo — un subagente solo cambia su propia f
 | B0 | Base: pyproject, Docker, docker-compose Postgres, config, `database.py`, Alembic, `/health`, CORS, errores, logging | sonnet | DONE | 38df003 |
 | B1 | Identidad: `users`, registro/login/me, JWT, `require_candidate/require_company` | sonnet | DONE | 38df003 |
 | B2 | Catálogo y semillas: `job_families`, `competencies`, `skills`, `rubrics`, `learning_catalog` | sonnet | DONE | 38df003 |
-| B3 | Perfil de candidato + documentos | sonnet | PENDING | — |
-| B4 | `AIPort` v1.1, `invoke.py`, `DeterministicAdapter`, tabla `jobs` + runner | sonnet | PENDING | — |
+| B3 | Perfil de candidato + documentos | sonnet | DONE | (ver bitácora) |
+| B4 | `AIPort` v1.1, `invoke.py`, `DeterministicAdapter`, tabla `jobs` + runner | sonnet | DONE | (ver bitácora) |
 | B5 | Extracción de CV y claims, `cv-builder` sessions | sonnet | PENDING | — |
 | B6 | Entrevista: sesiones, turnos, orquestador, Guardián de Equidad | opus | PENDING | — |
 | B7 | Evaluación y perfil: A3, `competency_evaluations`, `candidate_skills`, `talent_profiles`, A4 | opus | PENDING | — |
@@ -77,7 +77,7 @@ Detectada al construir el frontend contra el contrato de `02_API_CONTRACT.md`. C
 
 | # | Gap | Qué hace falta en el backend |
 |---|---|---|
-| D-01 | No hay forma de listar las certificaciones ya subidas por un candidato. `documents.uploadCertification` solo devuelve el `DocumentRef` recién creado, así que el perfil solo muestra lo subido en la sesión actual. | Agregar `GET /candidates/me/documents?type=CERTIFICATION` → `DocumentRef[]`. |
+| ~~D-01~~ | ~~No hay forma de listar las certificaciones ya subidas por un candidato.~~ | **Resuelto en B3**: `GET /candidates/me/documents?type=CERTIFICATION` → `DocumentRef[]`. |
 | D-02 | `UnlockedCandidateProfile` no trae `unlocked_at`, así que la fecha del badge "Identidad desbloqueada" se sella en el cliente al abrir la pantalla. | Incluir `unlocked_at` (viene de la fila `candidate_unlocks`). |
 | D-03 | `interviews.turns` existe en el contrato pero F2 no le dio hook; F4 lo resolvió con un `useQuery` local. | Ninguno en backend: implementar el endpoint como está especificado y, si se quiere, mover el hook a `api/hooks`. |
 | D-04 | `VacancyInput` no tiene campo de tipo de jornada, aunque la spec de pantallas lo pedía. Se omitió en la UI por no tener dónde persistirlo. | Decidir si se agrega `work_schedule` a `vacancies` o si se retira definitivamente del alcance. |
@@ -107,6 +107,160 @@ Detectada al construir el frontend contra el contrato de `02_API_CONTRACT.md`. C
 8. **No inventes decisiones de producto.** Si la spec no cubre algo, elige la opción más simple que no contradiga la spec y anótala en la bitácora.
 
 ## Bitácora (más reciente arriba)
+
+### 2026-09-09 — B3+B4 (Sonnet)
+
+**Qué se construyó** (todo dentro de `backend/`; `frontend/` no se tocó):
+
+- **B3 — Perfil de candidato y documentos**: `app/modules/candidates/schemas.py` (tipos del
+  contrato §3: `Location`, `ExperienceItem`, `EducationItem`, `CandidateProfile`,
+  `CandidateProfilePatch`, `CandidateStatusView`); `service.py` ampliado con `to_schema` (arma el
+  DTO anidado desde las columnas planas `location_city`/`location_state`), `apply_patch`
+  (`exclude_unset`, PATCH real — un segundo PATCH parcial no borra lo ya guardado, verificado con
+  curl real), `set_job_family` (404 `NOT_FOUND` si el id no existe), `compute_status_view` y
+  `build_candidate_snapshot_for_ai`; `router.py` nuevo con `GET/PATCH /candidates/me`,
+  `POST /candidates/me/job-family`, `GET /candidates/me/status`. `completion_percent` ya existía
+  de B1-B2 (heurística de 9 campos, documentada en el docstring de `service.py`); no se tocó.
+  `next_step` replica exactamente la máquina de estados de
+  `frontend/src/api/mock/index.ts::candidate.status()`, con una simplificación documentada: la
+  señal "hay una extracción sin confirmar" (`REVIEW_CLAIMS`) se aproxima con "existe un documento
+  `CV` en estado `PARSED`", porque `cv_extractions`/`confirmed_by_candidate` son de B5 — B5 puede
+  sustituir esa señal sin cambiar la forma de `CandidateStatusView`. `interview_session_id` y
+  `has_talent_profile` quedan `null`/`false` hasta B6/B7.
+  `app/modules/documents/`: modelo `Document` (docs/04 §5.3); `StoragePort` (Protocol) +
+  `LocalStorageAdapter` (nombre reescrito a UUID, organizado por `owner_user_id/tipo/`, ruta a
+  S3/Supabase preparada vía `get_storage()` pero no implementada — levanta `NotImplementedError`
+  explícito si `STORAGE_PROVIDER` no es `local`); `validation.py` con sniffing de MIME real por
+  firma de bytes (PDF/DOCX-ZIP/PNG/JPG) — se evitó `python-magic` a propósito porque requiere
+  `libmagic` del sistema, doloroso de instalar en Windows; límite 10 MB; errores
+  `UPLOAD_TOO_LARGE`/`UNSUPPORTED_MEDIA_TYPE`/`EMPTY_UPLOAD` en español accionable.
+  `POST /candidates/me/cv` (multipart, 202 + `job_id`), `POST /candidates/me/certifications`
+  (síncrono, `DocumentRef`), `GET /candidates/me/documents?type=` (**resuelve D-01**). `main.py`
+  monta `/storage` como estáticos solo si `STORAGE_PROVIDER=local`, para que `DocumentRef.url` sea
+  navegable en dev/demo (sin auth — el nombre es un UUID no adivinable; documentado como
+  simplificación aceptable para B3, no para producción real).
+  **Invariante I-05**: `CandidateSnapshotForAI` (`app/ai/contracts/base.py`) carece físicamente de
+  `full_name`/`photo_url`/`birth_date`/`gender`; `build_candidate_snapshot_for_ai` en
+  `candidates/service.py` lo arma desde `CandidateProfile`. Test en frío en
+  `tests/test_ai_snapshot.py` (dos tests: la clase no declara esos campos + la serialización de un
+  perfil totalmente lleno no los filtra).
+- **B4 — Puerto de IA, contratos, adaptador determinista y jobs**: `app/ai/contracts/` (`base.py`
+  con los tipos compartidos incluido `CandidateSnapshotForAI`; `profiling.py`, `interview.py`,
+  `assessment.py`, `advisory.py`, `matching.py` con las 9 operaciones, todas con `contract_version`
+  y las validaciones duras de §6.3: `score` 0-100, `rubric_level` 0-4, `confidence` 0-1,
+  `justification` `min_length=20`, `evidence_turn_ids` `min_length=1` — todas por Pydantic v2
+  `Field`, así que un valor fuera de rango lanza `ValidationError` al construir el modelo, nunca se
+  recorta). `app/ai/port.py`: `Protocol AIPort` con exactamente 9 métodos +
+  `AI_OPERATIONS` (tupla, fuente única de nombres, con `assert` en `registry.py` que falla si se
+  desincroniza). `app/ai/registry.py`: `get_adapter(operation)` resuelve `deterministic|agentic`
+  por grupo (`cv`/`interview`/`assessment`/`advisory`/`matching`, variables `AI_ADAPTER_<GRUPO>`) o
+  el default `AI_ADAPTER`; `AI_MODE=demo` fuerza `deterministic` sin excepción; pedir `agentic`
+  levanta `AdapterNotImplementedError` explícito (no existe hasta B11, y no degrada en silencio).
+  `app/ai/invoke.py`: wrapper único — arma el request, llama al método del adaptador resuelto,
+  valida contra el `result_schema` Pydantic, reintenta con el **mismo** adaptador ante falla de
+  validación (`AIValidationError`, hasta `LLM_MAX_RETRIES_PRIMARY`), o propaga `AIProviderError` si
+  el adaptador lanzó una excepción (sin reintentar en el mismo intento); registra **siempre** en
+  `ai_invocations` (operación, `contract_version`, adaptador, digest sha256 del request, salida
+  cruda, latencia, reintentos, estado). Puntos de extensión de B11 comentados en el código:
+  failover al proveedor secundario dentro de `invoke()`, y circuit breaker de docs/05 §8.1.
+  `app/ai/adapters/deterministic.py`: las 9 operaciones sin LLM, coherentes con
+  `frontend/src/api/mock/engine/*` (mismas reglas de negocio: CV plausible por familia, guion de 8
+  turnos para el CV conversacional, entrevista adaptativa con ASK sobre competencias core primero,
+  PROBE citando la respuesta más larga sin referenciar todavía — `references_turn_id` no nulo,
+  verificado en un test de bucle completo —, evaluación que **lee `score_mapping` del `RubricSpec`
+  recibido** (nunca de un prompt: la rúbrica la resuelve el servicio de dominio desde la tabla
+  `rubrics` y se la pasa al adaptador ya armada), perfil de talento, feedback en dos tonos,
+  learning path que **solo usa `catalog_entries` recibidas** (nunca inventa curso ni URL),
+  resolución de requisitos con las mismas 8 frases discriminatorias del mock frontend, y
+  explicación de match con una aserción defensiva propia (`_assert_no_foreign_percentage`) que
+  replica en Python el `assertExplanation` de `frontend/src/api/mock/engine/explain.ts`.
+  Modelo `AIInvocation` (`app/ai/models.py`) y `Job` + runner (`app/core/jobs.py`, con
+  `BackgroundTasks`): ciclo `QUEUED → RUNNING → DONE | FAILED`; `run_job` le pasa al `worker` la
+  misma sesión con la que va a marcar `DONE`, así que si el `worker` lanza cualquier excepción,
+  `run_job` hace `rollback()` antes de marcar `FAILED` — ninguna escritura a medias del worker
+  sobrevive (test explícito en `tests/test_jobs.py`, con `SessionLocal` real porque el runner abre
+  su propia sesión a propósito). `GET /jobs/{id}` devuelve `Job` del contrato.
+  **Límite de alcance con B5, importante para quien siga**: el job `CV_PARSE` (worker en
+  `app/modules/documents/service.py::cv_parse_worker`) ejercita `AIPort.parse_cv` de punta a punta
+  y deja el `Document` en `PARSED`/`FAILED`, pero usa un **texto de marcador de posición** derivado
+  del nombre de archivo como `document_text` (no lee el PDF real) — igual que hace el mock del
+  frontend. No existen todavía `cv_extractions` ni `claims`: el `result_ref` del job es el
+  `document_id`, no una extracción persistida. B5 debe: (1) extraer texto real con
+  `pypdf`/`python-docx`, (2) crear la fila `cv_extractions` y las `claims`, (3) construir el
+  endpoint de confirmación que mueve `candidate_profiles.status` a `CV_READY` y así reemplaza la
+  señal aproximada de `REVIEW_CLAIMS` en `compute_status_view`.
+  Migración `9826d961beb1_documents_jobs_ai_invocations.py` (autogenerada y revisada): tablas
+  `ai_invocations`, `jobs`, `documents`.
+
+**Desviaciones respecto a docs/04 y docs/05** (documentadas también en el código, no solo aquí):
+
+1. **`AIPort` con `def` síncrono, no `async def`** (docs/04 §6.1, docs/05 §8 lo declaran async).
+   Coherente con la decisión ya tomada en B0 de SQLAlchemy síncrono en todo el backend — FastAPI ya
+   ejecuta las dependencias síncronas en threadpool, así que mezclar dos estilos de concurrencia no
+   compraba nada hoy. Cuando B11 conecte un cliente HTTP async real, `AgenticAdapter` puede
+   envolver la llamada (hilo o `asyncio.run`) sin tocar el `Protocol`. Ver docstring de
+   `app/ai/port.py`.
+2. **`invoke()` comitea la sesión que recibe** al registrar `ai_invocations` (éxito o falla). Es lo
+   que permite que un `worker` de job mute filas de dominio (ej. `document.status`) sin comitear
+   él mismo, y que ese cambio se persista junto con el resultado de IA como una sola unidad. Efecto
+   colateral documentado: cualquier cambio pendiente que el llamador ya hubiera hecho en esa misma
+   sesión también se comitea. Ver docstring de `app/ai/invoke.py`.
+3. **Evaluaciones de competencias no exploradas**: el adaptador determinista solo evalúa
+   competencias con al menos un turno respondido (no genera automáticamente un nivel 0 por cada
+   competencia de la rúbrica que nunca se tocó). Sintetiza una única entrada `BASELINE` de nivel 0
+   solo para no violar `EvaluationResult.evaluations` (`min_length=1`) cuando la transcripción no
+   cubrió nada. Backfillear "nivel 0 con confianza baja" para cada competencia core no explorada es
+   una regla de negocio de `assessments/service.py` (B7), no una decisión que le corresponda al
+   adaptador de IA — anotado en el docstring de `evaluate_competencies`.
+4. **`uploadCertification(file, skillCode?)`** acepta `skill_code` (coherente con el contrato) pero
+   no lo persiste: `documents` (docs/04 §5.3) no tiene esa columna: el vínculo evidencia-skill vive
+   en `skill_evidences` (B7). Queda como parámetro aceptado y documentado para que B7 lo use sin
+   cambiar la firma del endpoint.
+
+**Verificación de cierre — salida real** (con el servidor corriendo,
+`DATABASE_URL` explícito de `backend/README.md`, archivo real
+`frontend/public/demo/cv-ejemplo.pdf`):
+- `alembic upgrade head` → `Running upgrade fe3ea41d61ec -> 9826d961beb1, documents jobs ai_invocations`
+  sin error. `python -m app.seeds.run` corrido después → `seeds_completed`, mismos conteos que B0-B2
+  (idempotente, sin filas nuevas).
+- `pytest` → **42/42 passed** (12 de B0-B2 + 30 nuevos: perfil GET/PATCH incluida preservación de
+  campos en PATCH parcial, `job-family` con 404 en id inexistente, `next_step` en los 6 estados,
+  upload con MIME no permitido → 415, upload > 10 MB → 413, ciclo de vida de un job éxito y falla
+  sin escritura parcial, I-05 (2 tests), score/rubric_level/confidence fuera de rango → error sin
+  clamp (I-04), justification corta y evidence_turn_ids vacío rechazados, las 9 operaciones del
+  adaptador determinista validan contra sus contratos incluida la entrevista completa con
+  `references_turn_id` no nulo, D-01 (listar certificaciones)).
+- `ruff check app tests` → sin hallazgos.
+- Con `uvicorn` corriendo en `:8000`: registro + login de candidato → 200/201 con token; `PATCH
+  /candidates/me` (con `location` anidado) → 200, un segundo PATCH parcial preserva `full_name`;
+  `POST /candidates/me/job-family` con `WAREHOUSE_SUPERVISOR` → 200, `job_family_id` correcto;
+  `GET /candidates/me/status` → `ONBOARDING` sin familia, `CV` tras fijar familia; `POST
+  /candidates/me/cv` con el PDF real de demo → `202 {"job_id": "..."}`; polling `GET /jobs/{id}` →
+  `DONE` con `progress:100` y `result_ref` en el primer poll (adaptador determinista, sin red);
+  `GET /candidates/me/status` después → `REVIEW_CLAIMS` (el documento CV quedó `PARSED`); `POST
+  /candidates/me/certifications` → 200 con `DocumentRef` y `url` navegable bajo `/storage/...`;
+  `GET /candidates/me/documents?type=CERTIFICATION` → lista con esa fila (D-01); upload de un
+  `.txt` → `415 UNSUPPORTED_MEDIA_TYPE`; upload de un PDF de 11 MB → `413 UPLOAD_TOO_LARGE`. Log
+  estructurado del servidor sin errores inesperados durante toda la corrida.
+
+**Qué necesita saber quien siga con B5** (extracción de CV y CV conversacional):
+- El job `CV_PARSE` ya existe y ya llama a `AIPort.parse_cv` vía `invoke()`; solo hace falta
+  reemplazar el texto de marcador de posición en `cv_parse_worker`
+  (`app/modules/documents/service.py`) por extracción real (`pypdf`/`python-docx`, con fallback a
+  visión si el PDF es escaneado, según docs/05 §7 A1) y agregar la persistencia en `cv_extractions`/
+  `claims` (modelos nuevos de B5) usando el `CVParseResult` ya validado que `invoke()` devuelve.
+- `compute_status_view` en `candidates/service.py` tiene la señal `REVIEW_CLAIMS` aproximada con
+  `Document.status == "PARSED"`; en cuanto exista `cv_extractions.confirmed_by_candidate`, esa
+  condición debe reemplazarse (mismo `next_step`, misma forma de `CandidateStatusView`).
+  `GET/PATCH /candidates/me/cv/extraction` (confirmación) es lo que debe mover
+  `candidate_profiles.status` a `CV_READY`.
+- `build_cv_conversationally` en `DeterministicAdapter` ya implementa el guion base de 8 turnos de
+  forma **stateless** (recibe `turn_index`/`last_answer`/`answers_so_far`, devuelve el siguiente
+  prompt): B5 es quien construye `cv-builder sessions` (persistencia de la sesión, avance de
+  `turn_index`, ensamblado final del `CVExtraction` a partir de las respuestas capturadas) — el
+  adaptador no guarda estado entre llamadas a propósito.
+- El `AIPort`/`invoke()`/`registry` ya están completos y estables: cualquier operación nueva de B5
+  reutiliza `parse_cv`/`build_cv_conversationally` tal cual están, sin tocar `port.py`.
 
 ### 2026-09-09 — B0+B1+B2 (Sonnet)
 

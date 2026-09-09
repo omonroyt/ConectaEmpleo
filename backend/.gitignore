@@ -4,3 +4,6 @@
 build/
 .env.local
 conecta-empleo-api.egg-info/
+
+# LocalStorageAdapter (docs/04 §5.3): archivos subidos por candidatos/empresas en dev/demo local.
+storage/

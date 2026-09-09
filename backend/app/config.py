@@ -71,6 +71,13 @@ class Settings(BaseSettings):
     # --- Capa de IA (doc 04 §6 / doc 05 §0.3) ---
     ai_adapter: Literal["deterministic", "agentic"] = "deterministic"
     ai_mode: Literal["live", "demo"] = "demo"
+    # Overrides por grupo de operación (docs/04 §6.4): None = usa `ai_adapter`.
+    # Grupos (ver app/ai/registry.py): cv, interview, assessment, advisory, matching.
+    ai_adapter_cv: Literal["deterministic", "agentic"] | None = None
+    ai_adapter_interview: Literal["deterministic", "agentic"] | None = None
+    ai_adapter_assessment: Literal["deterministic", "agentic"] | None = None
+    ai_adapter_advisory: Literal["deterministic", "agentic"] | None = None
+    ai_adapter_matching: Literal["deterministic", "agentic"] | None = None
     llm_provider: str = "anthropic"
     llm_api_key: str = ""
     llm_model: str = "claude-sonnet-5"

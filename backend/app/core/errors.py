@@ -76,6 +76,54 @@ class ValidationDomainError(DomainError):
     default_message = "Los datos enviados no son válidos."
 
 
+class UploadTooLargeError(DomainError):
+    status_code = status.HTTP_413_REQUEST_ENTITY_TOO_LARGE
+    code = "UPLOAD_TOO_LARGE"
+    default_message = "El archivo supera el tamaño máximo permitido (10 MB). Comprime el archivo o sube una versión más ligera."
+
+
+class UnsupportedMediaTypeError(DomainError):
+    status_code = status.HTTP_415_UNSUPPORTED_MEDIA_TYPE
+    code = "UNSUPPORTED_MEDIA_TYPE"
+    default_message = (
+        "El tipo de archivo no está permitido. Sube un PDF, Word (.docx), PNG o JPG."
+    )
+
+
+class EmptyUploadError(DomainError):
+    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    code = "EMPTY_UPLOAD"
+    default_message = "El archivo llegó vacío. Vuelve a intentar la subida."
+
+
+class AIValidationError(DomainError):
+    """El adaptador de IA respondió, pero la salida no valida contra su esquema (I-01).
+
+    No hereda de `DomainError` para uso HTTP directo en la mayoría de los casos —
+    normalmente se captura dentro de `invoke.py` y termina en un job `FAILED`
+    o en un reintento — pero se deja como `DomainError` para que, si algún
+    endpoint la deja escapar, el cliente reciba `{code, message, details}` en
+    vez de un 500 genérico.
+    """
+
+    status_code = status.HTTP_502_BAD_GATEWAY
+    code = "AI_VALIDATION_ERROR"
+    default_message = "La IA respondió en un formato inesperado. Se reintentó automáticamente."
+
+
+class AIProviderError(DomainError):
+    """El adaptador de IA no pudo producir una respuesta (timeout, red, proveedor caído).
+
+    Distinta de `AIValidationError` a propósito (docs/05 §8): esta es la falla
+    que dispara failover de proveedor (B11) o fallback funcional, no un reintento
+    con el mismo proveedor.
+    """
+
+    status_code = status.HTTP_502_BAD_GATEWAY
+    code = "AI_PROVIDER_ERROR"
+    default_message = "El servicio de IA no está disponible en este momento. Intenta de nuevo en unos minutos."
+
+
 def register_error_handlers(app: FastAPI) -> None:
     @app.exception_handler(DomainError)
     async def _domain_error_handler(_: Request, exc: DomainError) -> JSONResponse:

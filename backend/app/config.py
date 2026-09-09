@@ -107,8 +107,13 @@ class Settings(BaseSettings):
     llm_max_tokens: int = 4096
     llm_max_tokens_assessment: int = 8192
 
-    # --- Entrevista ---
-    interview_question_budget: int = 12
+    # --- Entrevista (docs/build/06_INTERVIEW_SYSTEM.md §5) ---
+    # 14 = 7 HARD + 7 SOFT (recorrido completo). En modo demo se recorta a 3+3
+    # (ver `interview_demo_mode`) y el perfil resultante se marca `coverage="PARTIAL"`.
+    interview_question_budget: int = 14
+    interview_demo_mode: bool = False
+    # 1 recomendado, 2 solo ante inconsistencia o ambigüedad grave (docs/build/06 §5).
+    interview_max_followups_per_question: int = 2
 
     # --- Voz (ElevenLabs) ---
     voice_enabled: bool = False

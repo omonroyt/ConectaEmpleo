@@ -11,25 +11,22 @@ Ningún servicio llama a un adaptador directamente (regla no negociable de
    proveedor no ayuda si el problema es de formato (docs/05 §8).
 5. Ante **falla de proveedor** (el adaptador lanzó una excepción — timeout, red,
    lo que sea): no se reintenta en el mismo intento; se registra y se
-   propaga como `AIProviderError` para que la capa de arriba decida (B11:
-   failover al proveedor secundario; hasta entonces, fallback funcional por
-   operación, docs/05 §11.1, o dejar el job en `FAILED`/reintentable).
+   propaga como `AIProviderError` para que la capa de arriba decida (fallback
+   funcional por operación, docs/05 §11.1, o dejar el job en
+   `FAILED`/reintentable — `AgenticAdapter` ya resuelve el failover de
+   proveedor internamente vía `LLMFailoverPolicy`, así que en la práctica
+   `invoke()` solo ve una excepción si tanto el primario como el fallback
+   funcional fallan).
 6. Registra **siempre** en `ai_invocations` — éxito o falla — con operación,
-   versión de contrato, adaptador, digest de entrada, salida cruda, latencia
-   y estado.
+   versión de contrato, adaptador, digest de entrada, salida cruda, latencia,
+   estado y, cuando la respuesta vino de un proveedor real (`AgenticAdapter`,
+   B11/B6), también `provider`/`model`/`tokens_in`/`tokens_out` (leídos de
+   `AgenticAdapter.last_response`, ver `_adapter_telemetry`).
 
 Las dos fallas son clases distintas a propósito (`app.core.errors`):
 `AIValidationError` (reintenta mismo proveedor) vs. `AIProviderError`
 (dispara failover / fallback). Confundirlas fue explícitamente señalado en
 docs/05 §8 como un error a evitar.
-
-**Puntos de extensión para B11** (no implementados aquí, ver comentarios en el
-código): failover automático al proveedor secundario dentro del mismo
-`invoke()`, y circuit breaker tras 3 fallas de proveedor en 60s (docs/05 §8.1).
-Hoy solo existe `DeterministicAdapter`, así que `AIProviderError` en la
-práctica solo ocurre si el propio adaptador determinista lanza una excepción
-(un bug, no una caída de red) — pero el contrato ya está listo para cuando
-exista un segundo proveedor real.
 
 **Nota de diseño**: `invoke()` hace `db.commit()` de la fila de `ai_invocations`
 en la sesión que recibe. Es una simplificación deliberada para un backend de
@@ -75,19 +72,23 @@ def _record(
     retries: int,
     status: str,
     error: str | None,
+    provider: str | None = None,
+    model: str | None = None,
+    tokens_in: int | None = None,
+    tokens_out: int | None = None,
 ) -> AIInvocation:
     row = AIInvocation(
         operation=operation,
         contract_version=contract_version,
         prompt_version=prompt_version,
         adapter=adapter,
-        provider=None,  # B11: nombre del proveedor real (anthropic|openai) que respondió
-        model=None,  # B11: modelo real usado
+        provider=provider,
+        model=model,
         input_digest=input_digest,
         raw_output=raw_output,
         latency_ms=latency_ms,
-        tokens_in=None,
-        tokens_out=None,
+        tokens_in=tokens_in,
+        tokens_out=tokens_out,
         retries=retries,
         status=status,
         error=error,
@@ -96,6 +97,30 @@ def _record(
     db.commit()
     db.refresh(row)
     return row
+
+
+def _adapter_telemetry(adapter: object) -> tuple[str | None, str | None, int | None, int | None]:
+    """Lee `provider`/`model`/tokens de `AgenticAdapter.last_response` (B11), si existe.
+
+    B11 dejó expuesto `AgenticAdapter.last_response: StructuredResponse | None`
+    (`None` cuando la respuesta vino del fallback funcional al
+    `DeterministicAdapter`, ver `app/ai/adapters/llm/failover.py`) documentando
+    explícitamente que "quien conecte `invoke.py` puede leer ese atributo justo
+    después de invocar el método de `AIPort`". Eso es lo que hace esta función
+    — `DeterministicAdapter` no declara `last_response`, así que `getattr`
+    devuelve `None` para él sin necesidad de un `isinstance` que acoplaría este
+    módulo a una clase concreta de adaptador.
+    """
+
+    last_response = getattr(adapter, "last_response", None)
+    if last_response is None:
+        return None, None, None, None
+    return (
+        last_response.provider,
+        last_response.model,
+        last_response.input_tokens,
+        last_response.output_tokens,
+    )
 
 
 def invoke(
@@ -158,6 +183,7 @@ def invoke(
             continue  # I-08: falla de validación -> reintenta con el MISMO adaptador
 
         latency_ms = int((time.monotonic() - started) * 1000)
+        provider, model, tokens_in, tokens_out = _adapter_telemetry(adapter)
         _record(
             db,
             operation=operation,
@@ -170,6 +196,10 @@ def invoke(
             retries=attempt - 1,
             status="SUCCESS",
             error=None,
+            provider=provider,
+            model=model,
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
         )
         return validated
 

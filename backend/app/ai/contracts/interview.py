@@ -34,6 +34,13 @@ class InterviewTurnRequest(AIBaseModel):
     history: list[TurnDTO] = Field(default_factory=list)
     coverage_state: dict[str, CoverageStatus] = Field(default_factory=dict)
     remaining_questions: int = Field(ge=0)
+    # B6 — Guardián de Equidad (docs/05 §7 S2, docs/build/00_BUILD_STATE.md B6):
+    # cuando el Guardián bloquea una propuesta, pide **una** reformulación
+    # pasando aquí el motivo del bloqueo (nunca el texto bloqueado en sí, para
+    # no anclar al agente a repetir la misma redacción). `None` en cualquier
+    # llamada normal fuera de un reintento de reformulación. Campo aditivo:
+    # opcional, no rompe ninguna llamada existente.
+    guardian_feedback: str | None = None
 
 
 class InterviewTurnResult(AIBaseModel):

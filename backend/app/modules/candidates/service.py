@@ -170,10 +170,14 @@ def compute_status_view(db: Session, profile: CandidateProfile) -> CandidateStat
     "hay una extracción sin confirmar" usa la señal real
     `cv_extractions.confirmed_by_candidate` (antes era una aproximación con
     `Document.status == "PARSED"`, documentada como deuda en B3-B4).
-    `interview_session_id` y `has_talent_profile` quedan `None`/`False` hasta
-    B6/B7, que son quienes crean esas tablas.
+    Desde B6/B7: `interview_session_id` refleja
+    `candidate_profiles.interview_session_id` (fijado por
+    `app/modules/interviews/service.py::create_session`) y
+    `has_talent_profile` consulta si existe un `talent_profiles` vigente
+    (`is_current=True`) para el candidato.
     """
 
+    from app.modules.assessments.models import TalentProfile  # import local: evita ciclo candidates<->assessments
     from app.modules.documents.cv_extraction_service import (  # import local: evita ciclo candidates<->documents
         get_pending_extraction,
     )
@@ -196,11 +200,20 @@ def compute_status_view(db: Session, profile: CandidateProfile) -> CandidateStat
     else:
         next_step = "ONBOARDING"
 
+    has_talent_profile = (
+        db.execute(
+            select(TalentProfile.id).where(
+                TalentProfile.candidate_id == profile.id, TalentProfile.is_current.is_(True)
+            )
+        ).first()
+        is not None
+    )
+
     return CandidateStatusView(
         status=profile.status,
         next_step=next_step,
         interview_session_id=profile.interview_session_id,
-        has_talent_profile=False,  # B7 crea `talent_profiles`
+        has_talent_profile=has_talent_profile,
     )
 
 

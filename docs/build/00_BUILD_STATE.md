@@ -11,9 +11,9 @@
 | Campo | Valor |
 |---|---|
 | Fase activa | **BACKEND (fase 2)** — ver `05_BACKEND_TASKS.md`. La fase frontend está cerrada. |
-| Siguiente tarea | **B6** (entrevista: sesiones, turnos, orquestador determinista, cobertura, Guardián de Equidad) |
+| Siguiente tarea | **B9** (motor de matching determinista, `match_runs`, `match_results`) |
 | Tarea en curso | ninguna |
-| Último commit de construcción | 05ab4ef |
+| Último commit de construcción | (ver bitácora) |
 | Bloqueos | ninguno |
 
 ### Cómo verificar el backend antes de tocar nada
@@ -75,8 +75,8 @@ sugerido). Esta tabla es el estado vivo — un subagente solo cambia su propia f
 | B3 | Perfil de candidato + documentos | sonnet | DONE | c1cfda9 |
 | B4 | `AIPort` v1.1, `invoke.py`, `DeterministicAdapter`, tabla `jobs` + runner | sonnet | DONE | c1cfda9 |
 | B5 | Extracción de CV y claims, `cv-builder` sessions | sonnet | DONE | 05ab4ef |
-| B6 | Entrevista: sesiones, turnos, orquestador, Guardián de Equidad | opus | PENDING | — |
-| B7 | Evaluación y perfil: A3, `competency_evaluations`, `candidate_skills`, `talent_profiles`, A4 | opus | PENDING | — |
+| B6 | Entrevista: sesiones, turnos, orquestador, Guardián de Equidad | opus | DONE | (ver bitácora) |
+| B7 | Evaluación y perfil: A3, `competency_evaluations`, `candidate_skills`, `talent_profiles`, A4 | opus | DONE | (ver bitácora) |
 | B8 | Empresa y vacantes: `companies` (extendido), `vacancies`, `vacancy_requirements`, A5 RESOLVE | sonnet | DONE | 05ab4ef |
 | B9 | Motor de matching determinista, `match_runs`, `match_results` | opus | PENDING | — |
 | B10 | Marketplace y anonimización, `candidate_unlocks`, compare, shortlist, A5 EXPLAIN | sonnet | PENDING | — |
@@ -122,6 +122,239 @@ Detectada al construir el frontend contra el contrato de `02_API_CONTRACT.md`. C
 8. **No inventes decisiones de producto.** Si la spec no cubre algo, elige la opción más simple que no contradiga la spec y anótala en la bitácora.
 
 ## Bitácora (más reciente arriba)
+
+### 2026-09-09 — B6+B7 (Sonnet)
+
+**Qué se construyó** (`backend/app/modules/interviews/`,
+`backend/app/modules/assessments/` — ambos nuevos —, `backend/app/ai/orchestration/`,
+`backend/app/ai/guardrails/`, una migración nueva, `backend/tests/test_interviews.py`,
+`test_equity_guardian.py`, `test_assessments.py`, `test_risk_flags.py`,
+`test_interview_live_agentic.py`; archivos compartidos tocados de forma mínima y
+aditiva: `backend/app/ai/contracts/interview.py`, `backend/app/ai/invoke.py`,
+`backend/app/ai/prompts/interviewer/v1.md`, `backend/app/config.py`,
+`backend/app/main.py`, `backend/app/modules/candidates/service.py`,
+`backend/app/modules/catalog/service.py`, `backend/alembic/env.py`):
+
+**Máquina de estados de la entrevista** (`app/ai/orchestration/interview_flow.py::InterviewOrchestrator`):
+- Las 14 preguntas base (7 HARD + 7 SOFT, o 3+3 en `INTERVIEW_DEMO_MODE`) salen
+  **literales** del banco semilla (`interview_questions`, ya sembrado por B2b) — el
+  agente nunca las reescribe, para garantizar la comparabilidad entre candidatos que
+  exige el master prompt §3.2. `coverage_state` persiste con la forma exacta de
+  `docs/build/06_INTERVIEW_SYSTEM.md` §6 (`phase`, `current_question_id`,
+  `answered_question_ids`, `follow_ups_for_current_question`, etc.) — es una forma
+  **distinta** a la de `docs/05 §4.3` (mapa por competencia): el header de `06` dice
+  explícitamente que gana sobre `05` para todo lo de entrevista/scoring, así que se
+  siguió `06` al pie de la letra.
+- **Follow-ups** (`_maybe_create_followup`): tras cada respuesta base, si
+  `follow_ups_for_current_question < INTERVIEW_MAX_FOLLOWUPS_PER_QUESTION` (2), se
+  invoca `AIPort.next_interview_question` con un `history` de **un solo turno** (el
+  último respondido) y `rubrics=[la rúbrica de esa competencia]` — a propósito, para
+  que la decisión de follow-up dependa solo de esa respuesta, no de todo el
+  historial. Solo `action == "PROBE"` con `question_text` no vacío se traduce en un
+  turno de follow-up real; cualquier otra acción (`ASK`/`SWITCH_COMPETENCY`/`FINISH`)
+  se interpreta como "sin follow-up" y el orquestador pasa a la siguiente pregunta
+  base — **nunca** como orden de terminar la entrevista completa (I-06). Con
+  `DeterministicAdapter` esto resuelve a una regla simple y determinista: solo
+  respuestas de 12+ palabras dan pie a un follow-up (reutiliza el heurístico ya
+  existente de `DeterministicAdapter.next_interview_question`, no uno nuevo). El
+  turno de follow-up hereda `question_id`/`block`/`target_competency_id` de la
+  pregunta base y nunca incrementa `session.questions_asked` ni
+  `coverage_state.base_questions_answered`.
+- **Terminación** (`_advance`): presupuesto agotado y cobertura suficiente
+  **coinciden siempre** porque `question_budget == len(preguntas seleccionadas)` — es
+  la forma más simple de hacer cumplir I-06 ("el presupuesto lo impone el backend
+  pase lo que pida el agente"): la entrevista sencillamente no tiene más preguntas
+  que ofrecer una vez agotada la lista, sin importar cuántas veces el adaptador
+  proponga `PROBE`. Estancamiento: 3 respuestas consecutivas de ≤2 palabras
+  (`consecutive_weak_answers`) fuerza el cierre con `finish_reason="BUDGET_EXHAUSTED"`
+  (el contrato `NextQuestion.finish_reason` solo admite 3 valores — `BUDGET_EXHAUSTED
+  | COVERAGE_SUFFICIENT | AGENT_FINISH` —, así que estancamiento se mapea al primero,
+  decisión documentada en el código). Abandono (`mark_abandoned_if_stale`, 10 min sin
+  actividad) queda implementado pero no se prueba en CI (depende del reloj real);
+  reanudable porque solo cambia `status`, nunca borra turnos.
+- **Idempotencia de `next-question`**: `_pending_turn` busca el turno más reciente sin
+  `answer_text`; si existe, se devuelve tal cual sin tocar `questions_asked` ni
+  `coverage_state`. Reabrir la pantalla de entrevista nunca gasta presupuesto.
+- **Mensajes de apertura/transición** (Master Prompt §27/§28): se anteponen al
+  `question_text` de la primera pregunta HARD y de la primera pregunta SOFT
+  respectivamente — el contrato HTTP no tiene un campo separado para "mensaje del
+  sistema", así que viajan concatenados en el mismo turno (decisión más simple que
+  extender el contrato solo para esto).
+
+**Guardián de Equidad** (`app/ai/guardrails/equity_guardian.py`): función pura
+(`find_violations`) + `review_question` que corre sobre **toda** pregunta emitida
+(base y follow-up, defensa en profundidad aunque el banco ya está cubierto por
+`test_interview_bank.py`). Bloquea por 3 motivos deterministas: tema prohibido
+(lista de términos del Master Prompt §22), más de una interrogante
+(`question_text.count("?") > 1`), o texto que revela el criterio de calificación
+(términos como "rúbrica", "puntaje", "nivel 0-4"). Al bloquear: registra en
+`ai_invocations` (`operation="equity_guardian_block"`, `status="GUARDIAN_BLOCKED"`,
+motivo en `.error` y en `.raw_output`), pide **una** reformulación vía el parámetro
+`retry` (para follow-ups, esto es una segunda llamada real a
+`next_interview_question` con el nuevo campo aditivo `guardian_feedback` explicando
+el motivo del bloqueo) y, si vuelve a fallar, cae a `suggested_follow_ups[0]` del
+banco semilla (o una pregunta genérica si el banco no trae ninguna). Campo
+`InterviewTurnRequest.guardian_feedback: str | None` agregado de forma aditiva en
+`app/ai/contracts/interview.py`, y una instrucción corta agregada al prompt
+`interviewer/v1.md` explicando cómo debe reaccionar el agente ante ese campo —única
+desviación del alcance de archivos asignado a esta tarea (prompts no estaba en la
+lista), documentada aquí igual que precedentes de B11/B12 con archivos compartidos.
+
+**Evaluación y perfil** (`app/modules/assessments/service.py`):
+- **I-02**: `validate_evidence_turn_ids` compara cada `evidence_turn_ids` contra el
+  conjunto real de `interview_turns.id` de **esa** sesión (por eso
+  `CompetencyEvaluation.interview_session_id` se agregó como columna aditiva, no
+  está en `docs/04 §5.5` literal); cualquier id ajeno rechaza la evaluación completa
+  con `EvidenceValidationError` (422) — nunca se filtra parcialmente.
+- **I-03**: única puerta de entrada es `accept_skill_evidence`, que solo marca
+  `is_verified=True` si `evidence_type in (DOCUMENT, EXTERNAL)` **y**
+  `accepted_for_verification=True`. Reforzado estructuralmente: ningún DTO de
+  `AIPort` que un agente pueda rellenar (`CandidateSkillDTO`, `CompetencyScore`)
+  declara el campo `is_verified` — verificado con un test que introspecciona
+  `model_fields`.
+- **I-04**: no hay código propio; se apoya en que `CompetencyScore` ya rechaza
+  `score` fuera de 0-100 al construirse (I-01, pre-existente de B4).
+- **Scoring** (`compute_block_scores`, docs/build/06 §4, generalizado para tolerar
+  demo mode): `hard_skills_score = Σ(rubric_level de competencias TECHNICAL) / (4 ×
+  n_hard) × 100`; igual para soft; `interview_score = round(hard×0.5 + soft×0.5)`.
+  Con 7+7 preguntas esto coincide exactamente con la fórmula fija de 28 puntos
+  máximo del master prompt; en demo mode (3+3) el denominador se ajusta a 12 en vez
+  de fallar o dar un score inflado. `overall_score`/`overall_label` del
+  `talent_profile` se **fuerzan** a este cálculo determinista — nunca al
+  `overall_score`/`overall_label` que devuelva la llamada narrativa a
+  `build_talent_profile` (A3 PROFILE), que solo aporta `top_skills`/`strengths`/
+  `evidence_gaps`/`summary_text`. Así es estructuralmente imposible que aparezca una
+  etiqueta de apto/no apto (prohibida por el master prompt): la etiqueta la calcula
+  siempre `overall_label_for()` contra los 4 rangos de §12.
+- **Banderas de riesgo** (`detect_risk_flags`): heurística por regex sobre la
+  respuesta real, activada solo cuando la `InterviewQuestion.risk_flag_triggers` del
+  banco declara ese `code` para esa pregunta — con un patrón de negación para no
+  marcar en falso a quien explícitamente descarta la conducta de riesgo. Nunca se
+  usan como decisión, solo se listan en `talent_profiles.risk_flags` (jsonb) para que
+  un humano las revise (Master Prompt §18). `detect_inconsistencies` es
+  deliberadamente mínimo (mejor esfuerzo, documentado en el código): cruza
+  `claims.claimed_level ∈ {3,4}` contra evaluaciones de nivel ≤1 con nombre de
+  competencia relacionado por palabras compartidas.
+- **Pipeline de jobs** (`app/modules/assessments/jobs.py`): `POST
+  /interviews/{id}/complete` crea un único job `INTERVIEW_EVALUATE` (contrato exige
+  un solo `job_id` de vuelta) cuyo callback de `BackgroundTasks`
+  (`run_interview_pipeline`) corre ese job y, si `DONE`, crea y corre **inmediatamente
+  después, en el mismo callback** un segundo job `PROFILE_BUILD` — "encadenados"
+  significa esto, no dos llamadas HTTP. Si A3 falla, `PROFILE_BUILD` ni se crea y el
+  candidato queda `PENDING_EVALUATION` (reintentable; A3 no tiene fallback funcional
+  a propósito, docs/05 §11.1).
+- `candidates/service.py::compute_status_view` ahora calcula `has_talent_profile` de
+  verdad (antes hardcodeado a `False`) consultando `talent_profiles.is_current`; toca
+  ese archivo compartido de forma mínima y aditiva.
+
+**`invoke.py` cableado a telemetría real** (pendiente que dejó B11): `_adapter_telemetry`
+lee `AgenticAdapter.last_response` (si el adaptador lo expone) justo después de la
+llamada exitosa y puebla `provider`/`model`/`tokens_in`/`tokens_out` en
+`ai_invocations` — `None` para `DeterministicAdapter` (no tiene ese atributo) o
+cuando la respuesta vino del fallback funcional interno del `AgenticAdapter`.
+
+**Migración** (`alembic/versions/1ecc63c0a3d4_...py`, autogenerada y revisada a mano,
+una sola cabeza sobre `b60181a672b0` de B2b/B12): `interview_sessions`,
+`interview_turns`, `competency_evaluations`, `candidate_skills`, `skill_evidences`,
+`talent_profiles`. `candidate_skills.skill_code` es string (no FK a `skills`), mismo
+patrón que `claims.skill_code` de B5, documentado en el docstring del modelo.
+
+**Verificación de cierre**:
+1. `alembic upgrade head` limpio, cabeza única `1ecc63c0a3d4`. `pytest -q`:
+   **155 passed, 3 skipped** (129 previos + 26 nuevos siempre-verdes + 1 nuevo gateado
+   por `RUN_LIVE_LLM_SMOKE`, que ya existía como patrón de `test_llm_smoke.py`).
+2. Tests obligatorios de la tarea, todos verdes: entrevista completa de 14 turnos
+   (7+7, sin `question_id` repetido) en `test_interviews.py`; follow-up sin
+   incrementar el contador base; `next-question` idempotente al reabrir; presupuesto
+   impuesto por el backend aunque el adaptador determinista siga proponiendo `PROBE`
+   (tope de 2 follow-ups por pregunta, termina en exactamente 14 base); Guardián
+   bloquea y registra en `test_equity_guardian.py` (incluida reformulación exitosa y
+   doble bloqueo con fallback al banco); I-02/I-03/I-04 en `test_assessments.py`;
+   scoring exacto (7×nivel4 hard → 100; mezcla hard=100/soft=50 → interview_score=75
+   exacto, sin ambigüedad de redondeo `.5`); prueba de sesgo formal-vs-coloquial
+   contra `DeterministicAdapter` (diferencia 0, muy por debajo de los 10 puntos de
+   tolerancia — documentado en el propio test cómo correrla contra el agente real);
+   seguridad en `test_risk_flags.py` (fuga hidráulica → `SAFETY_CRITICAL` alto;
+   confrontación en almacén → `PHYSICAL_SAFETY_RISK` alto, nunca premiada; fuga de
+   confidencialidad administrativa → `CONFIDENTIALITY_BREACH`; y su contraparte
+   "no se marca cuando la respuesta es la correcta" para los tres, para descartar
+   falsos positivos).
+3. **Recorrido real** contra un servidor `uvicorn` corriendo de verdad (no
+   `TestClient`: el patrón `BackgroundTasks` + `SessionLocal()` propio de
+   `run_job`/`run_interview_pipeline` no es visible dentro de la transacción con
+   rollback de los fixtures de pytest — misma limitación ya documentada por B3/B5
+   para `CV_PARSE`), con `AI_ADAPTER` en su default `deterministic`: candidato nuevo
+   → familia `WAREHOUSE_SUPERVISOR` → CV por conversación (A1 BUILD) confirmado →
+   `POST /interviews` → 14 respuestas (7 HARD `HE-01..07` + 7 SOFT `SE-01..07`, sin
+   repetidos, `finish_reason=COVERAGE_SUFFICIENT`) → `POST /complete` → job
+   `INTERVIEW_EVALUATE` `DONE` → `GET /talent-profile` con `hard_skills_score=50`,
+   `soft_skills_score=50`, `interview_score=50`, `overall_label="Evidencia parcial"`,
+   `coverage="FULL"`, 14 evaluaciones citando 14 `evidence_turn_ids` reales
+   (verificado contra `GET /interviews/{id}/turns`), `risk_flags=[]`,
+   `inconsistencies=[]`; `GET /skills` (14), `/feedback` y `/learning-path` (A4, 3
+   brechas priorizadas) respondiendo 200 — `compute_status_view` pasó
+   `DRAFT→CV_READY→EVALUATED` correctamente en cada paso.
+4. **Corrida real con `AI_ADAPTER_INTERVIEW=agentic`** contra `claude-sonnet-5`
+   (`tests/test_interview_live_agentic.py`, gateada por `RUN_LIVE_LLM_SMOKE=1`, mismo
+   patrón que `test_llm_smoke.py` de B11): 3 llamadas reales a
+   `next_interview_question` simulando follow-ups sucesivos sobre `WAREHOUSE_HE_01`;
+   las 3 respondieron desde el proveedor real (`adapter.last_response.provider ==
+   "anthropic"`), ninguna pregunta propuesta violó el Guardián de Equidad
+   (`equity_guardian.find_violations() == []` en las 3). Costo real reportado por la
+   corrida final en verde: **22,813 tokens de entrada + 1,200 de salida ≈ $0.058
+   USD** (precios de `claude-sonnet-5`: $2.00/$10.00 por millón de tokens); una
+   corrida previa que tropezó con una falla de validación del modelo y se corrigió
+   para tolerar hasta 1 fallback antes de exigir mínimo 2/3 turnos reales gastó
+   ~4 llamadas adicionales similares (~$0.02-0.05 USD más) — costo total de esta
+   verificación puntual: **del orden de $0.08-0.11 USD**.
+
+**Decisiones y desviaciones documentadas en el código** (además de las ya listadas
+arriba: forma de `coverage_state` de docs/06 sobre docs/05, follow-up gateado por un
+history de un solo turno, mapeo estancamiento→`BUDGET_EXHAUSTED`, prompt tocado por
+`guardian_feedback`, `overall_score/label` siempre deterministas):
+1. **No se implementó la selección de `no_experience_variant`** del banco (variante
+   de pregunta para quien no tiene experiencia con una herramienta) — requeriría
+   inferir "relevancia" de los claims del candidato contra cada pregunta, una
+   heurística difusa que no pedía ningún test de cierre; se usa siempre el texto
+   principal. Documentado como simplificación consciente (Master Prompt §36: "no
+   sobre-ingenierizar").
+2. **`resolve_rubrics` de tres niveles (docs/05 §6.3, SPECIFIC/PROVISIONAL/BASELINE)
+   no se implementó completo**: las 42 rúbricas ya están sembradas 1:1 con las 42
+   competencias (B2b), así que el caso "sin rúbrica" es defensivo
+   (`rubric_spec_for_competency` devuelve `None` y esa competencia simplemente no se
+   evalúa) en vez de sintetizar una rúbrica genérica. Si B9/B13 agregan una cuarta
+   familia sin rúbricas completas, esa función es el punto a extender.
+3. **`InterviewProgress.coverage`** (`GET /interviews/{id}/progress`) se simplificó a
+   `SUFFICIENT`/`UNTOUCHED` (sin `PARTIAL`) — la cobertura fina que sí gobierna el
+   flujo vive en `coverage_state` de la sesión; este endpoint es solo una vista de
+   progreso, no se usa en ninguna regla de negocio.
+4. **`Job` de `PROFILE_BUILD`** no se expone al frontend (el contrato solo pide un
+   `job_id` desde `complete()`), pero sí queda en la tabla `jobs` para auditoría vía
+   `GET /jobs/{id}` con su propio id, recuperable consultando la tabla directamente
+   (B13 puede exponerlo en `GET /admin/ai-invocations`/jobs si hace falta verlo desde
+   el frontend).
+
+**Qué necesita saber quien construya B9 (matching)**:
+- El único artefacto que importa para el matching es `talent_profiles` (fila
+  `is_current=True` por candidato) y `competency_evaluations` (`is_current=True`,
+  una por competencia). `candidate_skills` es la vista "aplanada" por si el motor
+  prefiere iterar ahí en vez de join contra `competencies`.
+- `interview_score` **no es** el score de matching — es desempeño en la entrevista
+  (§11 del master prompt, 50/50 hard/soft). El motor de B9 debe calcular su propio
+  `total_score` con la fórmula de `docs/04 §7` (pesos por `VacancyRequirement`,
+  penalizaciones, etc.), usando `competency_evaluations.score`/`rubric_level` como
+  insumo del componente TECHNICAL/BEHAVIORAL — nunca reutilizar `interview_score`
+  directamente como si fuera compatibilidad con una vacante.
+- Solo candidatos con `candidate_profiles.status == "EVALUATED"` deberían entrar a un
+  `match_run` (RB-01 de docs/04 §7.3) — ese status ya lo pone
+  `build_and_persist_talent_profile` al terminar `PROFILE_BUILD`.
+- `risk_flags`/`inconsistencies` del `talent_profile` son evidencia para mostrar a la
+  empresa tras el desbloqueo (B10), **nunca** deben entrar como penalización
+  automática al cálculo del motor de matching — eso violaría el principio "las
+  banderas son evidencia, nunca decisiones" del master prompt §18.
+- `CompetencyEvaluation.evidence_refs` (turn ids) y `justification` ya están listos
+  para que B9/B10 los cite en `match_results.strengths`/`gaps` sin tener que volver a
+  tocar `interview_turns`.
 
 ### 2026-09-09 — B12 (Sonnet)
 

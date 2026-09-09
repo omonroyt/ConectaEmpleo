@@ -193,6 +193,11 @@ export function useRunMatch() {
   });
 }
 
+/** Invalida cualquier query de shortlist sin importar el prefijo exacto (hoy vive bajo `["vacancies", id, "shortlist"]`). */
+function invalidateShortlistQueries(qc: ReturnType<typeof useQueryClient>) {
+  void qc.invalidateQueries({ predicate: (query) => query.queryKey.includes("shortlist") });
+}
+
 export function useUnlock() {
   const qc = useQueryClient();
   return useMutation({
@@ -200,6 +205,8 @@ export function useUnlock() {
     onSuccess: (_data, matchResultId) => {
       void qc.invalidateQueries({ queryKey: queryKeys.matchResult(matchResultId) });
       void qc.invalidateQueries({ queryKey: queryKeys.fullProfile(matchResultId) });
+      void qc.invalidateQueries({ queryKey: ["match-results"] });
+      invalidateShortlistQueries(qc);
     },
   });
 }
@@ -208,7 +215,12 @@ export function useSetShortlistStage() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (vars: { matchResultId: string; stage: ShortlistStage | null }) => api.matching.setShortlistStage(vars.matchResultId, vars.stage),
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ["vacancies"] }),
+    onSuccess: (_data, vars) => {
+      void qc.invalidateQueries({ queryKey: ["vacancies"] });
+      void qc.invalidateQueries({ queryKey: ["match-results"] });
+      void qc.invalidateQueries({ queryKey: queryKeys.matchResult(vars.matchResultId) });
+      invalidateShortlistQueries(qc);
+    },
   });
 }
 

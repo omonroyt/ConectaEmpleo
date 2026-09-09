@@ -27,6 +27,11 @@ import { availabilityOptions, MEXICO_STATES } from "./profile.utils";
 export function Component() {
   const me = useCandidateMe();
   const navigate = useNavigate();
+  // Los hooks deben llamarse siempre en el mismo orden: `useMotionSafe` no
+  // puede quedar después de los `return` condicionales de abajo (causaba
+  // "Rendered more hooks than during the previous render" en cuanto
+  // `me.isLoading` pasaba de true a false).
+  const { fadeUp, staggerContainer } = useMotionSafe();
 
   if (me.isLoading) return <EditSkeleton />;
   if (me.isError || !me.data) {
@@ -43,7 +48,6 @@ export function Component() {
   }
 
   const profile = me.data;
-  const { fadeUp, staggerContainer } = useMotionSafe();
 
   return (
     <PageContainer className="flex flex-col gap-8 py-8 md:py-10">

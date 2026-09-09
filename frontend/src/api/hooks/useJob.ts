@@ -21,6 +21,12 @@ export function useJob(jobId: string | null | undefined, options: UseJobOptions 
       const status = q.state.data?.status;
       return status === "DONE" || status === "FAILED" ? false : 1500;
     },
+    // Sin esto, TanStack Query pausa el polling cuando la pestaña pierde el foco
+    // (comportamiento por defecto): si el usuario cambia de pestaña mientras se
+    // procesa su CV o se evalúa su entrevista, el resultado nunca llegaría al
+    // volver. También evita falsos "atascos" en navegadores headless (Chromium
+    // sin foco real, ej. pruebas E2E) donde la pestaña siempre cuenta como oculta.
+    refetchIntervalInBackground: true,
   });
 
   const notified = useRef<string | null>(null);

@@ -7,6 +7,8 @@ export interface ImmersiveLayoutProps {
   children: ReactNode;
   /** Slot lateral opcional (desktop 60/40, ej. panel de contexto de la entrevista). */
   aside?: ReactNode;
+  /** Si es `true`, el contenedor del `aside` no se renderiza en mobile (ni ocupa espacio ahí). */
+  asideDesktopOnly?: boolean;
   onClose?: () => void;
   className?: string;
 }
@@ -15,7 +17,7 @@ export interface ImmersiveLayoutProps {
  * Layout sin navegación, fondo oscuro completo. Usado en entrevista,
  * onboarding y creación de vacante ("focus mode").
  */
-export function ImmersiveLayout({ children, aside, onClose, className }: ImmersiveLayoutProps) {
+export function ImmersiveLayout({ children, aside, asideDesktopOnly, onClose, className }: ImmersiveLayoutProps) {
   return (
     <div className={cn("relative flex min-h-dvh flex-col bg-bg-dark text-text-on-dark", className)}>
       <header className="flex items-center justify-between px-6 py-5 sm:px-10">
@@ -41,7 +43,14 @@ export function ImmersiveLayout({ children, aside, onClose, className }: Immersi
           {children}
         </div>
         {aside && (
-          <div className="mt-8 w-full max-w-[760px] md:mt-0 md:w-[40%] md:max-w-none">{aside}</div>
+          <div
+            className={cn(
+              "w-full max-w-[760px] md:mt-0 md:w-[40%] md:max-w-none",
+              asideDesktopOnly ? "hidden md:block" : "mt-8",
+            )}
+          >
+            {aside}
+          </div>
         )}
       </div>
     </div>

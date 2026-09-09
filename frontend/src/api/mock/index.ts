@@ -424,22 +424,22 @@ export const mockApiClient: ApiClient = {
     async uploadCertification(file: File, skillCode?: string): Promise<DocumentRef> {
       await delay();
       return mutate((db) => {
-        const { candidateId, record } = requireCandidate();
+        const { candidateId } = requireCandidate();
+        // Regla del producto: ningún flujo del frontend marca una skill como "verificada".
+        // El documento queda registrado como evidencia pendiente de revisión; la skill
+        // conserva su estado (`is_declared`/`is_evaluated`) tal como estaba antes de subirlo.
         const doc: DocumentRef = {
           id: genId("doc"),
           type: "CERTIFICATION",
           original_filename: file.name,
           mime_type: file.type || "application/pdf",
           size_bytes: file.size,
-          status: "PARSED",
+          status: "PROCESSING",
           uploaded_at: nowIso(),
           url: "/demo/cv-ejemplo.pdf",
         };
         db.candidates[candidateId]!.documents.push(doc);
-        if (skillCode) {
-          const skill = record.skills.find((s) => s.skill_code === skillCode);
-          if (skill) skill.is_verified = true;
-        }
+        void skillCode;
         return doc;
       });
     },
@@ -679,6 +679,12 @@ export const mockApiClient: ApiClient = {
             result_ids: sorted.map((c) => c.match_result_id),
           };
           v.last_match_run_id = runId;
+          // Genera la explicación al crear el match_result (no de forma perezosa en el
+          // primer `matching.result(id)`): así E9 nunca muestra el skeleton "Redactando
+          // explicación…" salvo el primer render mientras llega la respuesta del job.
+          // `matchRuns` ya está poblado, así que la frase de posición relativa usa el
+          // score del siguiente candidato correctamente.
+          for (const card of sorted) ensureExplanation(card);
           return runId;
         });
       });

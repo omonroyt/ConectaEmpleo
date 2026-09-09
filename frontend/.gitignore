@@ -4,6 +4,13 @@ dist-ssr/
 .vite/
 *.local
 
+# Playwright / e2e smoke (scripts/e2e-smoke.mjs)
+output/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+
 .env
 .env.*
 !.env.example

@@ -21,8 +21,13 @@ export function enqueueJob(type: JobType, run: () => string | Promise<string>): 
     mutate((db) => {
       const job = db.jobs[id];
       if (!job) return;
-      job.status = "RUNNING";
-      job.progress = Math.min(100, Math.round((step / steps) * 100));
+      // Reemplaza el objeto (no lo muta in-place): `useJob` hace polling con
+      // TanStack Query, que decide si debe re-renderizar comparando la
+      // referencia/estructura de `data`. Mutar el mismo objeto en su lugar
+      // deja `data` referencialmente igual entre refetches y la UI nunca
+      // se actualiza (se queda "atascada" mostrando el primer estado, con o
+      // sin la pestaña en foco) aunque el job internamente sí avance.
+      db.jobs[id] = { ...job, status: "RUNNING", progress: Math.min(100, Math.round((step / steps) * 100)) };
     });
 
     if (step >= steps) {
@@ -32,17 +37,18 @@ export function enqueueJob(type: JobType, run: () => string | Promise<string>): 
           mutate((db) => {
             const job = db.jobs[id];
             if (!job) return;
-            job.status = "DONE";
-            job.progress = 100;
-            job.result_ref = resultRef;
+            db.jobs[id] = { ...job, status: "DONE", progress: 100, result_ref: resultRef };
           });
         })
         .catch((error: unknown) => {
           mutate((db) => {
             const job = db.jobs[id];
             if (!job) return;
-            job.status = "FAILED";
-            job.error = error instanceof Error ? error.message : "Error inesperado";
+            db.jobs[id] = {
+              ...job,
+              status: "FAILED",
+              error: error instanceof Error ? error.message : "Error inesperado",
+            };
           });
         });
       return;
@@ -55,5 +61,9 @@ export function enqueueJob(type: JobType, run: () => string | Promise<string>): 
 }
 
 export function getJob(id: string): Job | null {
-  return getDB().jobs[id] ?? null;
+  const job = getDB().jobs[id];
+  // Copia defensiva: aunque `tick()` ya no mute in-place, devolver una copia
+  // aquí evita que este mismo bug reaparezca si algo más llega a mutar el
+  // objeto guardado directamente.
+  return job ? { ...job } : null;
 }

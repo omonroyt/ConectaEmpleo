@@ -60,9 +60,7 @@ export function Component() {
         { matchResultId: entry.match_result_id, stage },
         {
           onSuccess: () => {
-            void queryClient.invalidateQueries({ queryKey: ["vacancies"] });
-            void queryClient.invalidateQueries({ queryKey: ["match-result"] });
-            void queryClient.invalidateQueries({ queryKey: ["match-results"] });
+            // useSetShortlistStage ya invalida vacancies/match-results/match-result/shortlist.
             showToast({
               title: stage
                 ? `${anonDisplayCode(entry.anon_code)} → ${shortlistStageLabels[stage]}`

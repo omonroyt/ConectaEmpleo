@@ -78,6 +78,28 @@ const shellRoutes: RouteObject[] = [
       return { Component };
     },
   },
+  // ---- F8: stubs P2 (04 §E13) ------------------------------------------------
+  {
+    path: "notifications",
+    lazy: async () => {
+      const { Component } = await import("@/features/shared/NotificationsPage");
+      return { Component };
+    },
+  },
+  {
+    path: "messages",
+    lazy: async () => {
+      const { Component } = await import("@/features/shared/MessagesPage");
+      return { Component };
+    },
+  },
+  {
+    path: "billing",
+    lazy: async () => {
+      const { Component } = await import("@/features/shared/PlansPage");
+      return { Component };
+    },
+  },
 ];
 
 // ---- F6: onboarding, vacancies/new, vacancies/:id/ideal-profile -----------------

@@ -47,7 +47,7 @@ export function EmployerShell({ user, onLogout }: EmployerShellProps) {
         onLogout={onLogout}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar user={user} />
+        <TopBar user={user} onNotificationsClick={() => navigate("/employer/notifications")} />
         <main className="flex-1 pb-20 md:pb-0">
           <Outlet />
         </main>

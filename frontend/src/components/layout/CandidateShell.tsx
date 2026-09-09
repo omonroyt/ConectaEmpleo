@@ -33,7 +33,7 @@ export function CandidateShell({ user, onLogout }: CandidateShellProps) {
         onLogout={onLogout}
       />
       <div className="flex min-w-0 flex-1 flex-col">
-        <TopBar user={user} />
+        <TopBar user={user} onNotificationsClick={() => navigate("/candidate/notifications")} />
         <main className="flex-1 pb-20 md:pb-0">
           <Outlet />
         </main>

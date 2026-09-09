@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { motion } from "motion/react";
 import { AlertCircle, ArrowLeft, KeyRound, MapPin } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
 import type { ShortlistStage } from "@/api/types";
 import { useMatchResult, useSetShortlistStage, useUnlock } from "@/api/hooks";
 import { PageContainer } from "@/components/layout";
@@ -42,7 +41,6 @@ const STAGE_OPTIONS = [
 export function Component() {
   const { matchResultId } = useParams<{ matchResultId: string }>();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { showToast } = useToast();
   const motionSafe = useMotionSafe();
 
@@ -70,8 +68,7 @@ export function Component() {
         { matchResultId, stage },
         {
           onSuccess: () => {
-            void queryClient.invalidateQueries({ queryKey: ["match-result"] });
-            void queryClient.invalidateQueries({ queryKey: ["match-results"] });
+            // useSetShortlistStage ya invalida match-result/match-results/vacancies/shortlist.
             showToast({
               title: stage ? `Movido a ${shortlistStageLabels[stage].toLowerCase()}` : "Quitado de la selección",
               tone: stage ? "success" : "neutral",
@@ -86,7 +83,7 @@ export function Component() {
         },
       );
     },
-    [matchResultId, queryClient, setStage, showToast],
+    [matchResultId, setStage, showToast],
   );
 
   const confirmUnlock = useCallback(() => {

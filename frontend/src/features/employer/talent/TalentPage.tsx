@@ -131,8 +131,7 @@ export function Component() {
         { matchResultId, stage: already ? null : "REVIEW" },
         {
           onSuccess: () => {
-            void queryClient.invalidateQueries({ queryKey: ["match-results"] });
-            void queryClient.invalidateQueries({ queryKey: ["match-result"] });
+            // useSetShortlistStage ya invalida match-results/match-result/shortlist.
             showToast({
               title: already ? "Quitado de la selección" : "Agregado a la selección",
               description: already

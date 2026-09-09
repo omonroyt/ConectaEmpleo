@@ -50,6 +50,21 @@ const shellRoutes: RouteObject[] = [
       return { Component };
     },
   },
+  // ---- F8: stubs P2 (03 §C15) -----------------------------------------------
+  {
+    path: "notifications",
+    lazy: async () => {
+      const { Component } = await import("@/features/shared/NotificationsPage");
+      return { Component };
+    },
+  },
+  {
+    path: "messages",
+    lazy: async () => {
+      const { Component } = await import("@/features/shared/MessagesPage");
+      return { Component };
+    },
+  },
 ];
 
 // ---- F3: onboarding, cv/* ------------------------------------------------------

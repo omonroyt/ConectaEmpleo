@@ -37,8 +37,9 @@ export function Component() {
   return (
     <ImmersiveLayout
       onClose={() => setConfirmClose(true)}
+      asideDesktopOnly
       aside={
-        <div className="hidden h-full md:block">
+        <div className="h-full">
           <ContextAside
             interviewId={interviewId}
             jobFamilyId={candidateQuery.data?.job_family_id}

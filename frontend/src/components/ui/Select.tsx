@@ -16,14 +16,20 @@ export interface SelectProps
 
 /** Select nativo (accesibilidad y teclado del navegador) con chevron custom. */
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
-  { options, placeholder, className, defaultValue, ...rest },
+  { options, placeholder, className, defaultValue, value, ...rest },
   ref,
 ) {
+  // Un <select> de React no puede recibir `value` y `defaultValue` a la vez
+  // (warning "must be either controlled or uncontrolled"): si el caller pasa
+  // `value` (uso controlado, el caso común en este proyecto), no se aplica
+  // el `defaultValue` por defecto de abajo.
+  const isControlled = value !== undefined;
   return (
     <div className="relative">
       <select
         ref={ref}
-        defaultValue={defaultValue ?? (placeholder ? "" : undefined)}
+        value={value}
+        defaultValue={isControlled ? undefined : (defaultValue ?? (placeholder ? "" : undefined))}
         className={cn(
           "h-14 w-full appearance-none rounded-md border border-border bg-[#FAFBFD] px-4 pr-10 text-base text-text-primary",
           "transition-[border-color,box-shadow] duration-fast ease-standard",

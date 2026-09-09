@@ -1,7 +1,6 @@
 import { Fragment, useCallback, useMemo, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { AlertCircle, ArrowLeft, GitCompareArrows, Lightbulb } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
 import type { AnonymousCandidateCard, MatchComponent } from "@/api/types";
 import { useCompare, useSetShortlistStage } from "@/api/hooks";
 import { PageContainer } from "@/components/layout";
@@ -51,7 +50,6 @@ export function Component() {
   const { id: vacancyId } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { showToast } = useToast();
 
   const ids = useMemo(() => {
@@ -71,8 +69,7 @@ export function Component() {
         { matchResultId, stage: current ? null : "REVIEW" },
         {
           onSuccess: () => {
-            void queryClient.invalidateQueries({ queryKey: ["match-result"] });
-            void queryClient.invalidateQueries({ queryKey: ["match-results"] });
+            // useSetShortlistStage ya invalida match-result/match-results/vacancies/shortlist.
             showToast({
               title: current ? "Quitado de la selección" : "Agregado a la selección",
               tone: current ? "neutral" : "success",
@@ -85,7 +82,7 @@ export function Component() {
         },
       );
     },
-    [queryClient, setStage, showToast],
+    [setStage, showToast],
   );
 
   const backToTalent = () =>
@@ -145,8 +142,13 @@ export function Component() {
         />
 
         {/* Tabla comparativa: en desktop caben las 3 columnas; en mobile es un
-            carrusel con scroll-snap y la columna de criterios fija a la izquierda. */}
-        <Card padding="sm" className="mt-8 overflow-x-auto p-0">
+            carrusel con scroll-snap y la columna de criterios fija a la izquierda.
+            El header de columnas solo puede quedar `sticky` de verdad si el propio
+            contenedor con `overflow-x-auto` también scrollea en vertical (si no, el
+            navegador nunca activa el `position: sticky` porque no hay ancestro de
+            scroll vertical): por eso en desktop se le da una altura acotada y
+            `overflow-y-auto` — el scroll de la tabla queda contenido, no la página. */}
+        <Card padding="sm" className="mt-8 overflow-x-auto p-0 md:max-h-[70vh] md:overflow-y-auto">
           <div
             className="grid min-w-max snap-x snap-mandatory"
             style={{ gridTemplateColumns: gridTemplate }}

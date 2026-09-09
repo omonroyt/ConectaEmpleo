@@ -1,186 +1,268 @@
 [
   {
-    "competency_code": "OFFICE_TOOLS",
+    "competency_code": "ADMIN_HA_01",
     "job_family": "ADMIN_ASSISTANT",
     "version": 1,
-    "name": "Herramientas de oficina (Excel, Word, correo)",
+    "name": "Excel y hojas de cálculo",
     "type": "TECHNICAL",
     "is_core": true,
-    "what_to_probe": [
-      "Qué funciones de Excel usa realmente (fórmulas, filtros, tablas dinámicas) y para qué reporte",
-      "Cómo organiza y da formato a un documento de Word con varias secciones",
-      "Cómo administra su bandeja de correo (carpetas, prioridad, seguimiento de pendientes)"
-    ],
+    "what_to_probe": ["experiencia real", "nivel operativo", "uso de tablas, filtros y fórmulas", "organización de datos", "verificación de resultados"],
     "levels": [
-      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ninguna herramienta ni tarea concreta realizada con ellas."},
-      {"level": 1, "label": "Básico", "descriptor": "Menciona haber usado Excel o Word pero solo para escribir texto o capturar datos sueltos, sin fórmulas ni formato."},
-      {"level": 2, "label": "En desarrollo", "descriptor": "Usa fórmulas simples (sumas, promedios) y da formato básico a documentos, pero no menciona filtros, tablas dinámicas ni plantillas."},
-      {"level": 3, "label": "Competente", "descriptor": "Describe un reporte o documento real que arma de forma recurrente usando fórmulas condicionales o tablas dinámicas, y gestiona su correo con carpetas o reglas."},
-      {"level": 4, "label": "Avanzado", "descriptor": "Además automatiza tareas repetitivas (macros, plantillas reutilizables, combinación de correspondencia) y explica cómo eso redujo tiempo o errores."}
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ninguna tarea real en Excel o en una hoja de cálculo, o confunde la herramienta con otra cosa."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Menciona haber 'usado Excel' en general, sin nombrar una tarea, el tipo de información manejada ni ninguna función o fórmula."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Describe una tarea concreta (por ejemplo, captura de datos) y usa funciones simples (sumas, formato de celdas), pero no menciona filtros, tablas ni verificación de resultados."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Describe una tarea real con el tipo de información que manejaba, usa fórmulas o filtros con un propósito claro (buscar duplicados, calcular totales por categoría) y explica cómo organizaba los datos."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo verificaba que el resultado fuera correcto (cruce de cifras, revisión de fórmulas) y qué tan seguido repetía esa tarea, mostrando dominio consistente."}
     ],
-    "positive_signals": ["nombra una fórmula o función específica de Excel", "describe un documento o reporte real que produce", "explica cómo organiza su bandeja de entrada"],
-    "negative_signals": ["responde solo 'sí sé usar Excel' sin ejemplo", "confunde Excel con Word", "no distingue entre capturar datos y analizarlos"],
+    "positive_signals": ["nombra una función o fórmula específica", "describe el tipo de información real que manejaba", "explica cómo verificaba o revisaba el resultado"],
+    "negative_signals": ["dice 'sé usar Excel' sin ejemplo", "confunde fórmulas con formato de texto", "no distingue entre capturar y analizar datos"],
     "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
   },
   {
-    "competency_code": "DOCUMENT_CONTROL",
+    "competency_code": "ADMIN_HA_02",
     "job_family": "ADMIN_ASSISTANT",
     "version": 1,
-    "name": "Control documental y archivo",
+    "name": "Captura y calidad de información",
     "type": "TECHNICAL",
     "is_core": true,
-    "what_to_probe": [
-      "Cómo clasifica y nombra los documentos físicos o digitales que resguarda",
-      "Cómo encuentra un documento específico meses después de archivado",
-      "Qué hace cuando falta un documento o está mal clasificado"
-    ],
+    "what_to_probe": ["validación", "precisión", "no inventar datos", "trazabilidad", "escalamiento de dudas"],
     "levels": [
-      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún método de archivo ni ejemplo de documentos manejados."},
-      {"level": 1, "label": "Básico", "descriptor": "Guarda documentos en carpetas sin un criterio consistente de nombre o clasificación."},
-      {"level": 2, "label": "En desarrollo", "descriptor": "Usa una clasificación propia (por fecha, cliente o tipo) pero no explica cómo garantiza que no se pierda algo."},
-      {"level": 3, "label": "Competente", "descriptor": "Describe un sistema de clasificación consistente (físico o digital), cómo nombra archivos y cómo localiza un documento específico rápidamente, con un ejemplo real."},
-      {"level": 4, "label": "Avanzado", "descriptor": "Además implementó o mejoró el sistema de archivo de su área, con control de versiones o bitácora de préstamos/consultas, y mide su efectividad."}
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No propone ninguna acción ante datos incompletos o incorrectos, o dice que los capturaría igual sin revisar."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Dice que 'revisaría' los datos pero sin explicar cómo, o su única acción es 'preguntar a alguien' sin especificar a quién ni cuándo."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Describe una verificación básica (comparar contra el documento fuente) pero no explica qué hace si la duda persiste ni deja registro de ello."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Describe cómo valida el dato contra su fuente, qué hace cuando no puede confirmarlo (no inventa el valor, lo marca o lo deja pendiente) y a quién escala la duda."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo deja trazabilidad de la corrección o la duda (nota, bitácora, campo de observaciones) para que otra persona pueda dar seguimiento."}
     ],
-    "positive_signals": ["describe una convención de nombres o carpetas concreta", "da un ejemplo de haber encontrado algo archivado tiempo atrás", "menciona control de versiones o resguardo digital"],
-    "negative_signals": ["dice 'todo está en orden' sin describir el orden", "no distingue documentos físicos de digitales", "no explica qué hace ante un documento extraviado"],
+    "positive_signals": ["dice explícitamente que no inventaría el dato", "explica a quién o cómo escala una duda", "menciona dejar registro de la corrección"],
+    "negative_signals": ["propone completar el dato con un valor supuesto", "captura sin validar contra la fuente", "no menciona escalar la duda a nadie"],
     "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
   },
   {
-    "competency_code": "SCHEDULING_COORDINATION",
+    "competency_code": "ADMIN_HA_03",
     "job_family": "ADMIN_ASSISTANT",
     "version": 1,
-    "name": "Agenda y coordinación",
+    "name": "Gestión documental",
+    "type": "TECHNICAL",
+    "is_core": true,
+    "what_to_probe": ["nomenclatura", "clasificación", "versiones", "permisos", "respaldo", "orden"],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún método de organización, o dice que 'todo está en una sola carpeta' sin criterio."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Guarda documentos en carpetas pero sin una convención de nombres ni clasificación consistente."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Usa una clasificación propia (por fecha, cliente o tipo) pero no explica cómo evita perder versiones ni cómo protege el acceso a los documentos."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Describe una convención de nombres y clasificación consistente, distingue entre físico y digital, y explica cómo mantiene un respaldo o control de versiones."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo controla permisos o accesos a la información sensible y cómo esa organización permitió que otra persona encontrara algo rápidamente sin su ayuda."}
+    ],
+    "positive_signals": ["describe una convención de nombres o carpetas concreta", "distingue documentos físicos de digitales", "menciona respaldo o control de versiones"],
+    "negative_signals": ["dice 'todo está en orden' sin describir el orden", "no distingue tipos de documento", "no menciona ningún resguardo o respaldo"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "ADMIN_HA_04",
+    "job_family": "ADMIN_ASSISTANT",
+    "version": 1,
+    "name": "Reportes administrativos",
     "type": "TECHNICAL",
     "is_core": false,
-    "what_to_probe": [
-      "Cómo coordina la agenda de una o varias personas sin que se empalmen citas",
-      "Qué hace cuando dos reuniones importantes chocan de último momento",
-      "Cómo organiza viajes o logística de eventos"
-    ],
+    "what_to_probe": ["recopilación", "consistencia", "validación", "estructura", "claridad", "control de errores"],
     "levels": [
-      {"level": 0, "label": "Sin evidencia", "descriptor": "No aporta ejemplos de haber coordinado agendas o citas."},
-      {"level": 1, "label": "Básico", "descriptor": "Ha anotado citas en un calendario pero no describe cómo evita choques o prioriza."},
-      {"level": 2, "label": "En desarrollo", "descriptor": "Usa un calendario compartido o recordatorios, pero no da un ejemplo de haber resuelto un conflicto de horarios."},
-      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de reprogramar o priorizar citas ante un conflicto, considerando la urgencia de cada una."},
-      {"level": 4, "label": "Avanzado", "descriptor": "Además coordina logística compleja (viajes, salas, múltiples personas con husos horarios o prioridades distintas) de forma proactiva, anticipando conflictos antes de que ocurran."}
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún reporte real ni cómo reuniría información de varias fuentes."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Menciona 'juntar la información' sin explicar de dónde la obtiene ni cómo verifica que sea consistente entre fuentes."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Describe cómo recopila la información de varias fuentes pero no explica cómo revisa que los datos coincidan entre sí antes de presentarlos."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Describe un proceso claro: de dónde saca cada dato, cómo verifica que las fuentes coincidan y cómo estructura el reporte para que se entienda fácilmente."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además describe cómo detecta y corrige errores o inconsistencias entre fuentes antes de entregar el reporte, y cómo mejoró el formato para reducir dudas de quien lo recibe."}
     ],
-    "positive_signals": ["da un ejemplo concreto de reprogramación", "menciona una herramienta de calendario compartido", "explica un criterio de prioridad usado"],
-    "negative_signals": ["responde en abstracto sin caso real", "no menciona ninguna herramienta de agenda", "confunde coordinar agenda con solo recordar citas"],
+    "positive_signals": ["nombra las fuentes concretas de información", "explica cómo concilia datos de fuentes distintas", "describe una mejora al formato o estructura del reporte"],
+    "negative_signals": ["no menciona ninguna fuente concreta", "entrega el reporte sin mencionar revisión previa", "confunde recopilar con validar"],
     "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
   },
   {
-    "competency_code": "CUSTOMER_SERVICE",
+    "competency_code": "ADMIN_HA_05",
     "job_family": "ADMIN_ASSISTANT",
     "version": 1,
-    "name": "Atención a clientes y proveedores",
-    "type": "TECHNICAL",
-    "is_core": true,
-    "what_to_probe": [
-      "Cómo atendió una solicitud difícil de un cliente o proveedor",
-      "Qué hace para dar seguimiento a una solicitud que no puede resolver de inmediato",
-      "Cómo maneja a alguien molesto o impaciente"
-    ],
-    "levels": [
-      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe interacciones reales con clientes o proveedores."},
-      {"level": 1, "label": "Básico", "descriptor": "Describe atención genérica ('siempre soy amable') sin un caso concreto ni resultado."},
-      {"level": 2, "label": "En desarrollo", "descriptor": "Da un ejemplo de atención a una solicitud, pero no explica el seguimiento posterior ni el cierre."},
-      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de principio a fin: la solicitud, cómo la atendió, el seguimiento dado y cómo confirmó que quedó resuelta."},
-      {"level": 4, "label": "Avanzado", "descriptor": "Además describe cómo desactivó una situación tensa con un cliente o proveedor molesto, o mejoró un proceso de atención a partir de solicitudes repetidas."}
-    ],
-    "positive_signals": ["describe una solicitud real con inicio y cierre", "menciona cómo confirmó que el cliente quedó satisfecho", "da un ejemplo de manejo de una queja"],
-    "negative_signals": ["solo dice 'doy buen servicio' sin ejemplo", "no menciona seguimiento posterior", "describe el problema pero no la resolución"],
-    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
-  },
-  {
-    "competency_code": "WRITTEN_COMMUNICATION",
-    "job_family": "ADMIN_ASSISTANT",
-    "version": 1,
-    "name": "Comunicación escrita",
+    "name": "Seguimiento de pendientes",
     "type": "TECHNICAL",
     "is_core": false,
-    "what_to_probe": [
-      "Qué tipo de correos, minutas o reportes redacta con más frecuencia",
-      "Cómo adapta el tono según a quién le escribe (jefe, cliente, compañero)",
-      "Un ejemplo de un mensaje que tuvo que aclarar o corregir por ser mal entendido"
-    ],
+    "what_to_probe": ["sistema de seguimiento", "fechas", "responsables", "recordatorios", "actualización de estatus"],
     "levels": [
-      {"level": 0, "label": "Sin evidencia", "descriptor": "No aporta ejemplos de redacción de correos, minutas o reportes."},
-      {"level": 1, "label": "Básico", "descriptor": "Redacta mensajes cortos e informales; no menciona estructura ni revisión previa al envío."},
-      {"level": 2, "label": "En desarrollo", "descriptor": "Redacta correos o minutas con estructura básica (saludo, cuerpo, cierre) pero no adapta el tono según el destinatario."},
-      {"level": 3, "label": "Competente", "descriptor": "Describe cómo adapta tono y nivel de detalle según el destinatario, con un ejemplo real de un reporte o correo formal que redactó."},
-      {"level": 4, "label": "Avanzado", "descriptor": "Además da un ejemplo de haber evitado o corregido un malentendido importante por escrito, o de simplificar comunicación compleja para que otros la entendieran."}
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún método para no perder de vista solicitudes con fecha límite."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Dice que 'se acuerda' o anota pendientes de forma informal, sin fechas ni responsables asociados."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Usa una lista o calendario con fechas, pero no explica cómo prioriza cuando hay varias con la misma urgencia ni cómo actualiza su estatus."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Describe un sistema (lista, hoja de cálculo, calendario compartido) con fecha límite y responsable por pendiente, y cómo actualiza el estatus conforme avanza."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo se anticipa a que algo se venza (recordatorios previos) y cómo evitó concretamente que una solicitud se quedara sin atender."}
     ],
-    "positive_signals": ["distingue el tono usado con distintos destinatarios", "da un ejemplo de un documento escrito real", "menciona revisar antes de enviar"],
-    "negative_signals": ["solo dice 'escribo bien' sin ejemplo", "no distingue entre un mensaje informal y uno formal", "no menciona ningún documento concreto"],
+    "positive_signals": ["asocia fecha y responsable a cada pendiente", "menciona una herramienta o sistema concreto de seguimiento", "da un ejemplo de haber evitado un vencimiento"],
+    "negative_signals": ["dice que lo recuerda de memoria", "no menciona fechas ni responsables", "no explica cómo actualiza el estatus"],
     "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
   },
   {
-    "competency_code": "ORGANIZATION_PRIORITIZATION",
+    "competency_code": "ADMIN_HA_06",
+    "job_family": "ADMIN_ASSISTANT",
+    "version": 1,
+    "name": "Sistemas y bases de datos administrativas",
+    "type": "TECHNICAL",
+    "is_core": false,
+    "what_to_probe": ["familiaridad tecnológica", "calidad de datos", "navegación", "aprendizaje de herramientas", "controles"],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No ha usado ningún sistema y, ante la variante sin experiencia, no propone ninguna forma razonable de aprender uno nuevo sin arriesgar la información."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Menciona un sistema por nombre pero no qué tipo de información registraba ni consultaba, o para la variante, solo dice 'preguntaría' sin más detalle."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Describe qué registraba o consultaba en el sistema, pero no menciona ningún control para evitar errores de captura."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Describe el sistema, el tipo de información que manejaba y al menos un control que usaba para evitar errores; o, sin experiencia, describe un plan concreto de aprendizaje que prioriza no dañar información real."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo aprendió una herramienta nueva por su cuenta en el pasado y qué precauciones tomó mientras no dominaba el sistema todavía."}
+    ],
+    "positive_signals": ["nombra un sistema y el tipo de información concreta que manejaba", "menciona un control para evitar errores de captura", "para la variante, propone practicar sin arriesgar datos reales"],
+    "negative_signals": ["nombra el sistema pero no qué hacía en él", "no menciona ningún control de calidad de datos", "para la variante, dice que 'aprendería sobre la marcha' sin ninguna precaución"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "ADMIN_HA_07",
+    "job_family": "ADMIN_ASSISTANT",
+    "version": 1,
+    "name": "Facturas y documentos administrativos",
+    "type": "TECHNICAL",
+    "is_core": true,
+    "what_to_probe": ["revisión de campos", "no modificar sin autorización", "consulta", "trazabilidad", "control documental"],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "Propone modificar el dato para que coincida con el registro interno sin autorización, o continuar el proceso ignorando la discrepancia."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Dice que 'revisaría' el documento sin especificar qué campos ni qué haría con la discrepancia."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Identifica qué campos revisaría (cantidad, monto, proveedor) pero no explica el paso siguiente ante una discrepancia real."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Identifica los campos a revisar, explica que consultaría con quien corresponda antes de continuar y no modificaría el dato por su cuenta."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además describe cómo deja trazabilidad de la discrepancia y su resolución (nota, folio, correo) para que el proceso quede documentado."}
+    ],
+    "positive_signals": ["menciona campos específicos a revisar", "dice explícitamente que no modificaría el dato sin autorización", "explica a quién consulta la discrepancia"],
+    "negative_signals": ["propone ajustar el dato para que coincida", "continúa el proceso sin resolver la discrepancia", "no menciona consultar a nadie"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "ADMIN_SA_01",
     "job_family": "ADMIN_ASSISTANT",
     "version": 1,
     "name": "Organización y priorización",
     "type": "BEHAVIORAL",
-    "is_core": true,
-    "what_to_probe": [
-      "Cómo decide qué tarea hacer primero cuando tiene varias pendientes",
-      "Un día con muchos imprevistos: cómo lo organizó",
-      "Qué herramienta o método usa para no olvidar pendientes"
-    ],
+    "is_core": false,
+    "what_to_probe": ["criterio de priorización", "ejemplo concreto", "resultado obtenido"],
     "levels": [
-      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún método ni ejemplo de organización de tareas."},
-      {"level": 1, "label": "Básico", "descriptor": "Dice que 'organiza mentalmente' sin lista, método ni ejemplo concreto."},
-      {"level": 2, "label": "En desarrollo", "descriptor": "Usa una lista de pendientes o agenda, pero no explica un criterio claro de qué va primero."},
-      {"level": 3, "label": "Competente", "descriptor": "Describe un criterio explícito (urgencia, impacto, fecha límite) con un ejemplo real de un día con varias tareas en conflicto y cómo las priorizó."},
-      {"level": 4, "label": "Avanzado", "descriptor": "Además anticipa cargas de trabajo (por ejemplo, adelanta tareas antes de una fecha pico) y ajusta su plan cuando surge un imprevisto, sin dejar de cumplir lo crítico."}
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No da ningún ejemplo real o dice que nunca tiene varios pendientes a la vez."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Da una respuesta genérica ('organizo todo bien') sin un caso concreto ni criterio de qué atendía primero."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Da un ejemplo real de varios pendientes, pero el criterio para decidir el orden es vago o no lo explica ('hice lo que pude')."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Da un ejemplo concreto, explica el criterio usado para decidir el orden (urgencia, impacto, fecha límite) y el resultado obtenido."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además refleja qué aprendió de esa experiencia o cómo ajustó su forma de organizarse después, mostrando ownership del resultado."}
     ],
-    "positive_signals": ["nombra un criterio explícito de prioridad", "da un ejemplo real de un día saturado", "menciona una herramienta de gestión de tareas"],
-    "negative_signals": ["responde en abstracto sin ejemplo", "no distingue urgente de importante", "dice que nunca tiene pendientes atrasados sin explicar cómo lo logra"],
+    "positive_signals": ["da un ejemplo real con contexto específico", "nombra un criterio explícito de prioridad", "explica el resultado obtenido"],
+    "negative_signals": ["responde en abstracto sin caso real", "no explica ningún criterio de decisión", "atribuye el resultado solo a la suerte o a otra persona"],
     "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
   },
   {
-    "competency_code": "TEAM_COLLABORATION",
+    "competency_code": "ADMIN_SA_02",
     "job_family": "ADMIN_ASSISTANT",
     "version": 1,
-    "name": "Colaboración en equipo",
+    "name": "Atención al detalle y responsabilidad",
     "type": "BEHAVIORAL",
     "is_core": false,
-    "what_to_probe": [
-      "Un ejemplo de haber ayudado a un compañero de otra área a sacar adelante algo",
-      "Cómo maneja una tarea que depende de que alguien más entregue su parte a tiempo",
-      "Qué hace cuando no está de acuerdo con cómo un compañero está haciendo algo"
-    ],
+    "what_to_probe": ["cómo detectó el error", "acción tomada", "verificación del cierre"],
     "levels": [
-      {"level": 0, "label": "Sin evidencia", "descriptor": "No aporta ejemplos de trabajo colaborativo con otras personas o áreas."},
-      {"level": 1, "label": "Básico", "descriptor": "Describe trabajo en equipo en términos generales ('nos llevamos bien') sin un caso concreto."},
-      {"level": 2, "label": "En desarrollo", "descriptor": "Da un ejemplo de haber apoyado a un compañero, pero no explica el resultado ni el impacto."},
-      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de colaboración con otra área o compañero, incluyendo el resultado obtenido gracias a esa cooperación."},
-      {"level": 4, "label": "Avanzado", "descriptor": "Además describe cómo manejó un desacuerdo con un compañero de forma constructiva, o cómo facilitó que un equipo con fricciones lograra un objetivo común."}
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No da ningún ejemplo de haber detectado un error antes de que generara un problema."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Menciona haber encontrado un error pero no cómo lo identificó ni qué hizo después."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Describe cómo detectó el error, pero no qué acción tomó o el resultado de haberlo corregido."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Describe cómo detectó el error, la acción concreta que tomó y cómo confirmó que quedó resuelto antes de que causara un problema mayor."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica qué cambió en su forma de trabajar para reducir la probabilidad de que ese tipo de error se repitiera."}
     ],
-    "positive_signals": ["da un ejemplo real de ayuda a otra área", "explica el resultado de la colaboración", "describe cómo resolvió un desacuerdo sin conflicto"],
-    "negative_signals": ["solo dice 'trabajo bien en equipo' sin ejemplo", "describe una situación pero no su propio rol en ella", "atribuye todo el mérito a otros sin explicar su aporte"],
+    "positive_signals": ["explica cómo detectó el error específicamente", "describe la acción tomada y su resultado", "menciona un ajuste posterior para prevenir el error"],
+    "negative_signals": ["dice 'soy muy detallista' sin ejemplo", "describe el error pero no la corrección", "atribuye la detección a otra persona sin su propio rol"],
     "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
   },
   {
-    "competency_code": "PROBLEM_SOLVING",
+    "competency_code": "ADMIN_SA_03",
+    "job_family": "ADMIN_ASSISTANT",
+    "version": 1,
+    "name": "Comunicación",
+    "type": "BEHAVIORAL",
+    "is_core": false,
+    "what_to_probe": ["claridad de lo que sabe y no sabe", "compromiso de seguimiento", "manejo de la expectativa del otro"],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No da ningún ejemplo de haber manejado una solicitud sin tener toda la información."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Dice que 'le diría que no sabe' sin explicar cómo maneja la expectativa de la otra persona."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Da un ejemplo donde comunica la falta de información, pero no explica qué hace después (cuándo daría seguimiento, qué información sí puede compartir)."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Da un ejemplo concreto donde comunica con claridad lo que sabe y lo que no, y se compromete a un siguiente paso o fecha de seguimiento."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además describe cómo esa forma de comunicar evitó un malentendido o mantuvo la confianza de la otra persona, con un resultado verificable."}
+    ],
+    "positive_signals": ["comunica claramente qué sabe y qué no", "se compromete a un seguimiento concreto", "describe el efecto positivo de esa comunicación"],
+    "negative_signals": ["evade la pregunta sin comprometerse a nada", "inventa una respuesta para no quedar mal", "no menciona ningún seguimiento posterior"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "ADMIN_SA_04",
+    "job_family": "ADMIN_ASSISTANT",
+    "version": 1,
+    "name": "Trabajo en equipo",
+    "type": "BEHAVIORAL",
+    "is_core": false,
+    "what_to_probe": ["coordinación concreta con la otra persona", "seguimiento de la dependencia", "resultado obtenido"],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No da ningún ejemplo de depender de otra persona para completar una tarea."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Menciona depender de alguien más, pero no explica cómo se coordinaron ni el resultado."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Describe cómo se coordinaron, pero no explica qué hizo cuando hubo un retraso o falta de respuesta de la otra persona."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Describe la coordinación concreta (qué acordaron, cómo dieron seguimiento) y el resultado obtenido de esa dependencia."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además describe cómo manejó un retraso o desacuerdo con esa persona de forma constructiva, sin afectar el resultado final."}
+    ],
+    "positive_signals": ["describe un acuerdo concreto de coordinación", "explica cómo dio seguimiento a la dependencia", "maneja un retraso o desacuerdo de forma constructiva"],
+    "negative_signals": ["no explica su propio rol en la coordinación", "atribuye cualquier retraso únicamente a la otra persona sin acción propia", "no menciona ningún resultado"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "ADMIN_SA_05",
     "job_family": "ADMIN_ASSISTANT",
     "version": 1,
     "name": "Resolución de problemas",
     "type": "BEHAVIORAL",
     "is_core": false,
-    "what_to_probe": [
-      "Un contratiempo administrativo real (factura perdida, cita duplicada, error de captura) y cómo lo resolvió",
-      "Cómo decide si resuelve algo por su cuenta o lo escala a su jefe",
-      "Qué cambió en su forma de trabajar después de ese problema"
-    ],
+    "what_to_probe": ["alternativa propuesta", "criterio para escalar vs. resolver por su cuenta", "continuidad del proceso"],
     "levels": [
-      {"level": 0, "label": "Sin evidencia", "descriptor": "No aporta ejemplos de haber resuelto un contratiempo administrativo."},
-      {"level": 1, "label": "Básico", "descriptor": "Menciona un problema pero no explica qué hizo para resolverlo, o dice que solo lo reportó a alguien más."},
-      {"level": 2, "label": "En desarrollo", "descriptor": "Describe un problema y una acción tomada, pero sin explicar por qué eligió esa solución sobre otras."},
-      {"level": 3, "label": "Competente", "descriptor": "Describe un problema real, identifica su causa y explica la solución elegida y por qué, con un resultado verificable."},
-      {"level": 4, "label": "Avanzado", "descriptor": "Además implementó un cambio para que el problema no se repitiera (un nuevo control, un checklist, una alerta) y puede describir su efecto."}
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No propone ninguna acción cuando el proceso se detiene y el responsable no está disponible; dice que simplemente esperaría."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Propone únicamente 'esperar a que regrese' o 'avisar a alguien' sin ninguna acción concreta mientras tanto."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Propone una acción razonable (buscar la información por otro medio) pero no explica cómo decide si es apropiado actuar por su cuenta o escalar."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Explica cómo buscaría la información o una alternativa razonable, y cómo decide cuándo escalar en vez de resolver por su cuenta."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo dejaría el proceso documentado para que, si el responsable no regresa a tiempo, cualquier otra persona pueda continuarlo."}
     ],
-    "positive_signals": ["identifica la causa raíz del problema", "explica por qué eligió esa solución", "describe una mejora para prevenir que se repita"],
-    "negative_signals": ["repite el enunciado de la pregunta sin dar un caso", "solo describe el problema sin la solución", "atribuye la solución únicamente a otra persona"],
+    "positive_signals": ["propone una alternativa concreta para no detener el proceso", "explica el criterio para decidir escalar vs. resolver por su cuenta", "deja el proceso documentado para continuidad"],
+    "negative_signals": ["su única acción es esperar sin hacer nada más", "no considera escalar el problema", "no explica ningún criterio de decisión"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "ADMIN_SA_06",
+    "job_family": "ADMIN_ASSISTANT",
+    "version": 1,
+    "name": "Adaptabilidad",
+    "type": "BEHAVIORAL",
+    "is_core": false,
+    "what_to_probe": ["ajuste concreto realizado", "control de lo pendiente previo", "aprendizaje aplicado"],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No da ningún ejemplo de haber enfrentado un cambio de prioridades con poco aviso."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Menciona un cambio de prioridades pero dice que le costó mucho o no explica cómo se ajustó."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Describe el cambio y una acción de ajuste, pero sin explicar cómo mantuvo el control de lo que ya tenía pendiente."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Describe el cambio, cómo reorganizó su trabajo y cómo evitó que lo anterior se perdiera o se retrasara de forma crítica."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además describe qué aprendió de esa experiencia que le ayudó a adaptarse mejor la siguiente vez que ocurrió algo similar."}
+    ],
+    "positive_signals": ["da un ejemplo real de cambio con poco aviso", "explica cómo reorganizó el trabajo sin perder lo pendiente", "muestra aprendizaje aplicado después"],
+    "negative_signals": ["dice que se estresa o se bloquea sin explicar una acción", "no menciona qué pasó con las tareas previas", "responde en abstracto sin ejemplo"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "ADMIN_SA_07",
+    "job_family": "ADMIN_ASSISTANT",
+    "version": 1,
+    "name": "Confidencialidad e integridad",
+    "type": "BEHAVIORAL",
+    "is_core": true,
+    "what_to_probe": ["protección de información", "consulta de políticas", "criterio", "escalamiento", "no divulgación improvisada"],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "Comparte o dice que compartiría la información porque 'es un conocido' o porque 'no pasa nada', sin ningún criterio de protección."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Dice que 'no compartiría nada' pero sin explicar cómo respondería a la persona ni si consultaría algo."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Dice que no compartiría el dato y que preguntaría a alguien, pero no explica a quién ni qué haría mientras tanto con la solicitud."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Explica que no comparte el dato sin verificar si está autorizado, consulta la política o a su jefe antes de responder, y maneja la solicitud sin comprometerse de más."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo comunicaría el límite a la persona que preguntó sin generar conflicto, dejando claro el criterio sin exponer la información."}
+    ],
+    "positive_signals": ["dice explícitamente que no comparte el dato sin autorización", "menciona consultar una política o a un superior", "explica cómo responde a la persona sin exponer información"],
+    "negative_signals": ["comparte el dato por confianza o cercanía", "improvisa una respuesta sin consultar a nadie", "minimiza el riesgo de compartir información interna"],
     "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
   }
 ]

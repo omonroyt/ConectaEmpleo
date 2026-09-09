@@ -1,0 +1,208 @@
+[
+  {
+    "question_id": "HA-01",
+    "block": "HARD",
+    "sequence": 1,
+    "competency_code": "ADMIN_HA_01",
+    "competency_name": "Excel y hojas de cálculo",
+    "text": "Cuéntame una tarea concreta que hayas realizado en Excel o en una hoja de cálculo. ¿Qué información manejabas y qué funciones, fórmulas, filtros o herramientas utilizabas?",
+    "evaluates": ["experiencia real", "nivel operativo", "uso de tablas/filtros/fórmulas", "organización de datos", "verificación de resultados"],
+    "suggested_follow_ups": [
+      {"type": "PROFUNDIZACION", "text": "Si tuvieras una lista de 500 registros y necesitaras encontrar duplicados o filtrar solo los pendientes, ¿cómo lo harías?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "HA-02",
+    "block": "HARD",
+    "sequence": 2,
+    "competency_code": "ADMIN_HA_02",
+    "competency_name": "Captura y calidad de información",
+    "text": "Tienes que capturar muchos registros y detectas que algunos datos vienen incompletos o parecen incorrectos. ¿Qué harías antes de ingresarlos al sistema?",
+    "evaluates": ["validación", "precisión", "no inventar datos", "trazabilidad", "escalamiento de dudas"],
+    "suggested_follow_ups": [
+      {"type": "VERIFICACION", "text": "¿Cómo comprobarías que el dato corregido quedó correcto?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": [
+      {"code": "DATA_INTEGRITY", "severity": "medium", "when": "propone inventar o completar el dato con un valor supuesto en vez de validarlo o escalar la duda"}
+    ]
+  },
+  {
+    "question_id": "HA-03",
+    "block": "HARD",
+    "sequence": 3,
+    "competency_code": "ADMIN_HA_03",
+    "competency_name": "Gestión documental",
+    "text": "¿Cómo organizarías documentos físicos y digitales para que otra persona pueda encontrarlos rápidamente y para reducir el riesgo de perder información?",
+    "evaluates": ["nomenclatura", "clasificación", "versiones", "permisos", "respaldo", "orden"],
+    "suggested_follow_ups": [
+      {"type": "PROCEDIMIENTO", "text": "¿Qué harías primero al organizar un archivo que hoy está desordenado?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "HA-04",
+    "block": "HARD",
+    "sequence": 4,
+    "competency_code": "ADMIN_HA_04",
+    "competency_name": "Reportes administrativos",
+    "text": "Te piden preparar un reporte semanal con información proveniente de varias fuentes. ¿Cómo reunirías, revisarías y presentarías la información?",
+    "evaluates": ["recopilación", "consistencia", "validación", "estructura", "claridad", "control de errores"],
+    "suggested_follow_ups": [
+      {"type": "VERIFICACION", "text": "¿Cómo comprobarías que los datos de las distintas fuentes coinciden entre sí?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": [
+      {"code": "DATA_INTEGRITY", "severity": "medium", "when": "presenta el reporte con inconsistencias entre fuentes sin señalarlas ni validarlas"}
+    ]
+  },
+  {
+    "question_id": "HA-05",
+    "block": "HARD",
+    "sequence": 5,
+    "competency_code": "ADMIN_HA_05",
+    "competency_name": "Seguimiento de pendientes",
+    "text": "Recibes varias solicitudes de diferentes áreas y algunas tienen fecha límite. ¿Cómo registrarías y darías seguimiento para evitar que alguna se quede sin atender?",
+    "evaluates": ["sistema de seguimiento", "fechas", "responsables", "recordatorios", "actualización de estatus"],
+    "suggested_follow_ups": [
+      {"type": "RESULTADO", "text": "¿Cuál fue el resultado la última vez que usaste ese sistema de seguimiento?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "HA-06",
+    "block": "HARD",
+    "sequence": 6,
+    "competency_code": "ADMIN_HA_06",
+    "competency_name": "Sistemas y bases de datos administrativas",
+    "text": "Cuéntame qué sistemas administrativos, bases de datos o plataformas digitales has utilizado. ¿Qué tipo de información registrabas o consultabas y cómo evitabas errores?",
+    "evaluates": ["familiaridad tecnológica", "calidad de datos", "navegación", "aprendizaje de herramientas", "controles"],
+    "suggested_follow_ups": [
+      {"type": "PROFUNDIZACION", "text": "¿Puedes darme un ejemplo concreto de un error que hayas evitado usando ese sistema?"}
+    ],
+    "no_experience_variant": "Si entraras a una empresa con un sistema que no conoces, ¿cómo aprenderías a utilizarlo sin poner en riesgo la información?",
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "HA-07",
+    "block": "HARD",
+    "sequence": 7,
+    "competency_code": "ADMIN_HA_07",
+    "competency_name": "Facturas y documentos administrativos",
+    "text": "Si recibes una factura, recibo u orden de compra y detectas que un dato no coincide con el registro interno, ¿qué revisarías y qué harías antes de continuar el proceso?",
+    "evaluates": ["revisión de campos", "no modificar sin autorización", "consulta", "trazabilidad", "control documental"],
+    "suggested_follow_ups": [
+      {"type": "RIESGO", "text": "¿Qué riesgo intentarías evitar al no modificar el dato por tu cuenta?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": [
+      {"code": "DATA_INTEGRITY", "severity": "high", "when": "propone modificar o forzar el dato para que coincida con el registro interno sin autorización"}
+    ]
+  },
+  {
+    "question_id": "SA-01",
+    "block": "SOFT",
+    "sequence": 8,
+    "competency_code": "ADMIN_SA_01",
+    "competency_name": "Organización y priorización",
+    "text": "Cuéntame una ocasión en la que tuviste varios pendientes importantes al mismo tiempo. ¿Cómo decidiste qué atender primero?",
+    "evaluates": ["criterio de priorización", "ejemplo concreto", "resultado obtenido"],
+    "suggested_follow_ups": [
+      {"type": "RESULTADO", "text": "¿Cuál fue el resultado de haberlos priorizado así?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SA-02",
+    "block": "SOFT",
+    "sequence": 9,
+    "competency_code": "ADMIN_SA_02",
+    "competency_name": "Atención al detalle y responsabilidad",
+    "text": "Cuéntame de un error que hayas detectado en un documento, registro o tarea antes de que generara un problema. ¿Cómo lo identificaste y qué hiciste?",
+    "evaluates": ["cómo detectó el error", "acción tomada", "verificación del cierre"],
+    "suggested_follow_ups": [
+      {"type": "PROFUNDIZACION", "text": "¿Puedes darme un ejemplo concreto de cómo confirmaste que quedó corregido?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": [
+      {"code": "DATA_INTEGRITY", "severity": "medium", "when": "sugiere ocultar, borrar o no reportar el error en vez de corregirlo y dejarlo documentado"}
+    ]
+  },
+  {
+    "question_id": "SA-03",
+    "block": "SOFT",
+    "sequence": 10,
+    "competency_code": "ADMIN_SA_03",
+    "competency_name": "Comunicación",
+    "text": "Un compañero o cliente te solicita información, pero no tienes todos los datos todavía. ¿Cómo manejarías la situación?",
+    "evaluates": ["claridad de lo que sabe y no sabe", "compromiso de seguimiento", "manejo de la expectativa del otro"],
+    "suggested_follow_ups": [
+      {"type": "PROCEDIMIENTO", "text": "¿Qué harías primero para conseguir la información que falta?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SA-04",
+    "block": "SOFT",
+    "sequence": 11,
+    "competency_code": "ADMIN_SA_04",
+    "competency_name": "Trabajo en equipo",
+    "text": "Cuéntame una situación en la que dependías de otra persona para terminar una tarea. ¿Cómo se coordinaron?",
+    "evaluates": ["coordinación concreta con la otra persona", "seguimiento de la dependencia", "resultado obtenido"],
+    "suggested_follow_ups": [
+      {"type": "RESULTADO", "text": "¿Cuál fue el resultado final de esa coordinación?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SA-05",
+    "block": "SOFT",
+    "sequence": 12,
+    "competency_code": "ADMIN_SA_05",
+    "competency_name": "Resolución de problemas",
+    "text": "Un proceso administrativo se detiene porque falta información y la persona responsable no está disponible. ¿Qué harías?",
+    "evaluates": ["alternativa propuesta", "criterio para escalar vs. resolver por su cuenta", "continuidad del proceso"],
+    "suggested_follow_ups": [
+      {"type": "RIESGO", "text": "¿Qué riesgo intentarías evitar al decidir actuar por tu cuenta o esperar?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SA-06",
+    "block": "SOFT",
+    "sequence": 13,
+    "competency_code": "ADMIN_SA_06",
+    "competency_name": "Adaptabilidad",
+    "text": "Cuéntame una ocasión en la que cambiaron tus prioridades o la forma de hacer una tarea con poco tiempo de aviso. ¿Cómo te adaptaste?",
+    "evaluates": ["ajuste concreto realizado", "control de lo pendiente previo", "aprendizaje aplicado"],
+    "suggested_follow_ups": [
+      {"type": "PROFUNDIZACION", "text": "¿Puedes darme un ejemplo concreto de qué pasó con lo que ya tenías en proceso?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SA-07",
+    "block": "SOFT",
+    "sequence": 14,
+    "competency_code": "ADMIN_SA_07",
+    "competency_name": "Confidencialidad e integridad",
+    "text": "Estás trabajando con información interna y un conocido te pide un dato que no sabes si puedes compartir. ¿Qué harías?",
+    "evaluates": ["protección de información", "consulta de políticas", "criterio", "escalamiento", "no divulgación improvisada"],
+    "suggested_follow_ups": [
+      {"type": "VERIFICACION", "text": "¿Cómo comprobarías si estás autorizado a compartir ese dato antes de responder?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": [
+      {"code": "CONFIDENTIALITY_BREACH", "severity": "high", "when": "comparte o decide compartir información interna sin verificar si está autorizado"}
+    ]
+  }
+]

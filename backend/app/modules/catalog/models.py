@@ -9,7 +9,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -72,6 +72,44 @@ class Rubric(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     competency: Mapped[Competency] = relationship(back_populates="rubrics")
+
+
+class InterviewQuestion(Base):
+    """Banco de preguntas de entrevista (docs/build/06_INTERVIEW_SYSTEM.md §2).
+
+    Dato semilla versionado cargado desde
+    `app/seeds/interview_bank/{family}.json` — igual que `Rubric.levels`, no
+    vive en ningún prompt (regla dura de docs/05 §6.1 y del master prompt §24).
+    `question_id` (ej. `HA-01`) es estable y único por familia: es la llave de
+    comparabilidad entre candidatos y entre versiones del banco.
+    """
+
+    __tablename__ = "interview_questions"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    job_family_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("job_families.id"), nullable=False, index=True
+    )
+    competency_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("competencies.id"), nullable=False, index=True
+    )
+    question_id: Mapped[str] = mapped_column(String(20), nullable=False)  # "HA-01"
+    block: Mapped[str] = mapped_column(String(10), nullable=False)  # HARD | SOFT
+    sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+    evaluates: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    suggested_follow_ups: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    no_experience_variant: Mapped[str | None] = mapped_column(Text, nullable=True)
+    risk_flag_triggers: Mapped[list] = mapped_column(JSONB, nullable=False, default=list)
+    version: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    job_family: Mapped[JobFamily] = relationship()
+    competency: Mapped[Competency] = relationship()
+
+    __table_args__ = (
+        UniqueConstraint("job_family_id", "question_id", name="uq_interview_question_family_qid"),
+    )
 
 
 class LearningCatalogEntry(Base):

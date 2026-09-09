@@ -16,13 +16,21 @@ import structlog
 from sqlalchemy.orm import Session
 
 from app.database import SessionLocal
-from app.modules.catalog.models import Competency, JobFamily, LearningCatalogEntry, Rubric, Skill
+from app.modules.catalog.models import (
+    Competency,
+    InterviewQuestion,
+    JobFamily,
+    LearningCatalogEntry,
+    Rubric,
+    Skill,
+)
 from app.seeds.families import COMPETENCIES_BY_FAMILY, FAMILIES, SKILLS
 from app.seeds.learning_catalog import LEARNING_CATALOG
 
 logger = structlog.get_logger("seeds")
 
 RUBRICS_DIR = Path(__file__).parent / "rubrics"
+INTERVIEW_BANK_DIR = Path(__file__).parent / "interview_bank"
 
 
 def _upsert_job_family(db: Session, code: str, name: str, role_objective: str) -> JobFamily:
@@ -134,13 +142,72 @@ def _upsert_learning_entry(
     return entry
 
 
+def _upsert_interview_question(
+    db: Session,
+    *,
+    job_family_id,
+    competency_id,
+    question_id: str,
+    block: str,
+    sequence: int,
+    text: str,
+    evaluates: list,
+    suggested_follow_ups: list,
+    no_experience_variant: str | None,
+    risk_flag_triggers: list,
+    version: int = 1,
+) -> InterviewQuestion:
+    question = (
+        db.query(InterviewQuestion)
+        .filter(InterviewQuestion.job_family_id == job_family_id, InterviewQuestion.question_id == question_id)
+        .one_or_none()
+    )
+    if question is None:
+        question = InterviewQuestion(
+            job_family_id=job_family_id,
+            competency_id=competency_id,
+            question_id=question_id,
+            block=block,
+            sequence=sequence,
+            text=text,
+            evaluates=evaluates,
+            suggested_follow_ups=suggested_follow_ups,
+            no_experience_variant=no_experience_variant,
+            risk_flag_triggers=risk_flag_triggers,
+            version=version,
+        )
+        db.add(question)
+        db.flush()
+        logger.info("interview_question_created", question_id=question_id, job_family_id=str(job_family_id))
+    else:
+        question.competency_id = competency_id
+        question.block = block
+        question.sequence = sequence
+        question.text = text
+        question.evaluates = evaluates
+        question.suggested_follow_ups = suggested_follow_ups
+        question.no_experience_variant = no_experience_variant
+        question.risk_flag_triggers = risk_flag_triggers
+        question.version = version
+    return question
+
+
+_RUBRIC_AND_BANK_FILENAMES = {
+    "ADMIN_ASSISTANT": "admin_assistant.json",
+    "HEAVY_MACHINERY_OPERATOR": "heavy_machinery_operator.json",
+    "WAREHOUSE_SUPERVISOR": "warehouse_supervisor.json",
+}
+
+
 def _load_rubric_file(job_family_code: str) -> list[dict]:
-    filename = {
-        "ADMIN_ASSISTANT": "admin_assistant.json",
-        "HEAVY_MACHINERY_OPERATOR": "heavy_machinery_operator.json",
-        "WAREHOUSE_SUPERVISOR": "warehouse_supervisor.json",
-    }[job_family_code]
+    filename = _RUBRIC_AND_BANK_FILENAMES[job_family_code]
     with open(RUBRICS_DIR / filename, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def _load_interview_bank_file(job_family_code: str) -> list[dict]:
+    filename = _RUBRIC_AND_BANK_FILENAMES[job_family_code]
+    with open(INTERVIEW_BANK_DIR / filename, encoding="utf-8") as fh:
         return json.load(fh)
 
 
@@ -192,6 +259,26 @@ def run() -> None:
                     levels=row["levels"],
                     evidence_guidelines=evidence_guidelines,
                 )
+
+        for family_code in COMPETENCIES_BY_FAMILY:
+            family = families_by_code[family_code]
+            bank_rows = _load_interview_bank_file(family_code)
+            for row in bank_rows:
+                competency = competencies_by_family_and_code[(family_code, row["competency_code"])]
+                _upsert_interview_question(
+                    db,
+                    job_family_id=family.id,
+                    competency_id=competency.id,
+                    question_id=row["question_id"],
+                    block=row["block"],
+                    sequence=row["sequence"],
+                    text=row["text"],
+                    evaluates=row["evaluates"],
+                    suggested_follow_ups=row["suggested_follow_ups"],
+                    no_experience_variant=row.get("no_experience_variant"),
+                    risk_flag_triggers=row["risk_flag_triggers"],
+                )
+        db.flush()
 
         for entry in LEARNING_CATALOG:
             _upsert_learning_entry(

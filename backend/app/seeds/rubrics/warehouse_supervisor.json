@@ -1,186 +1,268 @@
 [
   {
-    "competency_code": "INVENTORY_CONTROL",
+    "competency_code": "WAREHOUSE_HE_01",
     "job_family": "WAREHOUSE_SUPERVISOR",
     "version": 1,
-    "name": "Control de inventarios",
+    "name": "Control de inventario",
     "type": "TECHNICAL",
     "is_core": true,
-    "what_to_probe": [
-      "Métodos de conteo utilizados y su periodicidad",
-      "Cómo detecta y resuelve diferencias entre físico y sistema",
-      "Herramientas o sistemas que ha operado"
-    ],
+    "what_to_probe": ["reconteo", "movimientos", "documentos", "trazabilidad", "ajustes autorizados", "causa raíz"],
     "levels": [
-      {"level": 0, "label": "Sin evidencia", "descriptor": "No aporta ejemplos ni describe prácticas."},
-      {"level": 1, "label": "Básico", "descriptor": "Menciona conteos pero sin método ni periodicidad."},
-      {"level": 2, "label": "En desarrollo", "descriptor": "Describe un método propio; no explica manejo de diferencias."},
-      {"level": 3, "label": "Competente", "descriptor": "Describe método, periodicidad y cómo concilia diferencias, con ejemplo concreto."},
-      {"level": 4, "label": "Avanzado", "descriptor": "Además propone mejoras, usa indicadores y explica impacto medible."}
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No propone ninguna investigación; ajusta la cifra del sistema para que coincida sin más."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Propone 'hacer otro conteo' sin mencionar revisar movimientos ni documentos."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Propone recontar y revisar movimientos recientes, pero no explica cómo determina la causa ni quién autoriza el ajuste final."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Describe reconteo, revisión de movimientos y documentos asociados, identifica una causa razonable de la diferencia y menciona que el ajuste requiere autorización."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo deja trazabilidad del hallazgo y qué cambiaría en el proceso para reducir que se repita esa diferencia."}
     ],
-    "positive_signals": ["cita cifras", "nombra un sistema real", "describe una decisión propia"],
-    "negative_signals": ["responde en abstracto", "repite el enunciado de la pregunta"],
+    "positive_signals": ["menciona reconteo físico como primer paso", "revisa movimientos y documentos, no solo ajusta la cifra", "menciona que el ajuste requiere autorización"],
+    "negative_signals": ["ajusta el sistema para que coincida sin investigar", "no menciona revisar documentos ni movimientos", "no menciona autorización para el ajuste"],
     "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
   },
   {
-    "competency_code": "FORKLIFT_SAFETY",
+    "competency_code": "WAREHOUSE_HE_02",
     "job_family": "WAREHOUSE_SUPERVISOR",
     "version": 1,
-    "name": "Seguridad en montacargas",
+    "name": "Entradas de mercancía",
     "type": "TECHNICAL",
     "is_core": true,
-    "what_to_probe": [
-      "Qué reglas de velocidad, carga y señalización sigue al operar o supervisar montacargas",
-      "Un ejemplo de haber corregido una práctica insegura de un montacarguista",
-      "Cómo verifica que un montacargas esté en condiciones de operar"
-    ],
+    "what_to_probe": ["cantidad", "estado", "documentos", "SKU/lote", "discrepancias", "evidencia", "registro"],
     "levels": [
-      {"level": 0, "label": "Sin evidencia", "descriptor": "No menciona ninguna regla de seguridad de montacargas ni ejemplo relacionado."},
-      {"level": 1, "label": "Básico", "descriptor": "Menciona reglas generales ('hay que ir despacio') sin especificar límites ni protocolo."},
-      {"level": 2, "label": "En desarrollo", "descriptor": "Nombra reglas concretas (límite de velocidad, altura máxima de carga, uso de claxon en cruces) pero no da un ejemplo real de aplicación o corrección."},
-      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de haber corregido o evitado una práctica insegura con montacargas, explicando la regla violada y la acción tomada."},
-      {"level": 4, "label": "Avanzado", "descriptor": "Además ha implementado o reforzado un protocolo de seguridad de montacargas para todo el equipo (checklist, señalización de pasillos, capacitación) y puede describir su efecto."}
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No menciona ninguna revisión antes de recibir; registraría la mercancía directamente."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Menciona revisar 'que esté completo' sin especificar cantidad, estado ni documentos."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Revisa cantidad y estado físico, pero no menciona verificar documentos, SKU/lote ni qué hace ante una discrepancia."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Revisa cantidad, estado, documentos (orden de compra, remisión) y SKU/lote, y explica qué hace si algo no coincide antes de registrar."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo deja evidencia de la discrepancia (fotos, nota en el documento) para respaldar el registro y facilitar un reclamo al proveedor."}
     ],
-    "positive_signals": ["nombra un límite o regla específica de operación", "da un ejemplo real de corrección de una práctica insegura", "menciona una revisión previa del equipo"],
-    "negative_signals": ["responde en abstracto sin regla concreta", "minimiza el riesgo de una maniobra insegura", "no menciona ninguna verificación del montacargas"],
+    "positive_signals": ["revisa cantidad, estado y documentos por separado", "menciona verificar SKU o lote", "explica el paso ante una discrepancia antes de registrar"],
+    "negative_signals": ["registra sin revisar documentos", "no menciona verificar cantidad o estado físico", "no explica qué hace ante una discrepancia"],
     "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
   },
   {
-    "competency_code": "WMS_ERP_SYSTEMS",
+    "competency_code": "WAREHOUSE_HE_03",
     "job_family": "WAREHOUSE_SUPERVISOR",
     "version": 1,
-    "name": "Sistemas WMS / ERP",
+    "name": "Salidas de mercancía",
+    "type": "TECHNICAL",
+    "is_core": true,
+    "what_to_probe": ["autorización", "identificación", "cantidad", "lote/serie cuando aplique", "registro", "evidencia de entrega"],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "Liberaría la salida sin verificar autorización ni identidad del producto."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Menciona 'revisar que sea lo que pidieron' sin mencionar autorización ni registro."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Verifica producto y cantidad contra el pedido, pero no menciona autorización explícita ni evidencia de entrega."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Verifica autorización de la salida, identidad y cantidad del producto, y actualiza el registro del sistema."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además deja evidencia de la entrega (firma, folio, foto) y verifica lote/serie cuando aplica, cerrando el ciclo de trazabilidad."}
+    ],
+    "positive_signals": ["verifica autorización antes de liberar", "confirma identidad y cantidad contra el pedido", "deja evidencia de la entrega"],
+    "negative_signals": ["libera la mercancía sin verificar autorización", "no actualiza el registro del sistema", "no menciona confirmar cantidad ni identidad del producto"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "WAREHOUSE_HE_04",
+    "job_family": "WAREHOUSE_SUPERVISOR",
+    "version": 1,
+    "name": "Organización física del almacén",
     "type": "TECHNICAL",
     "is_core": false,
-    "what_to_probe": [
-      "Qué sistema WMS o ERP ha usado y para qué movimientos concretos",
-      "Un ejemplo de haber corregido un error de captura en el sistema antes de que causara un problema",
-      "Qué reportes genera o consulta regularmente en el sistema"
-    ],
+    "what_to_probe": ["zonas", "etiquetado", "ubicaciones", "rotación", "accesos", "orden", "seguridad"],
     "levels": [
-      {"level": 0, "label": "Sin evidencia", "descriptor": "No nombra ningún sistema WMS o ERP ni tarea realizada en uno."},
-      {"level": 1, "label": "Básico", "descriptor": "Nombra un sistema pero solo para consultas simples, sin registrar movimientos ni generar reportes."},
-      {"level": 2, "label": "En desarrollo", "descriptor": "Describe registrar movimientos de entrada/salida en el sistema, pero no menciona haber detectado o corregido un error de captura."},
-      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de haber detectado y corregido un error de captura en el sistema antes de que generara una diferencia de inventario."},
-      {"level": 4, "label": "Avanzado", "descriptor": "Además genera o interpreta reportes del sistema para tomar decisiones operativas (reordenar, reubicar, priorizar surtido) y explica un caso real."}
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún criterio de organización física del almacén."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Menciona 'tener todo ordenado' sin zonas, etiquetado ni criterio de ubicación."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Describe zonas o etiquetado básico, pero no menciona rotación de producto ni control de accesos o seguridad."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Describe zonas, etiquetado y ubicaciones lógicas, y explica un criterio de rotación (PEPS/FIFO) que reduce errores de surtido."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo controla accesos y mantiene condiciones seguras (pasillos libres, cargas estables) como parte del mismo diseño."}
     ],
-    "positive_signals": ["nombra un sistema WMS/ERP específico", "describe un error de captura corregido a tiempo", "menciona un reporte del sistema usado para decidir algo"],
-    "negative_signals": ["no nombra ningún sistema concreto", "confunde el sistema con una hoja de Excel", "no menciona ningún movimiento registrado personalmente"],
+    "positive_signals": ["describe un criterio de rotación de inventario", "menciona etiquetado o ubicaciones lógicas concretas", "conecta el orden físico con la seguridad del almacén"],
+    "negative_signals": ["dice 'todo ordenado' sin describir el criterio", "no menciona rotación de producto", "no relaciona la organización con reducir errores o riesgos"],
     "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
   },
   {
-    "competency_code": "RECEIVING_DISPATCH",
+    "competency_code": "WAREHOUSE_HE_05",
     "job_family": "WAREHOUSE_SUPERVISOR",
     "version": 1,
-    "name": "Recepción y despacho",
-    "type": "TECHNICAL",
-    "is_core": true,
-    "what_to_probe": [
-      "Cómo verifica que la mercancía recibida coincide con el pedido antes de aceptarla",
-      "Un ejemplo de haber detectado un faltante, sobrante o daño en una recepción",
-      "Cómo organiza y documenta un despacho para que salga completo y a tiempo"
-    ],
-    "levels": [
-      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún proceso de recepción o despacho ni ejemplo concreto."},
-      {"level": 1, "label": "Básico", "descriptor": "Menciona recibir o despachar mercancía sin describir ninguna verificación contra el pedido."},
-      {"level": 2, "label": "En desarrollo", "descriptor": "Describe verificar cantidades contra el pedido, pero no da un ejemplo de haber detectado una discrepancia real."},
-      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de haber detectado un faltante, sobrante o mercancía dañada al recibir, y qué documentó o reportó al respecto."},
-      {"level": 4, "label": "Avanzado", "descriptor": "Además ha mejorado el proceso de recepción o despacho de su almacén (checklist, doble verificación, reorganización de andenes) y puede explicar el efecto en tiempos o errores."}
-    ],
-    "positive_signals": ["describe una verificación contra el pedido de forma concreta", "da un ejemplo real de faltante, sobrante o daño detectado", "menciona documentación o evidencia generada (foto, reporte, firma)"],
-    "negative_signals": ["responde en abstracto sin ejemplo", "no menciona ninguna verificación contra el pedido", "no explica qué hizo con la discrepancia detectada"],
-    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
-  },
-  {
-    "competency_code": "STORAGE_ORGANIZATION",
-    "job_family": "WAREHOUSE_SUPERVISOR",
-    "version": 1,
-    "name": "Organización de almacén",
+    "name": "Excel y sistema de almacén",
     "type": "TECHNICAL",
     "is_core": false,
-    "what_to_probe": [
-      "Cómo decide dónde ubicar cada tipo de mercancía dentro del almacén",
-      "Un ejemplo de haber reorganizado un área para agilizar el surtido",
-      "Cómo evita que la mercancía de alta rotación quede en un lugar difícil de alcanzar"
-    ],
+    "what_to_probe": ["nivel real", "operaciones realizadas", "búsqueda/filtrado", "actualización", "validación", "reportes"],
     "levels": [
-      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún criterio de organización del almacén."},
-      {"level": 1, "label": "Básico", "descriptor": "Menciona que el almacén 'está ordenado' sin explicar ningún criterio de ubicación."},
-      {"level": 2, "label": "En desarrollo", "descriptor": "Describe un criterio simple (por tipo de producto o por proveedor) pero no considera rotación ni facilidad de acceso."},
-      {"level": 3, "label": "Competente", "descriptor": "Describe un criterio de ubicación basado en rotación o frecuencia de surtido, con un ejemplo real de haber reorganizado un área para agilizar el trabajo."},
-      {"level": 4, "label": "Avanzado", "descriptor": "Además rediseñó el layout de una sección completa del almacén considerando flujo, seguridad y rotación, y puede describir la mejora en tiempos de surtido."}
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No ha usado ningún sistema o Excel para el almacén y, en la variante, no propone ningún método de control mientras aprende."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Nombra una herramienta (Excel, un ERP) sin describir qué operación concreta realizaba en ella."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Describe una operación concreta (registrar movimientos, buscar existencias) pero no menciona ninguna validación de los datos."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Describe operaciones concretas (búsqueda, actualización, reportes) y al menos una validación para evitar errores de captura; o, sin experiencia, propone un control básico y confiable mientras aprende el sistema de la empresa."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo generaba o usaba reportes del sistema para tomar una decisión operativa real."}
     ],
-    "positive_signals": ["describe un criterio de ubicación basado en rotación", "da un ejemplo real de reorganización con resultado medible", "menciona facilidad de acceso para mercancía de alta demanda"],
-    "negative_signals": ["dice 'todo está ordenado' sin criterio", "no menciona rotación ni frecuencia de surtido", "describe el layout sin ningún ejemplo de mejora"],
+    "positive_signals": ["describe una operación concreta realizada en el sistema", "menciona una validación para evitar errores", "para la variante, propone un control básico mientras aprende"],
+    "negative_signals": ["nombra la herramienta sin decir qué hacía en ella", "no menciona ninguna validación de datos", "para la variante, dice que aprendería sin ningún control intermedio"],
     "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
   },
   {
-    "competency_code": "TEAM_COORDINATION",
+    "competency_code": "WAREHOUSE_HE_06",
     "job_family": "WAREHOUSE_SUPERVISOR",
     "version": 1,
-    "name": "Coordinación de equipo",
+    "name": "Manejo de producto dañado o con incidencia",
+    "type": "TECHNICAL",
+    "is_core": false,
+    "what_to_probe": ["segregación", "evidencia", "registro", "comunicación", "decisión autorizada", "trazabilidad"],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No propone ninguna acción específica ante producto dañado; lo dejaría junto con el resto o decidiría por su cuenta qué hacer con él."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Menciona 'avisar a alguien' sin segregar el producto ni dejar evidencia."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Segrega el producto y avisa, pero no explica cómo documenta la incidencia ni quién autoriza el cierre."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Segrega el producto, documenta la incidencia con evidencia (fotos, nota) y comunica a quien corresponde antes de decidir qué hacer con él."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo se asegura de que la incidencia quede cerrada formalmente (autorización, registro final) y trazable para consultas futuras."}
+    ],
+    "positive_signals": ["segrega el producto dañado de inmediato", "documenta la incidencia con evidencia concreta", "espera autorización antes de decidir el destino del producto"],
+    "negative_signals": ["mezcla el producto dañado con el resto del inventario", "decide por su cuenta sin comunicar ni documentar", "no menciona ningún cierre formal de la incidencia"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "WAREHOUSE_HE_07",
+    "job_family": "WAREHOUSE_SUPERVISOR",
+    "version": 1,
+    "name": "Seguridad y control de riesgos",
+    "type": "TECHNICAL",
+    "is_core": true,
+    "what_to_probe": ["proteger personas", "detener/aislar riesgo", "señalizar", "comunicar", "seguir protocolo", "documentar"],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "Ignora la condición insegura o prioriza continuar la operación sobre atenderla."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Dice que 'lo reportaría después' sin proteger a nadie ni señalizar mientras tanto."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Señaliza o aísla el riesgo, pero no menciona a quién comunica ni si sigue algún protocolo formal."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Protege a las personas primero, aísla o señaliza la condición insegura y comunica de inmediato siguiendo el protocolo del almacén."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además documenta el hallazgo y da seguimiento hasta confirmar que la condición fue corregida."}
+    ],
+    "positive_signals": ["prioriza la seguridad de las personas antes que la operación", "señaliza o aísla el riesgo de inmediato", "comunica siguiendo un protocolo, no de forma informal"],
+    "negative_signals": ["continúa la operación ignorando el riesgo", "no señaliza ni aísla la condición insegura", "no menciona comunicar el hallazgo a nadie"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "WAREHOUSE_SA_01",
+    "job_family": "WAREHOUSE_SUPERVISOR",
+    "version": 1,
+    "name": "Responsabilidad",
     "type": "BEHAVIORAL",
-    "is_core": true,
-    "what_to_probe": [
-      "Cómo distribuye tareas entre montacarguistas y auxiliares durante un turno",
-      "Un ejemplo de un día con carga de trabajo desigual y cómo reasignó tareas",
-      "Cómo maneja a alguien del equipo que no está rindiendo al ritmo necesario"
-    ],
+    "is_core": false,
+    "what_to_probe": ["detección sin que se lo reporten", "acción propia", "resultado"],
     "levels": [
-      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún ejemplo de distribución de tareas o coordinación de un equipo."},
-      {"level": 1, "label": "Básico", "descriptor": "Dice que 'reparte el trabajo' sin criterio ni ejemplo concreto."},
-      {"level": 2, "label": "En desarrollo", "descriptor": "Describe repartir tareas por turno o por persona, pero no da un ejemplo de haber reasignado ante un desbalance de carga."},
-      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de reasignar tareas durante un turno para balancear la carga de trabajo, explicando el criterio usado."},
-      {"level": 4, "label": "Avanzado", "descriptor": "Además describe cómo abordó de forma directa y respetuosa a alguien del equipo con bajo rendimiento, ayudándolo a mejorar sin afectar el ambiente de trabajo."}
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No da ningún ejemplo de haber detectado un problema sin que se lo reportaran."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Menciona haber notado un problema pero dice que 'no era su función' actuar o que solo lo comentó de pasada."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Describe cómo detectó el problema y avisó, pero no explica ninguna acción propia más allá de reportarlo."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Describe cómo detectó el problema por iniciativa propia, qué acción tomó (además de avisar) y el resultado."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo esa acción evitó un problema mayor o se volvió parte de su forma habitual de revisar su área."}
     ],
-    "positive_signals": ["describe un criterio concreto de asignación de tareas", "da un ejemplo real de reasignación ante un desbalance", "explica cómo abordó un problema de rendimiento individual"],
-    "negative_signals": ["responde en abstracto sin ejemplo", "no menciona ningún criterio de asignación", "evita mencionar cómo maneja el bajo rendimiento de alguien"],
+    "positive_signals": ["detecta el problema sin que nadie se lo reporte", "toma una acción propia además de avisar", "explica el resultado de haber actuado"],
+    "negative_signals": ["dice que no era su responsabilidad actuar", "solo menciona el problema sin ninguna acción", "espera instrucciones antes de hacer cualquier cosa"],
     "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
   },
   {
-    "competency_code": "PROBLEM_SOLVING",
+    "competency_code": "WAREHOUSE_SA_02",
+    "job_family": "WAREHOUSE_SUPERVISOR",
+    "version": 1,
+    "name": "Priorización",
+    "type": "BEHAVIORAL",
+    "is_core": false,
+    "what_to_probe": ["criterio de orden entre las tres tareas", "ponderación de urgencia e impacto", "control de lo pospuesto"],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No propone ningún orden ni criterio entre las tres tareas planteadas."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Elige un orden pero sin explicar por qué, o dice que 'haría las tres al mismo tiempo'."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Da un orden con un criterio parcial (por ejemplo, solo urgencia) sin considerar el impacto de las otras dos tareas."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Da un orden con un criterio claro que pondera urgencia e impacto de las tres tareas, delegando o pausando lo demás con control."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo se aseguraría de que las tareas pospuestas no se pierdan de vista mientras atiende la prioritaria."}
+    ],
+    "positive_signals": ["da un orden explícito y justificado para las tres tareas", "pondera urgencia e impacto, no solo una de las dos", "explica cómo no perder de vista lo pospuesto"],
+    "negative_signals": ["no da ningún orden concreto", "elige un orden sin ninguna justificación", "ignora una de las tres tareas planteadas"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "WAREHOUSE_SA_03",
+    "job_family": "WAREHOUSE_SUPERVISOR",
+    "version": 1,
+    "name": "Comunicación",
+    "type": "BEHAVIORAL",
+    "is_core": false,
+    "what_to_probe": ["información concreta a comunicar", "oportunidad de la comunicación", "documentación del reporte"],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No comunicaría la diferencia de inventario o la minimizaría."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Diría que 'hay una diferencia' sin especificar qué información incluiría."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Menciona que comunicaría la diferencia con el monto o producto involucrado, pero no a quién ni cuándo."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Explica qué información incluiría (producto, cantidad, cuándo se detectó, posible causa) y a quién se lo comunicaría de inmediato."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo documentaría el reporte para que quede como antecedente y facilite la investigación posterior."}
+    ],
+    "positive_signals": ["especifica qué datos concretos incluiría en el reporte", "comunica de inmediato, no al día siguiente", "deja el reporte documentado para seguimiento"],
+    "negative_signals": ["minimiza o retrasa comunicar la diferencia", "no especifica qué información compartiría", "no menciona a quién se lo reportaría"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "WAREHOUSE_SA_04",
+    "job_family": "WAREHOUSE_SUPERVISOR",
+    "version": 1,
+    "name": "Trabajo en equipo",
+    "type": "BEHAVIORAL",
+    "is_core": false,
+    "what_to_probe": ["coordinación con otra área", "rol propio en la solución", "resultado obtenido"],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No da ningún ejemplo de coordinación con otra área."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Menciona haber hablado con otra área, pero no qué acordaron ni el resultado."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Describe la coordinación con otra área pero no explica su propio rol o aporte en la solución."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Describe un caso concreto de coordinación con otra área, su rol específico y el resultado obtenido."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo esa coordinación mejoró un proceso de forma duradera, no solo resolvió el caso puntual."}
+    ],
+    "positive_signals": ["describe un caso real con otra área específica", "explica su propio rol y aporte", "menciona un resultado o mejora duradera"],
+    "negative_signals": ["no especifica con qué área se coordinó", "no explica su propio aporte a la solución", "describe el problema sin mencionar el resultado"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "WAREHOUSE_SA_05",
     "job_family": "WAREHOUSE_SUPERVISOR",
     "version": 1,
     "name": "Resolución de problemas",
     "type": "BEHAVIORAL",
     "is_core": false,
-    "what_to_probe": [
-      "Un ejemplo real de un faltante, retraso o mercancía dañada y cómo reaccionó",
-      "Cómo decide si resuelve algo en el momento o lo escala a su jefe",
-      "Qué cambió en su forma de trabajar después de ese problema"
-    ],
+    "what_to_probe": ["método de investigación", "revisión de movimientos y ubicaciones", "plan si no aparece"],
     "levels": [
-      {"level": 0, "label": "Sin evidencia", "descriptor": "No aporta ejemplos de haber resuelto un problema operativo del almacén."},
-      {"level": 1, "label": "Básico", "descriptor": "Menciona un problema pero no describe ninguna acción tomada para resolverlo."},
-      {"level": 2, "label": "En desarrollo", "descriptor": "Describe un problema y una acción tomada, pero sin explicar por qué eligió esa solución."},
-      {"level": 3, "label": "Competente", "descriptor": "Describe un problema real (faltante, retraso, daño), identifica su causa y explica la solución aplicada con un resultado verificable."},
-      {"level": 4, "label": "Avanzado", "descriptor": "Además implementó un control para que el problema no se repitiera (checklist, doble revisión, ajuste de proceso) y puede describir su efecto."}
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No propone ningún método para investigar la discrepancia entre sistema y ubicación física."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Propone 'buscarlo en el almacén' sin ningún método sistemático."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Propone revisar ubicaciones cercanas o movimientos recientes, pero no un método completo ni un plan si no lo encuentra."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Propone un método claro: revisar movimientos recientes, ubicaciones alternas y posibles errores de captura, y qué hacer si finalmente no aparece."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo evitaría que la causa (error de captura, ubicación mal registrada) se repita en el futuro."}
     ],
-    "positive_signals": ["identifica la causa raíz del problema", "explica por qué eligió esa solución sobre otras", "describe una mejora implementada para prevenir recurrencia"],
-    "negative_signals": ["repite el enunciado sin dar un caso real", "solo describe el problema sin la solución", "atribuye la solución únicamente a otra persona"],
+    "positive_signals": ["propone revisar movimientos y ubicaciones de forma sistemática", "tiene un plan claro si el producto no aparece", "propone una mejora para prevenir que se repita"],
+    "negative_signals": ["su única acción es 'buscarlo'", "no considera revisar movimientos o registros", "no propone ningún plan si no lo encuentra"],
     "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
   },
   {
-    "competency_code": "DISCREPANCY_RESOLUTION",
+    "competency_code": "WAREHOUSE_SA_06",
     "job_family": "WAREHOUSE_SUPERVISOR",
     "version": 1,
-    "name": "Resolución de diferencias",
+    "name": "Adaptabilidad",
     "type": "BEHAVIORAL",
     "is_core": false,
-    "what_to_probe": [
-      "Un ejemplo real de una diferencia entre el físico y el sistema que investigó hasta cerrarla",
-      "Qué pasos sigue para descartar causas posibles de una diferencia de inventario",
-      "Cómo documenta el cierre de una diferencia para que no quede como pendiente abierto"
-    ],
+    "what_to_probe": ["reorganización del trabajo", "control de lo que ya estaba en proceso", "comunicación del cambio"],
     "levels": [
-      {"level": 0, "label": "Sin evidencia", "descriptor": "No aporta ejemplos de haber investigado una diferencia de inventario."},
-      {"level": 1, "label": "Básico", "descriptor": "Menciona que 'a veces hay diferencias' sin describir ningún proceso de investigación."},
-      {"level": 2, "label": "En desarrollo", "descriptor": "Describe revisar el sistema o recontar físicamente, pero no un caso concreto de cierre de una diferencia real."},
-      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de una diferencia física-sistema que investigó paso a paso (recuento, revisión de movimientos, entrevistas) hasta identificar la causa y cerrarla."},
-      {"level": 4, "label": "Avanzado", "descriptor": "Además propuso un control para reducir la recurrencia de ese tipo de diferencia (doble conteo, restricción de acceso, validación en captura) y puede describir su efecto."}
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No da ningún ejemplo de haber reorganizado el trabajo ante un cambio de prioridad."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Menciona el cambio pero dice que 'se atrasó todo lo demás' sin ningún plan."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Describe cómo atendió la entrega urgente, pero no explica qué pasó con el trabajo que ya estaba en proceso."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Describe cómo reorganizó el trabajo para atender la urgencia sin perder el control de lo que ya estaba en proceso."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica cómo comunicó el cambio de prioridad a quien correspondía para gestionar expectativas sobre lo demás."}
     ],
-    "positive_signals": ["describe un proceso de investigación con pasos concretos", "da un ejemplo real de una diferencia cerrada con causa identificada", "menciona un control propuesto para prevenir recurrencia"],
-    "negative_signals": ["responde en abstracto sin caso real", "dice que las diferencias 'se ajustan y ya' sin investigar causa", "no menciona ninguna documentación del cierre"],
+    "positive_signals": ["explica qué pasó con el trabajo previo, no solo con lo urgente", "reorganiza con un plan, no de forma improvisada", "comunica el cambio de prioridad a los afectados"],
+    "negative_signals": ["dice que todo lo demás se atrasó sin ningún control", "no menciona qué pasó con las tareas previas", "no comunica el cambio a nadie"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "WAREHOUSE_SA_07",
+    "job_family": "WAREHOUSE_SUPERVISOR",
+    "version": 1,
+    "name": "Integridad y criterio ante un incidente",
+    "type": "BEHAVIORAL",
+    "is_core": true,
+    "what_to_probe": ["priorizar seguridad personal", "evitar confrontaciones innecesarias", "preservar evidencia", "informar al responsable", "seguir protocolo", "no encubrir"],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "Propone confrontar físicamente a la persona o arriesgarse para proteger la mercancía."},
+      {"level": 1, "label": "Evidencia débil", "descriptor": "Dice que 'no haría nada' o que lo dejaría pasar para evitar problemas."},
+      {"level": 2, "label": "Evidencia básica", "descriptor": "Dice que informaría al responsable, pero no menciona preservar evidencia ni priorizar su propia seguridad."},
+      {"level": 3, "label": "Evidencia sólida", "descriptor": "Prioriza su seguridad, evita la confrontación directa, preserva evidencia (lo que observó, cuándo) e informa al responsable siguiendo el protocolo."},
+      {"level": 4, "label": "Evidencia fuerte", "descriptor": "Además explica por qué no intentaría resolverlo por su cuenta y cómo eso protege tanto a las personas como la investigación posterior."}
+    ],
+    "positive_signals": ["prioriza explícitamente su seguridad y la de otros sobre la mercancía", "evita la confrontación directa", "informa al responsable y preserva evidencia"],
+    "negative_signals": ["propone confrontar físicamente a la persona", "prioriza recuperar o proteger la mercancía sobre la seguridad de las personas", "decide encubrir o no informar del incidente"],
     "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
   }
 ]

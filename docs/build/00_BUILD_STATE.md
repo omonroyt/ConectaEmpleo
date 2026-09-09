@@ -71,6 +71,7 @@ sugerido). Esta tabla es el estado vivo — un subagente solo cambia su propia f
 | B0 | Base: pyproject, Docker, docker-compose Postgres, config, `database.py`, Alembic, `/health`, CORS, errores, logging | sonnet | DONE | 38df003 |
 | B1 | Identidad: `users`, registro/login/me, JWT, `require_candidate/require_company` | sonnet | DONE | 38df003 |
 | B2 | Catálogo y semillas: `job_families`, `competencies`, `skills`, `rubrics`, `learning_catalog` | sonnet | DONE | 38df003 |
+| B2b | Realineación del catálogo al master prompt: 42 competencias, 42 rúbricas, banco de 42 preguntas (`interview_questions`) | sonnet | DONE | (ver bitácora) |
 | B3 | Perfil de candidato + documentos | sonnet | DONE | c1cfda9 |
 | B4 | `AIPort` v1.1, `invoke.py`, `DeterministicAdapter`, tabla `jobs` + runner | sonnet | DONE | c1cfda9 |
 | B5 | Extracción de CV y claims, `cv-builder` sessions | sonnet | DONE | 05ab4ef |
@@ -79,7 +80,7 @@ sugerido). Esta tabla es el estado vivo — un subagente solo cambia su propia f
 | B8 | Empresa y vacantes: `companies` (extendido), `vacancies`, `vacancy_requirements`, A5 RESOLVE | sonnet | DONE | 05ab4ef |
 | B9 | Motor de matching determinista, `match_runs`, `match_results` | opus | PENDING | — |
 | B10 | Marketplace y anonimización, `candidate_unlocks`, compare, shortlist, A5 EXPLAIN | sonnet | PENDING | — |
-| B11 | `AgenticAdapter` real (Anthropic + OpenAI, failover, prompts A1-A5) | opus | PENDING | — |
+| B11 | `AgenticAdapter` real (Anthropic + OpenAI, failover, prompts A1-A5) | opus | DONE | (ver bitácora) |
 | B12 | Voz: `STTPort`/`TTSPort`, `ElevenLabsAdapter`, `VoiceGateway` WS | opus | PENDING | — |
 | B13 | Mocks P2, `GET /admin/ai-invocations`, seeds de demo completas, deploy Railway | sonnet | PENDING | — |
 
@@ -121,6 +122,159 @@ Detectada al construir el frontend contra el contrato de `02_API_CONTRACT.md`. C
 8. **No inventes decisiones de producto.** Si la spec no cubre algo, elige la opción más simple que no contradiga la spec y anótala en la bitácora.
 
 ## Bitácora (más reciente arriba)
+
+### 2026-09-09 — B2b (Sonnet)
+
+**Qué se construyó** (solo dentro de `backend/app/seeds/`, `backend/app/modules/catalog/`, una
+migración nueva y `backend/tests/`; `frontend/` no se tocó):
+
+- **Catálogo de 42 competencias** (`app/seeds/families.py` reescrito): 3 familias × 14
+  (7 `TECHNICAL` + 7 `BEHAVIORAL`), reemplazando las 24 anteriores. `code` = id de la pregunta del
+  master prompt con guion bajo (`ADMIN_HA_01`↔`HA-01`, `WAREHOUSE_SA_07`↔`SE-07`,
+  `HEAVY_SM_07`↔`SM-07`). `is_core=true` en 4 técnicas centrales + 1 conductual de
+  integridad/confidencialidad por familia (2 conductuales en `HEAVY_MACHINERY_OPERATOR`: `SM-01` y
+  `SM-07`, por la criticidad de seguridad de ese perfil). `name`/`description` de cada competencia
+  citan el tema real de su pregunta, no una etiqueta genérica.
+- **Banco de 42 preguntas** (`app/seeds/interview_bank/{admin_assistant,warehouse_supervisor,
+  heavy_machinery_operator}.json`, formato exacto de docs/build/06 §2): texto de pregunta copiado
+  **literal** del master prompt §14-§16 (incluye las dos variantes `no_experience_variant` que trae
+  el original: `HA-06`, `HE-05`). `evaluates` = lista "Evaluar:" del master prompt cuando existe, o
+  derivada del marco §17 (contexto→acción→criterio→resultado) para las 18 preguntas soft que no
+  traían lista explícita. `suggested_follow_ups`: el único follow-up literal que da el master
+  prompt (`HA-01`) más un follow-up genérico de §19 (tipo `PROFUNDIZACION`/`PROCEDIMIENTO`/
+  `VERIFICACION`/`RIESGO`/`RESULTADO`) elegido por escenario para las 41 restantes.
+  `risk_flag_triggers` derivados de §18: `SAFETY_CRITICAL` alto obligatorio en `HM-05` (fuga
+  hidráulica) y en `SM-07` (presión del supervisor), `PHYSICAL_SAFETY_RISK` alto en `SE-07`
+  (nunca premiar anteponer mercancía a integridad física), `CONFIDENTIALITY_BREACH` alto en
+  `SA-07`, más `DATA_INTEGRITY`/`INVENTORY_INTEGRITY`/`UNAUTHORIZED_RELEASE`/
+  `UNSAFE_CONDITION_IGNORED` en las preguntas donde el master prompt lo pide explícitamente
+  (`HA-02`, `HA-04`, `HA-07`, `SA-02`, `HE-01`, `HE-03`, `HE-06`, `HE-07`, `HM-02`, `HM-04`, `HM-06`).
+- **Modelo y migración nuevos**: `InterviewQuestion` en
+  `app/modules/catalog/models.py` (`job_family_id`, `competency_id`, `question_id` único por
+  familia, `block`, `sequence`, `text`, `evaluates`/`suggested_follow_ups`/`risk_flag_triggers`
+  JSONB, `no_experience_variant`, `version`). Migración
+  `alembic/versions/b60181a672b0_interview_questions_bank.py` (down_revision `3f5adcf29fbb`, la
+  migración de `tts_usage_events` de B12). **Nota de coordinación entre agentes**: el autogenerate
+  también proponía `DROP TABLE tts_usage_events` porque `alembic/env.py` no importaba
+  `app.ai.voice.models` — se quitó ese drop de la migración (B2b no toca `app/ai/voice/`) y se
+  agregó la línea de import que faltaba en `env.py` (cambio de una línea, aditivo) para que un
+  autogenerate futuro no vuelva a proponer borrar la tabla de B12. Verificado con un
+  `alembic revision --autogenerate` de control tras el fix: diff vacío (`pass`/`pass`), luego
+  descartado.
+- **42 rúbricas** (`app/seeds/rubrics/*.json` reescritos, mismo contrato `RubricCard` que ya
+  cargaba `run.py`): 5 niveles 0-4 con las etiquetas de §9 del master prompt ("Sin evidencia" /
+  "Evidencia débil" / "Evidencia básica" / "Evidencia sólida" / "Evidencia fuerte"),
+  **particularizados por pregunta** (ningún descriptor genérico reutilizado entre competencias);
+  `what_to_probe` = misma lista `evaluates` de la pregunta; `positive_signals`/`negative_signals`
+  observables (verbos concretos: "menciona", "explica", "propone", nunca adjetivos). `score_mapping`
+  fijo `{"0":0,"1":25,"2":50,"3":75,"4":100}` en las 42.
+- **Endpoints** (`app/modules/catalog/router.py`, `service.py`, `schemas.py`):
+  `GET /job-families/{id}/competencies` ahora devuelve 14 (sin cambio de contrato `Competency`).
+  Nuevo `GET /job-families/{id}/interview-questions` → `InterviewQuestion[]` ordenado por
+  `sequence`, con `competency_code`/`competency_name` resueltos en el propio endpoint (join, sin
+  segunda consulta desde el cliente).
+- **Seeder** (`app/seeds/run.py`): agrega `_upsert_interview_question` (upsert por
+  `(job_family_id, question_id)`, natural key estable) y el bucle que carga
+  `interview_bank/*.json` después de rúbricas. Idempotente: corrido dos veces seguidas, mismos
+  conteos (verificado).
+- **`app/seeds/learning_catalog.py` remapeado** (no pedía la spec tocarlo, pero las 20 entradas
+  apuntaban a los 24 códigos viejos que ya no existen): cada entrada movida 1:1 a la competencia
+  nueva más cercana en significado, documentado en el docstring del archivo.
+- **Limpieza de datos de la semilla vieja**: la base de dev tenía 2 `vacancy_requirements` de
+  prueba apuntando a competencias viejas (`INVENTORY_CONTROL`, `FORKLIFT_SAFETY`), lo que hubiera
+  bloqueado un `DELETE` de esas filas por FK. Se optó por la vía que la spec autorizaba
+  explícitamente ("la base de desarrollo puede recrearse"): `alembic downgrade base` +
+  `alembic upgrade head` + `python -m app.seeds.run`, en vez de escribir lógica de borrado
+  condicional dentro del seeder. Documentado aquí como el comando a repetir si alguien más tiene
+  una base de dev con datos de la semilla de 24 competencias.
+- **Tests nuevos** (`tests/test_interview_bank.py`, cubre master prompt §31 completo): 3 perfiles
+  exactos; 14 preguntas por perfil (7 HARD + 7 SOFT); `question_id` únicos y con formato estable
+  (`^[A-Z]{2}-\d{2}$`); ningún texto vacío; cada pregunta referencia una competencia de la semilla
+  (cobertura 1:1, no solo "existe"); cada competencia tiene rúbrica con 5 niveles y `score_mapping`
+  completo; `HM-05` produce `SAFETY_CRITICAL` alto (regla dura §31); `SE-07` nunca premia anteponer
+  mercancía a integridad física (nivel 0 lo describe explícitamente, niveles 3-4 no lo premian) y sí
+  trae `PHYSICAL_SAFETY_RISK`; `SA-07` produce `CONFIDENTIALITY_BREACH`; y el test real de §22 que
+  recorre los 42 textos (+ 2 `no_experience_variant`) contra los 14 términos prohibidos
+  (edad/género/estado civil/embarazo/religión/orientación/política/origen étnico/salud/familia).
+  `tests/test_catalog.py` reescrito para 14 competencias por familia con los códigos y `is_core`
+  exactos, más un test nuevo para `GET /interview-questions` (200 con 14, 404 en familia
+  inexistente).
+- **Cambio compartido documentado**: `alembic/env.py` (una línea, import de
+  `app.ai.voice.models` — ver nota de migración arriba). Ningún otro archivo fuera del alcance
+  asignado fue tocado; se confirmó con `git status` que los cambios en curso de B11
+  (`app/ai/prompts/`, `app/ai/adapters/llm/`) y B12 (`app/ai/voice/`, `frontend/src/voice/`) siguen
+  sin tocar.
+
+**Verificación de cierre — salida real**:
+- `alembic heads` → una sola cabeza, `b60181a672b0`. `alembic upgrade head` limpio.
+- `python -m app.seeds.run` corrido dos veces seguidas → `seeds_completed` ambas veces; conteo
+  verificado por SQL: `competencies=42` (14/14/14 por familia), `rubrics=42` (14/14/14),
+  `interview_questions=42` (14/14/14), sin duplicados en la segunda corrida.
+- `pytest -q` → **129 passed, 2 skipped** (0 failed). En una corrida intermedia,
+  `tests/test_prompts.py` (de B11, ajeno a este alcance) falló con `NameError:
+  _FORBIDDEN_MARKERS` por trabajo en curso en paralelo; en la corrida final ya estaba en verde —
+  no se tocó ese archivo.
+- `ruff check app/seeds app/modules/catalog tests/test_catalog.py tests/test_interview_bank.py
+  alembic/versions/b60181a672b0_interview_questions_bank.py alembic/env.py` → sin hallazgos.
+- Con `uvicorn` real en `:8010`: `GET /api/v1/job-families` → 3 familias con los códigos del
+  contrato. `GET /job-families/{id}/competencies` → 14 por familia con los códigos
+  `ADMIN_HA_*`/`ADMIN_SA_*`, `WAREHOUSE_HE_*`/`WAREHOUSE_SA_*`, `HEAVY_HM_*`/`HEAVY_SM_*` exactos y
+  `is_core` correcto. `GET /job-families/{id}/interview-questions` → 14 filas ordenadas por
+  `sequence`, bloque `HARD` (1-7) seguido de `SOFT` (8-14), `question_id` `HA-01..07`/`SA-01..07`
+  para `ADMIN_ASSISTANT` verificado explícitamente.
+
+**Mapa pregunta → competencia** (los 42, código de competencia = id de pregunta con `_`):
+`ADMIN_ASSISTANT`: HA-01 Excel y hojas de cálculo · HA-02 Captura y calidad de información · HA-03
+Gestión documental · HA-04 Reportes administrativos · HA-05 Seguimiento de pendientes · HA-06
+Sistemas y bases de datos administrativas · HA-07 Facturas y documentos administrativos · SA-01
+Organización y priorización · SA-02 Atención al detalle y responsabilidad · SA-03 Comunicación ·
+SA-04 Trabajo en equipo · SA-05 Resolución de problemas · SA-06 Adaptabilidad · SA-07
+Confidencialidad e integridad.
+`WAREHOUSE_SUPERVISOR`: HE-01 Control de inventario · HE-02 Entradas de mercancía · HE-03 Salidas
+de mercancía · HE-04 Organización física del almacén · HE-05 Excel y sistema de almacén · HE-06
+Manejo de producto dañado o con incidencia · HE-07 Seguridad y control de riesgos · SE-01
+Responsabilidad · SE-02 Priorización · SE-03 Comunicación · SE-04 Trabajo en equipo · SE-05
+Resolución de problemas · SE-06 Adaptabilidad · SE-07 Integridad y criterio ante un incidente.
+`HEAVY_MACHINERY_OPERATOR`: HM-01 Experiencia real con maquinaria · HM-02 Inspección preoperativa ·
+HM-03 Seguridad y EPP · HM-04 Manejo de falla durante la operación · HM-05 Fuga hidráulica · HM-06
+Maniobra en espacio reducido con personal cercano · HM-07 Condiciones adversas del terreno · SM-01
+Responsabilidad y disciplina · SM-02 Organización y gestión del tiempo · SM-03 Comunicación · SM-04
+Trabajo en equipo · SM-05 Resolución de problemas · SM-06 Adaptabilidad · SM-07 Criterio bajo
+presión.
+
+**Qué necesita saber quien siga con B6** (entrevista: sesiones, turnos, orquestador, Guardián de
+Equidad):
+- `InterviewQuestion` (tabla `interview_questions`) ya está sembrada con las 42 preguntas; B6 debe
+  leerla vía `catalog.service.list_interview_questions(db, job_family_id)` (devuelve tuplas
+  `(InterviewQuestion, Competency)` ordenadas por `sequence`) para construir el guion determinista
+  de 14 preguntas base — **no** debe copiar los textos a ningún prompt ni a `interview_sessions`,
+  solo referenciar `question_id`.
+- `coverage_state` de docs/build/06 §6 (`phase`, `current_question_id`,
+  `base_questions_answered`, `follow_ups_for_current_question`, `answered_question_ids`) mapea
+  directo: el orquestador avanza por `sequence` 1-14 de la fila anterior, cambia `phase` de `HARD`
+  a `SOFT` en la pregunta 8 (ya viene marcado en el campo `block` de cada fila, no hace falta
+  inferirlo).
+- `no_experience_variant` solo existe en `HA-06` y `HE-05` (las dos únicas que el master prompt
+  trae): B6 debe decidir el criterio para detectar "sin experiencia" (ej. claim ausente o
+  respuesta que lo declara) y usar esa variante en vez del texto base — el campo ya viene `null` en
+  las 40 preguntas restantes, así que un `if question.no_experience_variant` sin más lógica ya es
+  seguro.
+- `risk_flag_triggers` de cada pregunta son **candidatos a evaluar por el LLM/heurística de B6**,
+  no una regla determinista de texto — el campo `when` es una descripción en español de la
+  condición (ej. "propone continuar operando pese a una fuga hidráulica..."), pensado para que el
+  prompt de evaluación (B11, `app/ai/prompts/`) o el `AssessmentAdapter` (B7) lo usen como criterio,
+  no para hacer regex sobre la transcripción.
+- `suggested_follow_ups` es una sugerencia, no un guion obligatorio: B6/B11 deciden si usarla o
+  generar una propia siguiendo los mismos 6 tipos de §19 (`PROFUNDIZACION`, `PROCEDIMIENTO`,
+  `VERIFICACION`, `RIESGO`, `CONSISTENCIA`, `RESULTADO`).
+- Las 42 rúbricas ya están en `rubrics` con `evidence_guidelines.what_to_probe` = `evaluates` de la
+  pregunta correspondiente — B7 (evaluación) puede resolver la rúbrica de una competencia igual que
+  ya hacía antes de B2b (`competency_id` no cambió de forma, solo el contenido).
+- **Desviación a validar con B6/B7 si hace falta más granularidad**: `HEAVY_MACHINERY_OPERATOR`
+  marca `is_core=true` en 2 competencias soft (`SM-01`, `SM-07`) en vez de 1 como las otras dos
+  familias, por la criticidad de seguridad del puesto. Si el motor de matching (B9) pondera
+  `is_core` de forma uniforme entre familias, esto le da más peso relativo a "seguridad" en esa
+  familia — decisión intencional, no un descuido, pero queda anotada por si B9 la quiere igualar.
 
 ### 2026-09-09 — B3+B4 (Sonnet)
 

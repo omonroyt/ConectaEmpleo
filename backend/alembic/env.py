@@ -9,6 +9,7 @@ from app.database import Base
 # Importar todos los modelos para que `Base.metadata` los conozca y
 # `alembic revision --autogenerate` los detecte.
 from app.ai import models as ai_models  # noqa: F401
+from app.ai.voice import models as ai_voice_models  # noqa: F401
 from app.core.jobs import Job  # noqa: F401
 from app.modules.candidates import models as candidates_models  # noqa: F401
 from app.modules.catalog import models as catalog_models  # noqa: F401

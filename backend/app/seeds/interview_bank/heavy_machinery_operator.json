@@ -1,0 +1,208 @@
+[
+  {
+    "question_id": "HM-01",
+    "block": "HARD",
+    "sequence": 1,
+    "competency_code": "HEAVY_HM_01",
+    "competency_name": "Experiencia real con maquinaria",
+    "text": "¿Qué tipos de maquinaria pesada has operado realmente, durante cuánto tiempo y qué tareas realizabas con cada una?",
+    "evaluates": ["equipos concretos", "tiempo aproximado", "tareas", "contexto", "profundidad de experiencia"],
+    "suggested_follow_ups": [
+      {"type": "PROFUNDIZACION", "text": "¿Puedes darme un ejemplo concreto de una tarea real que hayas hecho con esa máquina?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "HM-02",
+    "block": "HARD",
+    "sequence": 2,
+    "competency_code": "HEAVY_HM_02",
+    "competency_name": "Inspección preoperativa",
+    "text": "Antes de encender una máquina al inicio del turno, ¿qué revisarías y en qué orden?",
+    "evaluates": ["recorrido visual", "fluidos", "fugas", "neumáticos/orugas", "frenos", "hidráulica", "alarmas", "mandos", "entorno", "documentación/checklist cuando aplique"],
+    "suggested_follow_ups": [
+      {"type": "PROCEDIMIENTO", "text": "¿Qué revisarías primero de todo lo que mencionaste?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": [
+      {"code": "SAFETY_CRITICAL", "severity": "medium", "when": "desconoce de forma crítica un punto esencial de la inspección preoperativa y afirma que igual encendería la máquina"}
+    ]
+  },
+  {
+    "question_id": "HM-03",
+    "block": "HARD",
+    "sequence": 3,
+    "competency_code": "HEAVY_HM_03",
+    "competency_name": "Seguridad y EPP",
+    "text": "¿Qué medidas de seguridad y equipo de protección consideras indispensables al operar o revisar maquinaria pesada?",
+    "evaluates": ["EPP", "zona de exclusión", "comunicación", "visibilidad", "señalización", "procedimientos", "conciencia de personal en tierra"],
+    "suggested_follow_ups": [
+      {"type": "RIESGO", "text": "¿Qué riesgo intentarías evitar al delimitar una zona de exclusión?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "HM-04",
+    "block": "HARD",
+    "sequence": 4,
+    "competency_code": "HEAVY_HM_04",
+    "competency_name": "Manejo de falla durante la operación",
+    "text": "Estás operando y detectas una falla mecánica o un comportamiento anormal de la máquina. ¿Qué harías?",
+    "evaluates": ["detener en condiciones seguras", "no continuar si existe riesgo", "asegurar equipo", "reportar", "inspección permitida", "no hacer reparaciones fuera de competencia", "seguimiento"],
+    "suggested_follow_ups": [
+      {"type": "PROCEDIMIENTO", "text": "¿Qué harías primero al notar el comportamiento anormal?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": [
+      {"code": "SAFETY_CRITICAL", "severity": "high", "when": "decide continuar operando pese a una falla mecánica o comportamiento anormal evidente"}
+    ]
+  },
+  {
+    "question_id": "HM-05",
+    "block": "HARD",
+    "sequence": 5,
+    "competency_code": "HEAVY_HM_05",
+    "competency_name": "Fuga hidráulica",
+    "text": "Detectas una fuga de fluido hidráulico en un cilindro. ¿Cómo actuarías antes de decidir si la máquina puede seguir operando?",
+    "evaluates": ["detener/asegurar", "valorar riesgo", "evitar contacto/contaminación", "reportar", "inspección", "autorización técnica", "no improvisar"],
+    "suggested_follow_ups": [
+      {"type": "VERIFICACION", "text": "¿Cómo comprobarías que ya es seguro seguir operando después de la fuga?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": [
+      {"code": "SAFETY_CRITICAL", "severity": "high", "when": "propone continuar operando pese a una fuga hidráulica potencialmente peligrosa sin inspección ni autorización"}
+    ]
+  },
+  {
+    "question_id": "HM-06",
+    "block": "HARD",
+    "sequence": 6,
+    "competency_code": "HEAVY_HM_06",
+    "competency_name": "Maniobra en espacio reducido con personal cercano",
+    "text": "Necesitas mover material en un espacio reducido mientras hay personal trabajando cerca. ¿Cómo prepararías y ejecutarías la maniobra?",
+    "evaluates": ["delimitación", "señalero", "comunicación", "puntos ciegos", "velocidad", "radio de giro", "plan de maniobra", "detener si se pierde visibilidad"],
+    "suggested_follow_ups": [
+      {"type": "RIESGO", "text": "¿Qué riesgo intentarías evitar en esa maniobra específicamente?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": [
+      {"code": "SAFETY_CRITICAL", "severity": "medium", "when": "continuaría la maniobra aunque pierda visibilidad o el personal se acerque sin control"}
+    ]
+  },
+  {
+    "question_id": "HM-07",
+    "block": "HARD",
+    "sequence": 7,
+    "competency_code": "HEAVY_HM_07",
+    "competency_name": "Condiciones adversas del terreno",
+    "text": "La máquina queda atascada o las condiciones del terreno cambian por lluvia, lodo o baja estabilidad. ¿Cómo decidirías qué hacer?",
+    "evaluates": ["evaluación del terreno", "estabilidad", "capacidad del equipo", "riesgos de volcadura", "pedir apoyo", "recuperación segura", "evitar acciones impulsivas"],
+    "suggested_follow_ups": [
+      {"type": "PROCEDIMIENTO", "text": "¿Qué harías primero antes de intentar mover la máquina?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SM-01",
+    "block": "SOFT",
+    "sequence": 8,
+    "competency_code": "HEAVY_SM_01",
+    "competency_name": "Responsabilidad y disciplina",
+    "text": "Cuéntame una ocasión en la que tuviste que detener o retrasar una tarea porque consideraste que no era seguro continuar. ¿Qué ocurrió?",
+    "evaluates": ["ejemplo concreto de haber detenido una tarea", "comunicación de la decisión", "sostenimiento pese a presión"],
+    "suggested_follow_ups": [
+      {"type": "RESULTADO", "text": "¿Cuál fue el resultado de haber detenido la tarea?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SM-02",
+    "block": "SOFT",
+    "sequence": 9,
+    "competency_code": "HEAVY_SM_02",
+    "competency_name": "Organización y gestión del tiempo",
+    "text": "Cuando tienes varias tareas asignadas con maquinaria durante un turno, ¿cómo organizas el trabajo y las revisiones necesarias?",
+    "evaluates": ["criterio de orden de tareas del turno", "inclusión de revisiones de seguridad", "ajuste ante imprevistos"],
+    "suggested_follow_ups": [
+      {"type": "PROFUNDIZACION", "text": "¿Puedes darme un ejemplo concreto de un turno con varias tareas así?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SM-03",
+    "block": "SOFT",
+    "sequence": 10,
+    "competency_code": "HEAVY_SM_03",
+    "competency_name": "Comunicación",
+    "text": "¿Cómo te comunicas con señalistas, supervisores y personal en tierra cuando una maniobra requiere coordinación?",
+    "evaluates": ["medio de comunicación usado", "confirmación de entendimiento", "manejo de comunicación ambigua"],
+    "suggested_follow_ups": [
+      {"type": "VERIFICACION", "text": "¿Cómo comprobarías que el señalista entendió correctamente la indicación?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SM-04",
+    "block": "SOFT",
+    "sequence": 11,
+    "competency_code": "HEAVY_SM_04",
+    "competency_name": "Trabajo en equipo",
+    "text": "Cuéntame una situación en la que tuviste que coordinarte con otros operadores o con personal de piso para cumplir una tarea.",
+    "evaluates": ["coordinación concreta con otra persona", "rol propio", "resultado obtenido"],
+    "suggested_follow_ups": [
+      {"type": "RESULTADO", "text": "¿Cuál fue el resultado de esa coordinación?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SM-05",
+    "block": "SOFT",
+    "sequence": 12,
+    "competency_code": "HEAVY_SM_05",
+    "competency_name": "Resolución de problemas",
+    "text": "Cuéntame una situación difícil que hayas enfrentado operando maquinaria. ¿Qué analizaste y cómo la resolviste?",
+    "evaluates": ["situación real enfrentada", "análisis detrás de la decisión", "aprendizaje aplicado después"],
+    "suggested_follow_ups": [
+      {"type": "PROFUNDIZACION", "text": "¿Puedes darme más detalle de qué analizaste antes de decidir qué hacer?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SM-06",
+    "block": "SOFT",
+    "sequence": 13,
+    "competency_code": "HEAVY_SM_06",
+    "competency_name": "Adaptabilidad",
+    "text": "Describe una ocasión en la que las condiciones del terreno, clima o plan de trabajo cambiaron durante tu turno. ¿Cómo ajustaste tu forma de trabajar?",
+    "evaluates": ["ajuste concreto ante el cambio de condiciones", "verificación de seguridad del ajuste", "comunicación del ajuste"],
+    "suggested_follow_ups": [
+      {"type": "RESULTADO", "text": "¿Cuál fue el resultado de ese ajuste?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SM-07",
+    "block": "SOFT",
+    "sequence": 14,
+    "competency_code": "HEAVY_SM_07",
+    "competency_name": "Criterio bajo presión",
+    "text": "Un supervisor te pide continuar una maniobra para no retrasar el proyecto, pero detectas una condición que consideras insegura. ¿Qué harías?",
+    "evaluates": ["detener o cuestionar de forma profesional", "explicar el riesgo", "escalar", "seguir procedimiento", "priorizar seguridad"],
+    "suggested_follow_ups": [
+      {"type": "RIESGO", "text": "¿Qué riesgo específico le explicarías al supervisor?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": [
+      {"code": "SAFETY_CRITICAL", "severity": "high", "when": "decide continuar la maniobra por presión del supervisor pese a haber detectado una condición insegura"}
+    ]
+  }
+]

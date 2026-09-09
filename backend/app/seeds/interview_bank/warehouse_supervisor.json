@@ -1,0 +1,208 @@
+[
+  {
+    "question_id": "HE-01",
+    "block": "HARD",
+    "sequence": 1,
+    "competency_code": "WAREHOUSE_HE_01",
+    "competency_name": "Control de inventario",
+    "text": "Al finalizar un conteo físico detectas que una cantidad no coincide con el sistema. ¿Qué pasos seguirías para investigar y corregir la diferencia?",
+    "evaluates": ["reconteo", "movimientos", "documentos", "trazabilidad", "ajustes autorizados", "causa raíz"],
+    "suggested_follow_ups": [
+      {"type": "PROCEDIMIENTO", "text": "¿Qué harías primero, antes de ajustar cualquier cifra en el sistema?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": [
+      {"code": "INVENTORY_INTEGRITY", "severity": "high", "when": "propone alterar el inventario o el sistema para que cuadre sin investigar ni obtener autorización"}
+    ]
+  },
+  {
+    "question_id": "HE-02",
+    "block": "HARD",
+    "sequence": 2,
+    "competency_code": "WAREHOUSE_HE_02",
+    "competency_name": "Entradas de mercancía",
+    "text": "Llega mercancía al almacén. ¿Qué revisarías antes de recibirla y registrarla formalmente?",
+    "evaluates": ["cantidad", "estado", "documentos", "SKU/lote", "discrepancias", "evidencia", "registro"],
+    "suggested_follow_ups": [
+      {"type": "RIESGO", "text": "¿Qué riesgo intentarías evitar al registrar la mercancía sin revisarla bien?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "HE-03",
+    "block": "HARD",
+    "sequence": 3,
+    "competency_code": "WAREHOUSE_HE_03",
+    "competency_name": "Salidas de mercancía",
+    "text": "Antes de liberar una salida de mercancía, ¿qué validarías para asegurarte de entregar el producto correcto y mantener actualizado el inventario?",
+    "evaluates": ["autorización", "identificación", "cantidad", "lote/serie cuando aplique", "registro", "evidencia de entrega"],
+    "suggested_follow_ups": [
+      {"type": "VERIFICACION", "text": "¿Cómo comprobarías que la salida quedó correctamente registrada en el sistema?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": [
+      {"code": "UNAUTHORIZED_RELEASE", "severity": "high", "when": "libera o decide liberar mercancía sin verificar autorización"}
+    ]
+  },
+  {
+    "question_id": "HE-04",
+    "block": "HARD",
+    "sequence": 4,
+    "competency_code": "WAREHOUSE_HE_04",
+    "competency_name": "Organización física del almacén",
+    "text": "¿Cómo organizarías un almacén para facilitar la localización de productos, reducir errores y mantener condiciones seguras?",
+    "evaluates": ["zonas", "etiquetado", "ubicaciones", "rotación", "accesos", "orden", "seguridad"],
+    "suggested_follow_ups": [
+      {"type": "PROFUNDIZACION", "text": "¿Puedes darme un ejemplo concreto de cómo aplicaste esto en un almacén real?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "HE-05",
+    "block": "HARD",
+    "sequence": 5,
+    "competency_code": "WAREHOUSE_HE_05",
+    "competency_name": "Excel y sistema de almacén",
+    "text": "Cuéntame cómo has utilizado Excel, un ERP o un sistema de inventarios para controlar existencias, movimientos o reportes.",
+    "evaluates": ["nivel real", "operaciones realizadas", "búsqueda/filtrado", "actualización", "validación", "reportes"],
+    "suggested_follow_ups": [
+      {"type": "PROFUNDIZACION", "text": "¿Puedes darme un ejemplo concreto de un reporte o movimiento que hayas hecho en ese sistema?"}
+    ],
+    "no_experience_variant": "¿Cómo llevarías un control básico y confiable mientras aprendes el sistema de la empresa?",
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "HE-06",
+    "block": "HARD",
+    "sequence": 6,
+    "competency_code": "WAREHOUSE_HE_06",
+    "competency_name": "Manejo de producto dañado o con incidencia",
+    "text": "Durante una recepción detectas producto dañado o con empaque alterado. ¿Qué harías desde que lo detectas hasta cerrar la incidencia?",
+    "evaluates": ["segregación", "evidencia", "registro", "comunicación", "decisión autorizada", "trazabilidad"],
+    "suggested_follow_ups": [
+      {"type": "RESULTADO", "text": "¿Cuál fue el resultado la última vez que manejaste una incidencia así?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": [
+      {"code": "INVENTORY_INTEGRITY", "severity": "medium", "when": "oculta, minimiza o no reporta la pérdida o el daño en vez de documentarlo"}
+    ]
+  },
+  {
+    "question_id": "HE-07",
+    "block": "HARD",
+    "sequence": 7,
+    "competency_code": "WAREHOUSE_HE_07",
+    "competency_name": "Seguridad y control de riesgos",
+    "text": "Detectas una condición insegura dentro del almacén que podría causar un accidente o dañar mercancía. ¿Cómo actuarías?",
+    "evaluates": ["proteger personas", "detener/aislar riesgo", "señalizar", "comunicar", "seguir protocolo", "documentar"],
+    "suggested_follow_ups": [
+      {"type": "PROCEDIMIENTO", "text": "¿Qué harías primero, antes de continuar con la operación normal?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": [
+      {"code": "UNSAFE_CONDITION_IGNORED", "severity": "high", "when": "decide continuar la operación pese a una condición insegura evidente"}
+    ]
+  },
+  {
+    "question_id": "SE-01",
+    "block": "SOFT",
+    "sequence": 8,
+    "competency_code": "WAREHOUSE_SA_01",
+    "competency_name": "Responsabilidad",
+    "text": "Cuéntame una ocasión en la que detectaste un problema en tu área aunque nadie te lo hubiera reportado. ¿Qué hiciste?",
+    "evaluates": ["detección sin que se lo reporten", "acción propia", "resultado"],
+    "suggested_follow_ups": [
+      {"type": "RESULTADO", "text": "¿Cuál fue el resultado de haber actuado por iniciativa propia?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SE-02",
+    "block": "SOFT",
+    "sequence": 9,
+    "competency_code": "WAREHOUSE_SA_02",
+    "competency_name": "Priorización",
+    "text": "Tienes una recepción pendiente, una salida urgente y una diferencia de inventario que investigar. ¿Cómo decidirías el orden de atención?",
+    "evaluates": ["criterio de orden entre las tres tareas", "ponderación de urgencia e impacto", "control de lo pospuesto"],
+    "suggested_follow_ups": [
+      {"type": "PROCEDIMIENTO", "text": "¿Qué harías primero de las tres?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SE-03",
+    "block": "SOFT",
+    "sequence": 10,
+    "competency_code": "WAREHOUSE_SA_03",
+    "competency_name": "Comunicación",
+    "text": "Detectas una diferencia importante de inventario al final del turno. ¿Cómo la comunicarías y qué información incluirías?",
+    "evaluates": ["información concreta a comunicar", "oportunidad de la comunicación", "documentación del reporte"],
+    "suggested_follow_ups": [
+      {"type": "VERIFICACION", "text": "¿Cómo comprobarías que la persona que recibió el reporte lo entendió?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SE-04",
+    "block": "SOFT",
+    "sequence": 11,
+    "competency_code": "WAREHOUSE_SA_04",
+    "competency_name": "Trabajo en equipo",
+    "text": "Cuéntame una situación en la que tuviste que coordinarte con compras, ventas, transporte u otra área para resolver un problema de almacén.",
+    "evaluates": ["coordinación con otra área", "rol propio en la solución", "resultado obtenido"],
+    "suggested_follow_ups": [
+      {"type": "RESULTADO", "text": "¿Cuál fue el resultado de esa coordinación?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SE-05",
+    "block": "SOFT",
+    "sequence": 12,
+    "competency_code": "WAREHOUSE_SA_05",
+    "competency_name": "Resolución de problemas",
+    "text": "El sistema indica que hay existencia, pero el producto no aparece en su ubicación. ¿Cómo abordarías el problema?",
+    "evaluates": ["método de investigación", "revisión de movimientos y ubicaciones", "plan si no aparece"],
+    "suggested_follow_ups": [
+      {"type": "PROCEDIMIENTO", "text": "¿Qué harías primero para investigarlo?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SE-06",
+    "block": "SOFT",
+    "sequence": 13,
+    "competency_code": "WAREHOUSE_SA_06",
+    "competency_name": "Adaptabilidad",
+    "text": "De repente cambia la prioridad de surtido por una entrega urgente. ¿Cómo reorganizarías el trabajo sin perder control de lo que ya estaba en proceso?",
+    "evaluates": ["reorganización del trabajo", "control de lo que ya estaba en proceso", "comunicación del cambio"],
+    "suggested_follow_ups": [
+      {"type": "RESULTADO", "text": "¿Cuál fue el resultado la última vez que tuviste que reorganizar así?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": []
+  },
+  {
+    "question_id": "SE-07",
+    "block": "SOFT",
+    "sequence": 14,
+    "competency_code": "WAREHOUSE_SA_07",
+    "competency_name": "Integridad y criterio ante un incidente",
+    "text": "Si detectaras un posible robo o manipulación indebida de mercancía dentro del almacén, ¿qué harías?",
+    "evaluates": ["priorizar seguridad personal", "evitar confrontaciones innecesarias", "preservar evidencia", "informar al responsable", "seguir protocolo", "no encubrir"],
+    "suggested_follow_ups": [
+      {"type": "RIESGO", "text": "¿Qué riesgo intentarías evitar al no confrontar directamente a la persona?"}
+    ],
+    "no_experience_variant": null,
+    "risk_flag_triggers": [
+      {"code": "PHYSICAL_SAFETY_RISK", "severity": "high", "when": "propone confrontar físicamente a alguien o arriesgar su integridad para proteger la mercancía"}
+    ]
+  }
+]

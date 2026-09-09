@@ -36,7 +36,7 @@ import { generateExtractionFromFile, buildExtractionFromCvBuilder, advanceCvBuil
 import { CV_BUILDER_SCRIPT, CV_BUILDER_CLOSING } from "./seed/cvBuilderScript";
 import * as interviewEngine from "./engine/interview";
 import { buildAnonymousCard, scoreLabelFor, ALGORITHM_VERSION } from "./engine/matching";
-import { buildExplanation } from "./engine/explain";
+import { buildExplanation, buildKeyDifferences } from "./engine/explain";
 import { resolveRequirements as resolveRequirementsEngine } from "./engine/resolve";
 import type { StoredMatchResult, StoredCvBuilderSession, StoredInterview } from "./state";
 
@@ -741,10 +741,7 @@ export const mockApiClient: ApiClient = {
         { key: "SALARY", label: "Salario" },
         { key: "LOCATION", label: "Ubicación" },
       ];
-      const sorted = [...cards].sort((a, b) => b.total_score - a.total_score);
-      const key_differences = sorted.length >= 2
-        ? [`${sorted[0]!.anon_code} supera a ${sorted[sorted.length - 1]!.anon_code} por ${sorted[0]!.total_score - sorted[sorted.length - 1]!.total_score} puntos de compatibilidad total.`]
-        : [];
+      const key_differences = buildKeyDifferences(cards);
       return { criteria, candidates: cards, key_differences };
     },
     async shortlist(vacancyId: string): Promise<ShortlistEntry[]> {

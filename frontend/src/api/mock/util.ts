@@ -59,3 +59,26 @@ export function clamp(value: number, min = 0, max = 100): number {
 export function nowIso(): string {
   return new Date().toISOString();
 }
+
+/**
+ * Línea de fortaleza para `strengths[]` ("Nombre de competencia: evidencia
+ * sólida (95/100)"). Conserva la capitalización real de `name` (no la baja a
+ * minúsculas) y separa el puntaje con dos puntos en vez de un paréntesis
+ * pegado al nombre, para no producir "Nombre (con paréntesis) (evaluada, 95)".
+ */
+export function formatStrengthLine(name: string, score: number): string {
+  return `${name}: evidencia sólida (${score}/100)`;
+}
+
+/**
+ * "CND-4F82" → "CANDIDATO #F82" (últimos 3 caracteres del código anónimo).
+ * Duplica a propósito `talentLabels.ts` (features/employer/talent): ese
+ * archivo vive en la capa de UI y el mock no puede importar de `src/features`.
+ * Cualquier texto generado aquí (explicación, diferencias clave) debe usar
+ * este formato para que coincida con lo que muestran las cards de empresa.
+ */
+export function anonDisplayCode(anonCode: string): string {
+  const compact = anonCode.replace(/[^A-Za-z0-9]/g, "");
+  const tail = compact.slice(-3).toUpperCase();
+  return `CANDIDATO #${tail || compact.toUpperCase()}`;
+}

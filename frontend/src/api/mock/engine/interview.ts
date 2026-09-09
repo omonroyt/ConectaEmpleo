@@ -15,7 +15,7 @@ import { COMPETENCIES_BY_FAMILY } from "../seed/catalog";
 import { INTERVIEW_BANK, type BankQuestion } from "../seed/interviewBank";
 import { recommendationsFor } from "../seed/learningCatalog";
 import { ApiClientError } from "@/api/client";
-import { genId, nowIso, wordCount, excerpt, clamp } from "../util";
+import { genId, nowIso, wordCount, excerpt, clamp, mulberry32, formatStrengthLine } from "../util";
 
 const QUESTION_BUDGET = 6;
 
@@ -187,17 +187,37 @@ export function turns(id: string): InterviewTurn[] {
   return [...getInterview(id).turns];
 }
 
-/** Deriva nivel/score/confianza de una respuesta con una heurística simple de longitud + palabras clave. */
+/** Hash simple (FNV-1a) para derivar una semilla determinista a partir de un texto. */
+function hashString(text: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+/**
+ * Deriva nivel/score/confianza de una respuesta con longitud + una variación
+ * pseudoaleatoria determinista (semillada por el turno y el texto) para que
+ * una entrevista normal no sature todo en 95%: mismo nivel de longitud puede
+ * dar puntajes y confianzas distintos entre competencias, como en una
+ * evaluación real.
+ */
 function evaluateAnswer(turn: InterviewTurn, competencyName: string, type: "TECHNICAL" | "BEHAVIORAL"): CompetencyEvaluation {
   const words = wordCount(turn.answer_text ?? "");
-  let rubric_level: 0 | 1 | 2 | 3 | 4;
-  let confidence: number;
-  if (words >= 25) { rubric_level = 4; confidence = 0.88; }
-  else if (words >= 15) { rubric_level = 3; confidence = 0.78; }
-  else if (words >= 6) { rubric_level = 2; confidence = 0.62; }
-  else { rubric_level = 1; confidence = 0.4; } // nunca 0: respuesta dubitativa igual cuenta como evidencia mínima
+  const rng = mulberry32(hashString(`${turn.id}:${turn.answer_text ?? ""}`));
 
-  const score = clamp(rubric_level * 20 + Math.min(15, words));
+  let rubric_level: 0 | 1 | 2 | 3 | 4;
+  let scoreRange: [number, number];
+  let confidenceRange: [number, number];
+  if (words >= 25) { rubric_level = 4; scoreRange = [76, 92]; confidenceRange = [0.72, 0.93]; }
+  else if (words >= 15) { rubric_level = 3; scoreRange = [62, 78]; confidenceRange = [0.6, 0.82]; }
+  else if (words >= 6) { rubric_level = 2; scoreRange = [48, 64]; confidenceRange = [0.45, 0.68]; }
+  else { rubric_level = 1; scoreRange = [28, 42]; confidenceRange = [0.3, 0.5]; } // nunca 0: respuesta dubitativa igual cuenta como evidencia mínima
+
+  const score = clamp(Math.round(scoreRange[0] + rng() * (scoreRange[1] - scoreRange[0])));
+  const confidence = Math.round((confidenceRange[0] + rng() * (confidenceRange[1] - confidenceRange[0])) * 100) / 100;
   const isThin = rubric_level <= 2;
   return {
     competency_code: turn.target_competency_code,
@@ -247,7 +267,7 @@ export function evaluateInterview(session: StoredInterview): InterviewEvaluation
     .filter((e) => e.score >= 75)
     .sort((a, b) => b.score - a.score)
     .slice(0, 2)
-    .map((e) => `${e.competency_name.toLowerCase()} (evaluada, ${e.score})`);
+    .map((e) => formatStrengthLine(e.competency_name, e.score));
   const evidence_gaps = evaluations
     .filter((e) => e.rubric_level < 3)
     .map((e) => `${e.competency_name}: ${e.limitations ?? "requiere más evidencia"}`);
@@ -266,7 +286,7 @@ export function evaluateInterview(session: StoredInterview): InterviewEvaluation
   };
 
   const feedback: FeedbackReport = {
-    candidate_note: `Tu evidencia muestra ${overall_label.toLowerCase()}. ${strengths.length > 0 ? `Destacan ${strengths.join(", ")}.` : ""} Sigue reforzando las áreas con evidencia limitada.`,
+    candidate_note: `Tu desempeño muestra ${overall_label.toLowerCase()}. ${strengths.length > 0 ? `Destacan ${strengths.join(", ")}.` : ""} Sigue reforzando las áreas con evidencia limitada.`,
     company_note: `Candidato con ${overall_label.toLowerCase()} tras la entrevista conversacional (${answered.length} respuestas evaluadas).`,
     generated_at: nowIso(),
   };

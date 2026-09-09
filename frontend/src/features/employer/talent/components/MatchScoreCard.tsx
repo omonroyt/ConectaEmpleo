@@ -13,8 +13,8 @@ export interface MatchScoreCardProps {
 
 /**
  * Card oscura protagonista de E9/E12: score total, etiqueta textual, desglose
- * por componente y penalizaciones. El anillo vive sobre una placa clara para
- * conservar contraste AA sobre el fondo oscuro.
+ * por componente y penalizaciones. El anillo usa `tone="dark"` para conservar
+ * contraste AA sobre el fondo oscuro sin necesitar una placa clara detrás.
  */
 export function MatchScoreCard({ card, className }: MatchScoreCardProps) {
   const weightedTotal = card.breakdown.reduce((sum, item) => sum + item.contribution, 0);
@@ -28,8 +28,8 @@ export function MatchScoreCard({ card, className }: MatchScoreCardProps) {
       className={cn("flex flex-col gap-6", className)}
     >
       <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center">
-        <div className="shrink-0 rounded-full bg-surface p-3 shadow-md">
-          <ProgressRing value={card.total_score} size={148} stroke={12} />
+        <div className="shrink-0">
+          <ProgressRing value={card.total_score} size={148} stroke={12} tone="dark" />
         </div>
         <div className="text-center sm:text-left">
           <p className="text-xs font-semibold uppercase tracking-[.18em] text-accent-soft">

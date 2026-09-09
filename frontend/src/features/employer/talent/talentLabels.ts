@@ -9,6 +9,7 @@ import type {
   ShortlistStage,
 } from "@/api/types";
 import type { EvidenceLevel } from "@/components/ui";
+import { formatYearsExperience } from "@/lib/format";
 
 /**
  * Etiquetas y derivaciones compartidas por E8–E12 (docs/build/04_SCREENS_EMPLOYER.md).
@@ -88,11 +89,8 @@ export function breakdownAriaText(
   return `${matchComponentLabels[component]}: ${Math.round(raw)} de 100, peso ${weight} %, aporta ${contribution.toFixed(1)} puntos.`;
 }
 
-/** Años de experiencia en texto ("3.5 años de experiencia"). */
-export function experienceLabel(years: number): string {
-  const value = Number.isInteger(years) ? String(years) : years.toFixed(1);
-  return `${value} ${years === 1 ? "año" : "años"} de experiencia`;
-}
+/** Años de experiencia en texto, siempre entero ("8 años de experiencia", "1 año de experiencia"). */
+export const experienceLabel = formatYearsExperience;
 
 /** Habilidades declaradas que aún no fueron evaluadas ni verificadas. */
 export function unvalidatedClaims(skills: CandidateSkill[]): CandidateSkill[] {

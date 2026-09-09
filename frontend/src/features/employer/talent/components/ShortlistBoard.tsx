@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, KeyRound, UserSearch, X } from "lucide-react
 import type { ShortlistEntry, ShortlistStage } from "@/api/types";
 import { Avatar, Button, Card, EmptyState, ScoreBadge } from "@/components/ui";
 import { useReducedMotion } from "@/lib/a11y";
-import { shortlistStageLabels, shortlistStageOrder } from "../talentLabels";
+import { anonDisplayCode, shortlistStageLabels, shortlistStageOrder } from "../talentLabels";
 import { cn } from "@/lib/cn";
 
 const emptyCopy: Record<ShortlistStage, string> = {
@@ -90,7 +90,7 @@ export function ShortlistColumn({
                     <button
                       type="button"
                       onClick={() => onRemove(entry)}
-                      aria-label={`Quitar ${entry.anon_code} de la selección`}
+                      aria-label={`Quitar ${anonDisplayCode(entry.anon_code)} de la selección`}
                       className="flex size-9 shrink-0 items-center justify-center rounded-full text-text-tertiary transition-colors duration-fast ease-standard hover:bg-surface-soft hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-2"
                     >
                       <X className="size-4" aria-hidden="true" />
@@ -104,7 +104,7 @@ export function ShortlistColumn({
                       onClick={() => previous && onMove(entry, previous)}
                       aria-label={
                         previous
-                          ? `Mover ${entry.anon_code} a ${shortlistStageLabels[previous]}`
+                          ? `Mover ${anonDisplayCode(entry.anon_code)} a ${shortlistStageLabels[previous]}`
                           : "No hay etapa anterior"
                       }
                       className="flex size-9 items-center justify-center rounded-full border border-border text-text-secondary transition-colors duration-fast ease-standard hover:border-primary-2 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-2"
@@ -117,7 +117,7 @@ export function ShortlistColumn({
                       onClick={() => next && onMove(entry, next)}
                       aria-label={
                         next
-                          ? `Mover ${entry.anon_code} a ${shortlistStageLabels[next]}`
+                          ? `Mover ${anonDisplayCode(entry.anon_code)} a ${shortlistStageLabels[next]}`
                           : "No hay etapa siguiente"
                       }
                       className="flex size-9 items-center justify-center rounded-full border border-border text-text-secondary transition-colors duration-fast ease-standard hover:border-primary-2 hover:text-primary disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-2"

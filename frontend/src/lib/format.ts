@@ -27,3 +27,13 @@ export function formatRange(min: number, max: number): string {
   const toMiles = (n: number) => Math.round(n / 1000);
   return `${toMiles(min)}–${toMiles(max)} mil`;
 }
+
+/**
+ * Años de experiencia en texto, siempre entero y con singular correcto,
+ * ej. formatYearsExperience(8.6) -> "8 años de experiencia",
+ * formatYearsExperience(1) -> "1 año de experiencia".
+ */
+export function formatYearsExperience(years: number): string {
+  const rounded = Math.round(years);
+  return `${rounded} ${rounded === 1 ? "año" : "años"} de experiencia`;
+}

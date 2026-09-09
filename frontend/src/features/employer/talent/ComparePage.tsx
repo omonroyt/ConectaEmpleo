@@ -124,7 +124,12 @@ export function Component() {
   }
 
   const candidates = view.candidates;
-  const gridTemplate = `minmax(140px, 168px) repeat(${candidates.length}, minmax(240px, 1fr))`;
+  // Columnas angostas a propósito: con el sidebar de 260px, a 1280px de viewport
+  // quedan ~956px útiles dentro de PageContainer. Con estos mínimos, 3 columnas
+  // de candidato caben completas sin cortarse (140 + 3×200 = 740px, muy por
+  // debajo de los 956px disponibles); en viewports más angostos el exceso sigue
+  // activando el scroll horizontal de la Card contenedora.
+  const gridTemplate = `minmax(110px, 140px) repeat(${candidates.length}, minmax(200px, 1fr))`;
 
   return (
     <div className="min-h-full bg-bg-light pb-16">
@@ -150,7 +155,7 @@ export function Component() {
             `overflow-y-auto` — el scroll de la tabla queda contenido, no la página. */}
         <Card padding="sm" className="mt-8 overflow-x-auto p-0 md:max-h-[70vh] md:overflow-y-auto">
           <div
-            className="grid min-w-max snap-x snap-mandatory"
+            className="grid snap-x snap-mandatory"
             style={{ gridTemplateColumns: gridTemplate }}
           >
             <div className="sticky left-0 top-0 z-30 border-b border-border bg-surface" />
@@ -235,6 +240,12 @@ export function Component() {
             ))}
           </div>
         </Card>
+        {candidates.length > 1 && (
+          <p className="mt-2 flex items-center gap-1.5 text-xs text-text-tertiary lg:hidden">
+            <ArrowLeft className="size-3.5 rotate-180" aria-hidden="true" />
+            Desliza para ver los demás perfiles
+          </p>
+        )}
 
         <Card padding="lg" className="mt-8">
           <div className="flex items-start gap-3">

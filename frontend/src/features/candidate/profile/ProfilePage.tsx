@@ -144,7 +144,7 @@ function ProfileHero({
 
           <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-3 rounded-lg border border-border-dark bg-white/5 px-4 py-2">
-              <ProgressRing value={profile.completion_percent} size={52} stroke={5} />
+              <ProgressRing value={profile.completion_percent} size={52} stroke={5} tone="dark" />
               <span className="text-sm text-text-on-dark-secondary">Perfil completo</span>
             </div>
             <Button variant="secondary" size="md" onClick={() => navigate("/candidate/profile/edit")}>
@@ -263,12 +263,18 @@ function AboutSection({
         </div>
         {profile.bio ? (
           <p className="text-base text-text-primary">{profile.bio}</p>
+        ) : talentProfile.summary_text ? (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[.14em] text-text-tertiary">
+              Resumen generado por IA
+            </p>
+            <p className="mt-1 text-base text-text-primary">{talentProfile.summary_text}</p>
+          </div>
         ) : (
           <p className="text-sm text-text-secondary">
             Aún no agregaste una biografía. Cuéntales a las empresas quién eres en un par de líneas.
           </p>
         )}
-        <p className="text-sm text-text-secondary">{talentProfile.summary_text}</p>
       </SectionCard>
       {talentProfile.strengths.length > 0 && (
         <AIInsightCard

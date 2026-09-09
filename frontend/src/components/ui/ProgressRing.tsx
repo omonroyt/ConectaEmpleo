@@ -2,15 +2,41 @@ import { useId } from "react";
 import { useCountUp } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 
+export type ProgressRingTone = "light" | "dark";
+
 export interface ProgressRingProps {
   value: number;
   size?: number;
   stroke?: number;
   label?: string;
+  /** "light" (default) para fondos claros; "dark" para tarjetas/héroes oscuros. */
+  tone?: ProgressRingTone;
   className?: string;
 }
 
-export function ProgressRing({ value, size = 120, stroke = 10, label, className }: ProgressRingProps) {
+const TRACK_COLOR: Record<ProgressRingTone, string> = {
+  light: "var(--color-surface-soft)",
+  dark: "rgba(255, 255, 255, 0.16)",
+};
+
+const NUMBER_CLASS: Record<ProgressRingTone, string> = {
+  light: "text-text-primary",
+  dark: "text-text-on-dark",
+};
+
+const LABEL_CLASS: Record<ProgressRingTone, string> = {
+  light: "text-text-secondary",
+  dark: "text-text-on-dark-secondary",
+};
+
+export function ProgressRing({
+  value,
+  size = 120,
+  stroke = 10,
+  label,
+  tone = "light",
+  className,
+}: ProgressRingProps) {
   const gradientId = useId();
   const clamped = Math.max(0, Math.min(100, value));
   const animated = useCountUp(clamped, 1200);
@@ -37,7 +63,7 @@ export function ProgressRing({ value, size = 120, stroke = 10, label, className 
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="var(--color-surface-soft)"
+          stroke={TRACK_COLOR[tone]}
           strokeWidth={stroke}
         />
         <circle
@@ -59,10 +85,10 @@ export function ProgressRing({ value, size = 120, stroke = 10, label, className 
         </defs>
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center" aria-hidden="true">
-        <span className="text-2xl font-bold tabular-nums text-text-primary">
+        <span className={cn("text-2xl font-bold tabular-nums", NUMBER_CLASS[tone])}>
           {Math.round(animated)}%
         </span>
-        {label && <span className="px-2 text-center text-xs text-text-secondary">{label}</span>}
+        {label && <span className={cn("px-2 text-center text-xs", LABEL_CLASS[tone])}>{label}</span>}
       </div>
     </div>
   );

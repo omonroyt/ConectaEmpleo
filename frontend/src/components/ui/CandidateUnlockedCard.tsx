@@ -9,6 +9,7 @@ import type {
   CandidateAnonymousSkill,
 } from "@/components/ui/CandidateAnonymousCard";
 import { cn } from "@/lib/cn";
+import { formatYearsExperience } from "@/lib/format";
 
 export interface CandidateUnlockedCardProps {
   name: string;
@@ -65,7 +66,7 @@ export function CandidateUnlockedCard({
         )}
       </div>
 
-      <p className="text-sm text-text-secondary">{yearsExperience} años de experiencia</p>
+      <p className="text-sm text-text-secondary">{formatYearsExperience(yearsExperience)}</p>
 
       <ScoreBadge score={score} label={scoreLabel} />
 

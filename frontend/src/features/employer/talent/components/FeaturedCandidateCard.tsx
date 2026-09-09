@@ -61,7 +61,7 @@ export function FeaturedCandidateCard({
         yearsExperience={card.years_experience}
         score={score}
         scoreLabel={card.score_label}
-        skills={card.skills.slice(0, 5).map((skill) => ({ name: skill.skill_name }))}
+        skills={card.skills.map((skill) => ({ name: skill.skill_name }))}
         evidence={card.evidence_counts}
         selected={selected}
         shortlisted={shortlisted}

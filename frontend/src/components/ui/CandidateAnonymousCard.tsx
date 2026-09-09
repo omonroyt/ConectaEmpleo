@@ -6,6 +6,10 @@ import { SkillChip } from "@/components/ui/SkillChip";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
+import { formatYearsExperience } from "@/lib/format";
+
+/** Máximo de chips visibles antes de colapsar el resto en un "+N". */
+const MAX_VISIBLE_SKILLS = 5;
 
 export interface CandidateAnonymousSkill {
   name: string;
@@ -95,15 +99,20 @@ export function CandidateAnonymousCard({
           {geoLabel}
         </span>
         <span>{availabilityLabel}</span>
-        <span>{yearsExperience} años de experiencia</span>
+        <span>{formatYearsExperience(yearsExperience)}</span>
       </div>
 
       <ScoreBadge score={score} label={scoreLabel} />
 
       <div className="flex flex-wrap gap-2">
-        {skills.slice(0, 6).map((skill) => (
-          <SkillChip key={skill.name} name={skill.name} level={skill.level} />
+        {skills.slice(0, MAX_VISIBLE_SKILLS).map((skill) => (
+          <SkillChip key={skill.name} name={skill.name} level={skill.level} className="shrink-0" />
         ))}
+        {skills.length > MAX_VISIBLE_SKILLS && (
+          <span className="inline-flex shrink-0 items-center rounded-pill bg-surface-soft px-3 py-1.5 text-sm font-medium text-text-tertiary">
+            +{skills.length - MAX_VISIBLE_SKILLS}
+          </span>
+        )}
       </div>
 
       <div className="flex flex-wrap gap-2">

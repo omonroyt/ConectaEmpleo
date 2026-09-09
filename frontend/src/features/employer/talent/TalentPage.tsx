@@ -237,9 +237,9 @@ export function Component() {
               Ver selección
             </Button>
           </div>
-          {selectedIds.length === 1 && (
+          {selectedIds.length < 2 && (
             <p className="mt-2 text-xs text-text-on-dark-secondary">
-              Selecciona al menos 2 candidatos para comparar (máximo 3).
+              Selecciona 2 o 3 candidatos para comparar.
             </p>
           )}
         </PageContainer>

@@ -12,7 +12,7 @@ import type {
 } from "@/api/types";
 import type { CandidateRecord, StoredMatchResult } from "../state";
 import { geoBandFor, GEO_BAND_SCORE } from "../seed/geo";
-import { clamp, genId, nowIso } from "../util";
+import { clamp, genId, nowIso, formatStrengthLine } from "../util";
 
 const ALGORITHM_VERSION = "mock-1.0.0";
 
@@ -42,7 +42,7 @@ export function computeMatch(
   const behavioralRaw = averageAttenuated(evaluations.filter((e) => e.type === "BEHAVIORAL"));
 
   const yearsExperience = yearsOfExperience(profile);
-  let experienceRaw = clamp(Math.min(100, yearsExperience * 20));
+  let experienceRaw = clamp(experienceCurve(yearsExperience));
   if (!hasFamilyRelevantExperience(profile)) experienceRaw = clamp(experienceRaw * 0.85);
 
   const totalSkills = Math.max(1, skills.length);
@@ -79,7 +79,7 @@ export function computeMatch(
     .filter((e) => e.score >= 75)
     .sort((a, b) => b.score - a.score)
     .slice(0, 2)
-    .map((e) => `${e.competency_name.toLowerCase()} (evaluada, ${e.score})`);
+    .map((e) => formatStrengthLine(e.competency_name, e.score));
 
   const gaps = gapsFor(candidate, vacancy);
 
@@ -112,7 +112,41 @@ function yearsOfExperience(profile: CandidateProfile): number {
       months += (end - start) / (1000 * 60 * 60 * 24 * 30);
     }
   }
-  return Math.round((months / 12) * 10) / 10;
+  // Entero: la UI nunca debe mostrar "8.6 años de experiencia".
+  return Math.round(months / 12);
+}
+
+/**
+ * Curva de EXPERIENCE que discrimina en el rango real de candidatos (2-13 años)
+ * en vez de saturar en 100 desde los 5 años (antes: min(100, años×20)).
+ * Interpolación lineal por tramos entre puntos de control ancla:
+ * 2≈35, 4≈55, 6≈70, 9≈85, 12≈97, 16+→100. Antes de los 2 años interpola
+ * desde 0; nunca satura antes de los 10-12 años.
+ */
+const EXPERIENCE_CURVE_POINTS: readonly [number, number][] = [
+  [0, 0],
+  [2, 35],
+  [4, 55],
+  [6, 70],
+  [9, 85],
+  [12, 97],
+  [16, 100],
+];
+
+function experienceCurve(years: number): number {
+  const points = EXPERIENCE_CURVE_POINTS;
+  if (years <= points[0]![0]) return points[0]![1];
+  const last = points[points.length - 1]!;
+  if (years >= last[0]) return last[1];
+  for (let i = 0; i < points.length - 1; i++) {
+    const [x0, y0] = points[i]!;
+    const [x1, y1] = points[i + 1]!;
+    if (years >= x0 && years <= x1) {
+      const t = (years - x0) / (x1 - x0);
+      return Math.round(y0 + t * (y1 - y0));
+    }
+  }
+  return last[1];
 }
 
 function hasFamilyRelevantExperience(profile: CandidateProfile): boolean {

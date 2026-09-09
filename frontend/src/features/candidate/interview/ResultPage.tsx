@@ -32,6 +32,26 @@ const PROCESSING_MESSAGES = [
 const FIXED_NOTE =
   "Resultados basados en tu entrevista por competencias con IA. Son una guía sobre la evidencia observada durante esta sesión.";
 
+/**
+ * Cuando no hay `evidence_gaps` reales, en vez de una línea vacía y genérica
+ * se señala la competencia con menor confianza (si existe) como sugerencia
+ * concreta de qué reforzar en una próxima conversación.
+ */
+function developmentOpportunityBody(profile: {
+  evidence_gaps: string[];
+  evaluations: CompetencyEvaluation[];
+} | undefined): string {
+  if (!profile) return "";
+  if (profile.evidence_gaps.length > 0) {
+    return "Sumar un ejemplo concreto en estos temas hará más sólida tu evidencia.";
+  }
+  if (profile.evaluations.length === 0) {
+    return "Aún no hay suficientes respuestas para señalar una oportunidad concreta.";
+  }
+  const lowestConfidence = [...profile.evaluations].sort((a, b) => a.confidence - b.confidence)[0]!;
+  return `Toda tu evidencia fue evaluada positivamente. Si quieres reforzar aún más tu perfil, profundiza en "${lowestConfidence.competency_name}", donde la confianza de la lectura fue la más baja (${Math.round(lowestConfidence.confidence * 100)} %).`;
+}
+
 function confidenceText(confidence: number): string {
   if (confidence >= 0.75) return "confianza alta";
   if (confidence >= 0.5) return "confianza media";
@@ -192,6 +212,7 @@ export function Component() {
                   size={180}
                   stroke={14}
                   label="Evidencia general"
+                  tone="dark"
                 />
               )}
             </motion.div>
@@ -254,11 +275,7 @@ export function Component() {
               loading={profileQuery.isLoading}
               why={[]}
               missing={profile?.evidence_gaps.slice(0, 2) ?? []}
-              body={
-                (profile?.evidence_gaps.length ?? 0) > 0
-                  ? "Sumar un ejemplo concreto en estos temas hará más sólida tu evidencia."
-                  : "Tu evidencia quedó completa en las competencias exploradas en esta sesión."
-              }
+              body={developmentOpportunityBody(profile)}
             />
           </motion.div>
 

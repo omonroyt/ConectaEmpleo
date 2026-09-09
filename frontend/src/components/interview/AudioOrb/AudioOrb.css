@@ -1,0 +1,44 @@
+.audio-orb {
+  position: relative;
+  aspect-ratio: 1;
+  max-width: 100%;
+  isolation: isolate;
+  contain: layout paint;
+}
+.audio-orb__canvas {
+  position: absolute;
+  inset: 0;
+}
+.audio-orb__fallback {
+  position: absolute;
+  inset: 18.75%;
+  border-radius: 50%;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 35% 20%, #19378588, transparent 55%),
+    radial-gradient(ellipse at 75% 85%, #574fff88, transparent 60%), #080c2366;
+  box-shadow:
+    inset 1px 0 8px #6bf1ff,
+    inset -2px -1px 10px #9b79ff,
+    0 0 28px #4855ff55;
+}
+.audio-orb__fallback i,
+.audio-orb__fallback b {
+  position: absolute;
+  inset: 28% -20%;
+  border: 1px solid #7cabff;
+  box-shadow:
+    0 0 20px #565dff,
+    inset 0 0 28px #5555ff88;
+  border-radius: 50%;
+  transform: rotate(-22deg);
+}
+.audio-orb__fallback b {
+  transform: rotate(25deg);
+  border-color: #a788ff;
+}
+.audio-orb[data-state="listening"] .audio-orb__fallback {
+  box-shadow:
+    inset 1px 0 12px #6bf1ff,
+    0 0 32px #55ccff55;
+}

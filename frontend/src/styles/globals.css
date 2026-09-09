@@ -1,0 +1,43 @@
+@import "./tokens.css";
+@import "@fontsource-variable/inter";
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-bg-dark);
+  color: var(--color-text-on-dark);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  margin: 0;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary-2);
+  outline-offset: 2px;
+}
+
+/* BrandBackground: animación ambiental sutil (ver components/brand/BrandBackground.tsx) */
+@keyframes brand-background-ambient {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.015);
+  }
+}
+
+.brand-background__ambient {
+  animation: brand-background-ambient 16s var(--ease-in-out) infinite alternate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

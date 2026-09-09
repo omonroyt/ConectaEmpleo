@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------- */
+/* Design tokens — Conecta Empleo (docs/build/01_FRONTEND_FOUNDATIONS.md §3) */
+/* ---------------------------------------------------------------------- */
+
+@theme {
+  /* Colores */
+  --color-bg-dark: #070a12;
+  --color-bg-dark-soft: #0d1020;
+  --color-surface-dark: #111521;
+  --color-bg-light: #f7f8fb;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f1f3f8;
+
+  --color-text-primary: #0a0b10;
+  --color-text-secondary: #62687a;
+  --color-text-tertiary: #9197a8;
+  --color-text-on-dark: #f7f8fc;
+  --color-text-on-dark-secondary: #b5bbd0;
+
+  --color-primary: #173cff;
+  --color-primary-2: #4a45ff;
+  --color-accent: #8e6dff;
+  --color-accent-soft: #cbc5ff;
+
+  --color-success: #28b75a;
+  --color-success-soft: #e9f8ee;
+  --color-warning: #f0a52b;
+  --color-warning-soft: #fff6e6;
+  --color-danger: #e25151;
+  --color-danger-soft: #fff0f0;
+
+  --color-border: #d9dce5;
+  --color-border-dark: rgba(255, 255, 255, 0.12);
+
+  /* Radios */
+  --radius-sm: 12px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --radius-xl: 28px;
+  --radius-2xl: 32px;
+  --radius-pill: 999px;
+
+  /* Sombras */
+  --shadow-sm: 0 4px 16px rgba(10, 12, 26, 0.05);
+  --shadow-md: 0 10px 32px rgba(10, 12, 26, 0.08);
+  --shadow-lg: 0 20px 64px rgba(10, 12, 26, 0.12);
+  --shadow-selected: 0 0 0 3px rgba(52, 72, 255, 0.07);
+
+  /* Motion */
+  --ease-out-smooth: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --duration-fast: 160ms;
+  --duration-normal: 320ms;
+  --duration-slow: 560ms;
+
+  /* Tipografia */
+  --font-sans:
+    "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+/* Gradientes: variables normales (no son tokens de escala de Tailwind) */
+:root {
+  --gradient-brand: linear-gradient(
+    100deg,
+    #173cff 0%,
+    #3946ff 42%,
+    #805dff 78%,
+    #9b7bff 100%
+  );
+  --gradient-cta: linear-gradient(100deg, #173cff, #4e46ff 55%, #9271ff);
+  --gradient-hero:
+    radial-gradient(
+      circle at 85% 22%,
+      rgba(60, 82, 255, 0.75),
+      transparent 34%
+    ),
+    radial-gradient(
+      circle at 100% 44%,
+      rgba(101, 67, 255, 0.35),
+      transparent 28%
+    ),
+    linear-gradient(145deg, #070a12 0%, #10152a 70%, #0a0d18 100%);
+}
+
+@layer utilities {
+  .bg-gradient-brand {
+    background: var(--gradient-brand);
+  }
+  .bg-gradient-cta {
+    background: var(--gradient-cta);
+  }
+  .bg-gradient-hero {
+    background: var(--gradient-hero);
+  }
+}

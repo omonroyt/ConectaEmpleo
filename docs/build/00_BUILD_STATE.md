@@ -13,7 +13,7 @@
 | Fase activa | **BACKEND (fase 2)** — ver `05_BACKEND_TASKS.md`. La fase frontend está cerrada. |
 | Siguiente tarea | **B5** (extracción de CV y claims: `cv_extractions`, `claims`, confirmación, `cv-builder` sessions) |
 | Tarea en curso | ninguna |
-| Último commit de construcción | (por asignar al cerrar el commit de B3+B4 — ver bitácora) |
+| Último commit de construcción | c1cfda9 |
 | Bloqueos | ninguno |
 
 ### Cómo verificar el frontend antes de tocar nada
@@ -57,8 +57,8 @@ sugerido). Esta tabla es el estado vivo — un subagente solo cambia su propia f
 | B0 | Base: pyproject, Docker, docker-compose Postgres, config, `database.py`, Alembic, `/health`, CORS, errores, logging | sonnet | DONE | 38df003 |
 | B1 | Identidad: `users`, registro/login/me, JWT, `require_candidate/require_company` | sonnet | DONE | 38df003 |
 | B2 | Catálogo y semillas: `job_families`, `competencies`, `skills`, `rubrics`, `learning_catalog` | sonnet | DONE | 38df003 |
-| B3 | Perfil de candidato + documentos | sonnet | DONE | (ver bitácora) |
-| B4 | `AIPort` v1.1, `invoke.py`, `DeterministicAdapter`, tabla `jobs` + runner | sonnet | DONE | (ver bitácora) |
+| B3 | Perfil de candidato + documentos | sonnet | DONE | c1cfda9 |
+| B4 | `AIPort` v1.1, `invoke.py`, `DeterministicAdapter`, tabla `jobs` + runner | sonnet | DONE | c1cfda9 |
 | B5 | Extracción de CV y claims, `cv-builder` sessions | sonnet | PENDING | — |
 | B6 | Entrevista: sesiones, turnos, orquestador, Guardián de Equidad | opus | PENDING | — |
 | B7 | Evaluación y perfil: A3, `competency_evaluations`, `candidate_skills`, `talent_profiles`, A4 | opus | PENDING | — |

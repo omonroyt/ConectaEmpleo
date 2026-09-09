@@ -3,18 +3,30 @@
 > **Este es el único archivo que debe leer quien retome la construcción** (humano o agente, con cualquier modelo).
 > Lo actualiza cada subagente al cerrar su tarea. No releer `docs/0*.md` ni la guía UX: todo lo necesario está condensado en `docs/build/`.
 
-- Orquestador original: Fable 5.1 · Constructores: Sonnet 5 (Opus 5 solo en F4 y F7)
-- Última actualización: 2026-09-09 (creación del tablero)
+- Orquestador: Fable 5.1 / Opus 5 · Constructores: Sonnet 5 (Opus 5 en F4 y F7)
+- Última actualización: 2026-09-09 (cierre de la fase frontend)
 
 ## Estado actual
 
 | Campo | Valor |
 |---|---|
-| Fase activa | **FRONTEND** (fase 1). Backend es fase 2, ver `05_BACKEND_TASKS.md` |
-| Siguiente tarea | **F3, F4, F5, F6, F7 (en paralelo)** |
+| Fase activa | **BACKEND (fase 2)** — ver `05_BACKEND_TASKS.md`. La fase frontend está cerrada. |
+| Siguiente tarea | **B0** (base: pyproject, Docker, Postgres, Alembic, config, `/health`, CORS, errores, logging) |
 | Tarea en curso | ninguna |
 | Último commit de construcción | d1c43cd |
 | Bloqueos | ninguno |
+
+### Cómo verificar el frontend antes de tocar nada
+
+```bash
+cd frontend && npm install
+npm run typecheck && npm run build   # ambos deben salir en verde
+npm run smoke:mock                   # 22 pasos, golden path completo contra el mock
+npm run smoke:interview              # 13 pasos, entrevista + evaluación
+npm run e2e:smoke                    # 50 pasos en Chromium, ambos journeys, 390px y 1280px
+```
+
+El último recorrido de navegador quedó **50/50 en verde, sin errores de consola**. Capturas en `frontend/output/e2e/` (ignorado por git). Usuarios demo (contraseña `demo1234`): `candidato@demo.mx` (perfil nuevo, recorre el golden path), `maria@demo.mx` (ya evaluada), `empresa@demo.mx`. Para reiniciar los datos del mock: `window.__ce.resetMock()` en la consola del navegador.
 
 ## Cola de tareas — frontend
 
@@ -37,7 +49,29 @@ Paralelismo permitido: F1 ∥ F2 · luego F3 ∥ F4 ∥ F5 ∥ F6 ∥ F7 (carpet
 
 ## Cola de tareas — backend (fase 2)
 
-Ver `05_BACKEND_TASKS.md`. No se arranca hasta que F0–F7 estén `DONE`.
+Ver `05_BACKEND_TASKS.md`. Requisito cumplido: F0–F9 están `DONE`, así que **B0 puede arrancar**.
+
+### Deuda conocida que hereda el backend
+
+Detectada al construir el frontend contra el contrato de `02_API_CONTRACT.md`. Cada punto es un ajuste **aditivo**: ninguno rompe lo ya construido, y el frontend ya funciona sin ellos gracias al mock.
+
+| # | Gap | Qué hace falta en el backend |
+|---|---|---|
+| D-01 | No hay forma de listar las certificaciones ya subidas por un candidato. `documents.uploadCertification` solo devuelve el `DocumentRef` recién creado, así que el perfil solo muestra lo subido en la sesión actual. | Agregar `GET /candidates/me/documents?type=CERTIFICATION` → `DocumentRef[]`. |
+| D-02 | `UnlockedCandidateProfile` no trae `unlocked_at`, así que la fecha del badge "Identidad desbloqueada" se sella en el cliente al abrir la pantalla. | Incluir `unlocked_at` (viene de la fila `candidate_unlocks`). |
+| D-03 | `interviews.turns` existe en el contrato pero F2 no le dio hook; F4 lo resolvió con un `useQuery` local. | Ninguno en backend: implementar el endpoint como está especificado y, si se quiere, mover el hook a `api/hooks`. |
+| D-04 | `VacancyInput` no tiene campo de tipo de jornada, aunque la spec de pantallas lo pedía. Se omitió en la UI por no tener dónde persistirlo. | Decidir si se agrega `work_schedule` a `vacancies` o si se retira definitivamente del alcance. |
+| D-05 | El peso por requisito individual (`VacancyRequirement.weight`) no se expone en la UI: se envía 0 y el mock lo normaliza. Los pesos que la empresa edita son los seis de `VacancyWeights`. | Mantener la normalización en `PUT /vacancies/{id}/requirements` (RB-07) y aceptar pesos por requisito en 0. |
+| D-06 | El conteo de "Desbloqueos" del home de empresa se calcula en el cliente pidiendo la shortlist de cada vacante. | Ofrecer un resumen (por ejemplo `GET /companies/me/summary`) para evitar N peticiones. |
+| D-07 | El marketplace del candidato (`GET /vacancies/open`, `POST /vacancies/{id}/apply`) es **Should Have**: existe en el contrato y en el mock, pero no está en la arquitectura del documento 04. | Implementarlo en B10 si el tiempo alcanza; si no, el frontend degrada mostrando el estado vacío. |
+| D-08 | `ServerVoiceGateway` no existe todavía: la entrevista usa `BrowserVoiceGateway` (speechSynthesis + webkitSpeechRecognition). | En B12, implementar la misma interfaz de `02 §6` sobre el WebSocket de ElevenLabs. La UI de entrevista no debe cambiar. |
+
+### Riesgos abiertos para la demo
+
+1. **Voz real sin probar en vivo.** El flujo por voz solo se ejercitó en modo texto y con el gateway del navegador. Conviene un ensayo en Chrome con micrófono real antes de presentar; en Firefox y Safari no hay reconocimiento de voz y la interfaz cae al campo de texto por diseño.
+2. **Chunk de Three.js de ~460 KB** en la ruta de entrevista. Está aislado en su propio archivo y solo se descarga al entrar a esa pantalla, pero en una conexión lenta conviene abrir la entrevista una vez antes de la demo para que quede en caché.
+3. **La confianza "baja" casi no aparece** con respuestas largas; el rango existe pero solo se activa con respuestas cortas reales.
+4. **`VITE_API_MODE=mock` es el modo por defecto.** Al conectar el backend hay que cambiarlo a `http` y apuntar `VITE_API_URL`; el modo mock queda como plan B si el proveedor falla en vivo.
 
 ## Protocolo del subagente (obligatorio)
 

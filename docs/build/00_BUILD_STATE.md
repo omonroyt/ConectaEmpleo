@@ -123,6 +123,177 @@ Detectada al construir el frontend contra el contrato de `02_API_CONTRACT.md`. C
 
 ## Bitácora (más reciente arriba)
 
+### 2026-09-09 — B11 (Sonnet)
+
+**Qué se construyó** (`backend/app/ai/adapters/llm/`, `backend/app/ai/adapters/agentic.py`,
+`backend/app/ai/prompts/`, `backend/tests/`; ver desviaciones de alcance abajo):
+
+- **Cliente LLM real**: `app/ai/adapters/llm/base.py` (`Protocol LLMClient` de docs/05 §8.1,
+  declarado `def` síncrono por la misma razón que `AIPort`; `Message`, `StructuredResponse`,
+  y dos excepciones — `LLMValidationError` vs. `LLMProviderError` — para no confundir las dos
+  clases de falla que docs/05 §8 marca como "un error a evitar" si se mezclan).
+  `anthropic_client.py`: SDK oficial `anthropic` (0.125.0), **salida estructurada por tool
+  forzada** (`tool_choice={"type":"tool","name":"emit_result"}`, `input_schema` =
+  `schema.model_json_schema()`), nunca parseo de texto libre. Ante `ValidationError` reintenta
+  en el mismo proveedor devolviendo el error como `tool_result` con `is_error: true` (máx. 2,
+  configurable); ante `APIConnectionError/APITimeoutError/RateLimitError/InternalServerError` o
+  `APIStatusError` con `status_code in {429} ∪ [500,600)` lanza `LLMProviderError`; un 4xx que no
+  es rate limit se propaga tal cual (es un bug de programación, no una falla de proveedor).
+- **Failover**: `app/ai/adapters/llm/failover.py` — `CircuitBreaker` (reloj inyectable para
+  pruebas deterministas; abre tras 3 fallas de proveedor en una ventana de 60s, permanece
+  abierto 5 minutos) y `LLMFailoverPolicy.run(...)`. Cadena real implementada (adaptada de
+  docs/05 §8.1 a la decisión de `docs/build/06_INTERVIEW_SYSTEM.md` §9: sin clave de OpenAI):
+  validación agotada o falla de proveedor → fallback funcional (`DeterministicAdapter` de la
+  misma operación); el circuit breaker abierto salta directo al fallback sin tocar el primario.
+  El punto de extensión para un segundo proveedor real (`OpenAIClient`) queda documentado en el
+  docstring del módulo — qué archivo crear, qué firma implementar y qué tres líneas de
+  `LLMFailoverPolicy.run` tocar, sin cambiar `AgenticAdapter`.
+- **Prompts en 4 capas** (`app/ai/prompts/`): `constitution/v1.md` con el texto de docs/05 §9.2
+  **literal**; `profiler/{extract_v1,build_v1}.md`, `interviewer/v1.md` (incorpora el guion del
+  Master Prompt: una pregunta por turno, ~35 palabras, preferir comportamiento pasado/escenario
+  sobre definición, `PROBE` solo cuando aporta evidencia, apertura/transición/cierre de §27-§29,
+  nunca revela criterios), `assessor/v1.md` (escala 0-4, no puntuar por longitud, distinguir
+  desconocimiento de mala práctica, nunca usar fluidez verbal como proxy — con la frase textual
+  del ejemplo del master prompt sobre registro coloquial —, cita de evidencia obligatoria,
+  ausencia de evidencia ≠ incompetencia), `advisor/{feedback_v1,learning_v1}.md`,
+  `analyst/{resolve_v1,explain_v1}.md`. `loader.py` compone capas 1+2+3 en un solo `system`
+  string y expone `prompt_version_for(operation)` (`"<agente>/<archivo>"`, persistible en
+  `ai_invocations.prompt_version`). **Una excepción documentada** a "un prompt por operación":
+  `evaluate_competencies` y `build_talent_profile` comparten `assessor/v1.md` porque ambas son
+  el mismo rol (A3) con el mismo contrato de fondo — la tarea concreta (`EVALUATE` vs.
+  `PROFILE`) va en la capa 4 (contexto), no en el archivo. La capa 4 nunca vive en un archivo:
+  `AgenticAdapter._context_message` la arma en código como un bloque `<datos>` delimitado y
+  etiquetado explícitamente como no-instrucción (mitigación de inyección de prompt, docs/05
+  §10.4).
+- **`AgenticAdapter`** (`app/ai/adapters/agentic.py`): las 9 operaciones de `AIPort`, cada una
+  compone su prompt, arma el contexto, corre `LLMFailoverPolicy` con el método equivalente de
+  `DeterministicAdapter` como fallback funcional, y devuelve el resultado ya validado. A3
+  (`evaluate_competencies`/`build_talent_profile`) usa `LLM_MODEL_ASSESSMENT` (si está fijado) y
+  una temperatura/`max_tokens` propios (baja temperatura, más tokens — docs/05 §7 A3). Expone
+  `self.last_response: StructuredResponse | None` tras cada llamada (ver "qué necesita saber
+  quien construya B6/B7" abajo).
+- **`registry.py` wireado**: `AI_ADAPTER=agentic` (global o por grupo, `AI_ADAPTER_<GRUPO>`)
+  ahora devuelve un `AgenticAdapter` singleton real (antes levantaba
+  `AdapterNotImplementedError`, clase que se conserva por compatibilidad pero ya no la lanza
+  ninguna ruta). Verificado con `Settings(ai_adapter_matching="agentic")` →
+  `get_adapter("resolve_vacancy_requirements")` es `AgenticAdapter`, `get_adapter("parse_cv")`
+  sigue siendo `DeterministicAdapter` (default `cv` sin override).
+- **Configuración**: `app/config.py` agrega `llm_temperature`, `llm_temperature_assessment`,
+  `llm_max_tokens`, `llm_max_tokens_assessment` (todas desde `.env`, nunca literales en código) y
+  cambia el default de `ai_mode` a `"live"` (docs/build/06 §9: "`AI_MODE=live` por defecto, con
+  `demo` como respaldo conmutable en caliente" — `live` por sí solo NO activa `AgenticAdapter`,
+  eso lo sigue decidiendo `AI_ADAPTER`/`AI_ADAPTER_<GRUPO>`). `.env.example` documentado con las
+  variables nuevas; `pyproject.toml`/`requirements.txt` agregan `anthropic>=0.125.0,<1`.
+  `backend/.env` real (con la clave verificada) no se tocó ni se copió a ningún archivo
+  versionado.
+
+**Decisión importante descubierta contra la API real, no documentada en docs/05**:
+`claude-sonnet-5` **rechaza `temperature` con 400** ("`temperature` is deprecated for this
+model"). `AnthropicClient.complete_structured` ya no reenvía `temperature` al SDK — sigue
+existiendo en la firma de `LLMClient` (viene de configuración, no de un literal) para no atar el
+`Protocol` a esta particularidad de un modelo, pero se descarta en el único punto que habla con
+el SDK, con el error real citado en el comentario. Cualquier prompt/eval futuro que asuma control
+de temperatura sobre `claude-sonnet-5` debe saber esto.
+
+**Desviación deliberada del alcance de archivos asignado**: la tarea restringía el trabajo a
+`app/ai/adapters/llm/`, `app/ai/adapters/agentic.py`, `app/ai/prompts/` y `tests/`, pero cumplir
+los criterios de cierre exigía tocar también `app/ai/registry.py` (wireado de `AgenticAdapter`,
+pedido explícitamente en la sección C de la tarea), `app/config.py` (temperatura/tokens "solo
+desde configuración"), `.env.example`, `pyproject.toml` y `requirements.txt` (dependencia
+`anthropic`, pedida explícitamente en la sección A). Se editaron de forma mínima y aditiva,
+verificando primero que B2b/B12 (en paralelo) no tuvieran cambios pendientes en esas mismas
+líneas. `app/ai/invoke.py` **no se tocó** (fuera de alcance): sigue persistiendo
+`provider=None`/`model=None`/`tokens_in=None`/`tokens_out=None` en `ai_invocations` aunque ya
+existe la información real disponible en `AgenticAdapter.last_response` — ver nota para B6/B7.
+
+**Verificación de cierre — salida real**:
+- `pytest -q` (todo el backend, sin gastar tokens) → **129 passed, 2 skipped** (uno de los
+  `skipped` es la propia prueba de humo real de B11, gateada por `RUN_LIVE_LLM_SMOKE`; el otro es
+  de B12/voz). 47 de esos tests son nuevos de B11: `test_llm_failover.py` (reintento de
+  validación sin cambiar de proveedor, `LLMValidationError` cae al fallback sin abrir el
+  breaker, `LLMProviderError` cae al `DeterministicAdapter`, circuit breaker abre a la 3ra falla
+  en 60s / ignora fallas fuera de ventana / enruta directo al fallback sin llamar al primario /
+  cierra tras 5 min / un éxito limpia el historial), `test_anthropic_client.py` (traducción de
+  esquema a `input_schema`, reintento con feedback hasta validar, 4 tipos de error de SDK →
+  `LLMProviderError`), `test_prompts.py` (la Constitución aparece en la composición de las 9
+  operaciones, ningún archivo de prompt contiene texto literal de rúbrica/pregunta del banco ni
+  un `question_id` con forma `XX-00` ni un bloque con forma de JSON de datos, `assessor/v1.md` es
+  la única excepción documentada a "un prompt por operación").
+- `ruff check app tests` → sin hallazgos, en todo el backend (incluidos los cambios paralelos de
+  B2b/B12 presentes en el árbol de trabajo al momento de correrlo).
+- **Prueba de humo real** (`RUN_LIVE_LLM_SMOKE=1 pytest tests/test_llm_smoke.py -v -s`,
+  `resolve_vacancy_requirements` vía `AgenticAdapter` directo, `LLM_MAX_TOKENS=512`,
+  `job_family_code=ADMIN_ASSISTANT`, texto corto "Excel + control documental" contra un catálogo
+  de 2 competencias): HTTP 200 real, `provider=anthropic model=claude-sonnet-5 latency_ms=2812
+  tokens_in=3199 tokens_out=295 retries=0`; `mapped=["Manejo de Excel", "Control del archivo
+  documental"]`, `unmapped=[]`, `warnings=[]` — mapeo correcto de las dos competencias, sin
+  requisitos discriminatorios detectados (no había ninguno en el texto de prueba) ni texto sin
+  mapear. La respuesta valida contra `RequirementResolutionResult` y quedó insertada y releída de
+  `ai_invocations` dentro del propio test (ver nota sobre `invoke.py` arriba). Costo real de esa
+  única llamada, a las tarifas de `claude-sonnet-5` ($2/$10 por 1M tokens): ~0.0035 USD.
+
+**Costo aproximado por operación** (estimado a partir del smoke test real; varía con el tamaño
+del contexto — rúbricas, historial, catálogo — que cada operación recibe en su capa 4):
+`resolve_vacancy_requirements`/`explain_match` (contexto pequeño, sin historial) ~3-4k tokens de
+entrada, ~$0.005-0.01 por llamada; `evaluate_competencies` (transcripción completa de hasta 14
+turnos + 14 rúbricas) previsiblemente 3-5x más entrada y `max_tokens` mayor
+(`LLM_MAX_TOKENS_ASSESSMENT=8192`), del orden de $0.02-0.04 por evaluación completa;
+`next_interview_question` se invoca ~12-14 veces por candidato con contexto creciente
+(historial acumulado), por lo que domina el costo de una entrevista completa pese a tener el
+`max_tokens` de salida más bajo de las 9 operaciones.
+
+**Cómo se compone un prompt** (para quien depure una respuesta rara de un agente): `system` =
+Constitución (`constitution/v1.md`, literal) + `---` + archivo de rol/contrato del agente
+(`app/ai/prompts/<agente>/<archivo>.md`), ambos cacheados en memoria por `functools.lru_cache`
+tras la primera lectura. El único mensaje de usuario es el bloque `<datos>` con el `request`
+completo serializado a JSON (capa 4, nunca en archivo). `prompt_version_for(operation)` da el
+string exacto a buscar en `ai_invocations.prompt_version` una vez que `invoke.py` lo persista de
+verdad.
+
+**Cómo se conmuta el adaptador**: `AI_MODE=demo` fuerza `deterministic` sin excepción (sin
+tocar). Con `AI_MODE=live` (default nuevo), `AI_ADAPTER=agentic` (global) o
+`AI_ADAPTER_<GRUPO>=agentic` (por grupo: `cv`/`interview`/`assessment`/`advisory`/`matching`)
+selecciona `AgenticAdapter` para esa operación/grupo; requiere `ANTHROPIC_API_KEY` no vacío o
+falla rápido y explícito (`ValueError` de `AnthropicClient.__init__`) en vez de fingir una
+respuesta real.
+
+**Qué necesita saber quien construya B6 y B7**:
+1. **`invoke.py` sigue sin capturar `provider`/`model`/`tokens_in`/`tokens_out` reales** — los
+   escribe como `None` con comentarios "B11" que ya no aplican del todo. `AgenticAdapter` ya
+   expone toda esa información en `self.last_response` (`StructuredResponse | None`, `None`
+   cuando la respuesta vino del fallback determinista) justo después de que `invoke()` llama a
+   `method(request)`. La forma más simple de cerrar esto sin tocar el contrato de `AIPort`: en
+   `invoke.py`, después de `raw_result = method(request)`, comprobar
+   `getattr(adapter, "last_response", None)` y usarlo para poblar `_record(...)` cuando no sea
+   `None`. `backend/tests/test_llm_smoke.py` hace exactamente esto a mano para demostrar que la
+   información existe.
+2. **A3 (evaluador) y A2 (entrevistador) ya funcionan de punta a punta contra Claude real** vía
+   `AgenticAdapter`, pero **nadie los invoca todavía desde un flujo real**: B6 es quien construye
+   el orquestador (`app/ai/orchestration/interview_flow.py`, máquina de estados de docs/05 §4)
+   que llama a `invoke(db, "next_interview_question", ...)` en el loop de turnos, y B7 quien
+   arma el `EvaluationRequest`/`TalentProfileRequest` reales desde `interview_sessions` y llama a
+   `evaluate_competencies`/`build_talent_profile`. El prompt del entrevistador ya incorpora
+   apertura/transición/cierre (§27-29 del master prompt) como instrucción de comportamiento,
+   pero **la máquina de estados real (fase HARD/SOFT/COMPLETED, `coverage_state` persistido) es
+   responsabilidad de B6** — el prompt solo reacciona a lo que el orquestador le pase en el
+   contexto (capa 4); no inventa su propia noción de fase.
+3. **Contratos actuales (`InterviewTurnResult`, `EvaluationResult`, `TalentProfileResult`) no
+   traen todavía las extensiones aditivas de `docs/build/06_INTERVIEW_SYSTEM.md` §7**
+   (`question_id`, `is_follow_up`, `block`, `hard_skills_score`, `soft_skills_score`,
+   `interview_score`, `coverage`, `risk_flags`, `inconsistencies`). B11 no los agregó porque
+   `app/ai/contracts/` no estaba en su alcance de archivos. El prompt del entrevistador y del
+   evaluador ya están escritos pensando en esas reglas (una sola pregunta, escala 0-4, no
+   puntuar por longitud, etc.) así que agregar los campos al contrato y al `_context_message`
+   debería ser aditivo, sin tocar los archivos `.md`.
+4. **`claude-sonnet-5` no acepta `temperature`** (ver arriba) — si B6/B7 agregan una llamada
+   directa al SDK fuera de `AnthropicClient` (no deberían: todo pasa por `AgenticAdapter`), no
+   reenvíen ese parámetro.
+5. **Circuit breaker es por instancia de `AgenticAdapter`**, y `registry.py` cachea un singleton
+   (`_agentic_singleton`, `lru_cache`) — así que el estado del breaker sí persiste entre llamadas
+   dentro del mismo proceso, tal como exige docs/05 §8.1. Si B6/B7 instancian su propio
+   `AgenticAdapter()` en vez de pasar por `get_adapter()`/`invoke()`, pierden ese estado
+   compartido — usar siempre `invoke()`.
+
 ### 2026-09-09 — B2b (Sonnet)
 
 **Qué se construyó** (solo dentro de `backend/app/seeds/`, `backend/app/modules/catalog/`, una

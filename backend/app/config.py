@@ -70,7 +70,12 @@ class Settings(BaseSettings):
 
     # --- Capa de IA (doc 04 §6 / doc 05 §0.3) ---
     ai_adapter: Literal["deterministic", "agentic"] = "deterministic"
-    ai_mode: Literal["live", "demo"] = "demo"
+    # docs/build/06_INTERVIEW_SYSTEM.md §9: "AI_MODE=live por defecto, con demo
+    # como respaldo conmutable en caliente". `live` por sí solo no activa el
+    # AgenticAdapter -- eso lo sigue decidiendo `ai_adapter`/`ai_adapter_*`; lo
+    # único que fuerza `deterministic` sin excepción es `ai_mode == "demo"`
+    # (ver app/ai/registry.py).
+    ai_mode: Literal["live", "demo"] = "live"
     # Overrides por grupo de operación (docs/04 §6.4): None = usa `ai_adapter`.
     # Grupos (ver app/ai/registry.py): cv, interview, assessment, advisory, matching.
     ai_adapter_cv: Literal["deterministic", "agentic"] | None = None
@@ -91,6 +96,16 @@ class Settings(BaseSettings):
     llm_max_retries_primary: int = 2
     llm_timeout_seconds: int = 45
     llm_model_assessment: str = ""
+    # Temperatura y máximo de tokens SOLO desde configuración (B11, regla no
+    # negociable de backend/CLAUDE.md: nunca un literal en el código). Default
+    # general moderado para A1/A2/A4/A5; A3 (evaluador) usa una temperatura
+    # baja a propósito (docs/05 §7 A3: "Temperatura: baja (0.0-0.2)") y un
+    # límite de tokens mayor porque puede evaluar hasta 14 competencias en una
+    # sola respuesta estructurada.
+    llm_temperature: float = 0.3
+    llm_temperature_assessment: float = 0.1
+    llm_max_tokens: int = 4096
+    llm_max_tokens_assessment: int = 8192
 
     # --- Entrevista ---
     interview_question_budget: int = 12
@@ -104,6 +119,12 @@ class Settings(BaseSettings):
     tts_voice_interviewer: str = ""
     stt_language: str = "es"
     tts_output_format: str = "mp3_22050_32"
+    # Salvaguarda de cuota (B12, obligatoria — docs/build/06_INTERVIEW_SYSTEM.md §9):
+    # la cuenta tiene 10,000 caracteres payg. Al llegar a `tts_quota_threshold_pct`
+    # del presupuesto, la voz se apaga y la sesión conmuta a texto avisando, en vez
+    # de fallar a mitad de una demo.
+    tts_character_budget: int = 10000
+    tts_quota_threshold_pct: float = 0.85
 
     @property
     def cors_origins_list(self) -> list[str]:

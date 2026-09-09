@@ -11,9 +11,12 @@ Reglas de resolución, en orden:
 2. Si no, se usa el override de grupo (`AI_ADAPTER_<GRUPO>`) si está fijado.
 3. Si no hay override, se usa el default global `AI_ADAPTER`.
 
-`AgenticAdapter` no existe todavía (llega en B11): pedir `agentic` para
-cualquier operación levanta `AdapterNotImplementedError` con un mensaje claro
-en vez de degradar en silencio a determinista o fingir una respuesta real.
+`AgenticAdapter` (B11, `app/ai/adapters/agentic.py`) implementa las 9
+operaciones contra Claude Sonnet 5 real, con caída interna al
+`DeterministicAdapter` ante falla de proveedor (docs/05 §11.1, sin segundo
+proveedor real — ver `app/ai/adapters/llm/failover.py`). Fijar
+`AI_ADAPTER=agentic` (global o por grupo, `AI_ADAPTER_<GRUPO>=agentic`)
+selecciona un `AgenticAdapter` singleton para esa operación.
 """
 
 from __future__ import annotations
@@ -21,6 +24,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
+from app.ai.adapters.agentic import AgenticAdapter
 from app.ai.adapters.deterministic import DeterministicAdapter
 from app.ai.port import AI_OPERATIONS, AIPort
 from app.config import Settings, get_settings
@@ -44,7 +48,12 @@ assert set(_OPERATION_GROUP) == set(AI_OPERATIONS), "Registry desincronizado de 
 
 
 class AdapterNotImplementedError(RuntimeError):
-    """`AI_ADAPTER*=agentic` pedido antes de que `AgenticAdapter` exista (B11)."""
+    """Reservado por compatibilidad: `AgenticAdapter` ya existe desde B11.
+
+    Se conserva la clase (en vez de borrarla) porque `docs/build/00_BUILD_STATE.md`
+    y código de pruebas anteriores a B11 podían referenciarla; hoy no la lanza
+    ninguna ruta de `get_adapter`.
+    """
 
 
 class UnknownAIOperationError(ValueError):
@@ -73,15 +82,19 @@ def _deterministic_singleton() -> DeterministicAdapter:
     return DeterministicAdapter()
 
 
+@lru_cache
+def _agentic_singleton() -> AgenticAdapter:
+    # `AgenticAdapter` construye su propio `AnthropicClient` y `CircuitBreaker`
+    # internos a partir de `get_settings()` -- cachearlo evita reabrir un
+    # cliente HTTP nuevo (y, más importante, un `CircuitBreaker` nuevo que
+    # olvida el historial de fallas) en cada llamada.
+    return AgenticAdapter()
+
+
 def get_adapter(operation: str, settings: Settings | None = None) -> AIPort:
     """Devuelve la instancia de `AIPort` que debe atender `operation`."""
 
     name = resolve_adapter_name(operation, settings)
     if name == "deterministic":
         return _deterministic_singleton()
-
-    # Punto de extensión de B11: `from app.ai.adapters.agentic import AgenticAdapter`.
-    raise AdapterNotImplementedError(
-        f"AI_ADAPTER para la operación '{operation}' está fijado en 'agentic', pero "
-        "AgenticAdapter todavía no existe (llega en B11). Usa 'deterministic' o AI_MODE=demo."
-    )
+    return _agentic_singleton()

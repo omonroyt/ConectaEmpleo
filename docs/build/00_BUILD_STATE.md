@@ -13,7 +13,7 @@
 | Fase activa | **BACKEND (fase 2)** — ver `05_BACKEND_TASKS.md`. La fase frontend está cerrada. |
 | Siguiente tarea | **B13** (mocks P2, `GET /admin/ai-invocations`, seeds de demo completas, deploy Railway — integración final y demo) |
 | Tarea en curso | ninguna |
-| Último commit de construcción | ver fila B9/B10 de la cola de tareas — backend |
+| Último commit de construcción | a3bcf07 |
 | Bloqueos | ninguno |
 
 ### Cómo verificar el backend antes de tocar nada
@@ -78,8 +78,8 @@ sugerido). Esta tabla es el estado vivo — un subagente solo cambia su propia f
 | B6 | Entrevista: sesiones, turnos, orquestador, Guardián de Equidad | opus | DONE | 5979a99 |
 | B7 | Evaluación y perfil: A3, `competency_evaluations`, `candidate_skills`, `talent_profiles`, A4 | opus | DONE | 5979a99 |
 | B8 | Empresa y vacantes: `companies` (extendido), `vacancies`, `vacancy_requirements`, A5 RESOLVE | sonnet | DONE | 05ab4ef |
-| B9 | Motor de matching determinista, `match_runs`, `match_results` | sonnet | DONE | ver bitácora 2026-09-09 |
-| B10 | Marketplace y anonimización, `candidate_unlocks`, compare, shortlist, A5 EXPLAIN | sonnet | DONE | ver bitácora 2026-09-09 |
+| B9 | Motor de matching determinista, `match_runs`, `match_results` | sonnet | DONE | a3bcf07 |
+| B10 | Marketplace y anonimización, `candidate_unlocks`, compare, shortlist, A5 EXPLAIN | sonnet | DONE | a3bcf07 |
 | B11 | `AgenticAdapter` real (Anthropic + OpenAI, failover, prompts A1-A5) | opus | DONE | 99cf29f |
 | B12 | Voz: `STTPort`/`TTSPort`, `ElevenLabsAdapter`, `VoiceGateway` WS | opus | DONE | a01d602 |
 | B13 | Mocks P2, `GET /admin/ai-invocations`, seeds de demo completas, deploy Railway | sonnet | PENDING | — |

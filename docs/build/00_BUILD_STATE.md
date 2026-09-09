@@ -11,10 +11,24 @@
 | Campo | Valor |
 |---|---|
 | Fase activa | **BACKEND (fase 2)** — ver `05_BACKEND_TASKS.md`. La fase frontend está cerrada. |
-| Siguiente tarea | **B5** (extracción de CV y claims: `cv_extractions`, `claims`, confirmación, `cv-builder` sessions) |
+| Siguiente tarea | **B6** (entrevista: sesiones, turnos, orquestador determinista, cobertura, Guardián de Equidad) |
 | Tarea en curso | ninguna |
-| Último commit de construcción | c1cfda9 |
+| Último commit de construcción | 05ab4ef |
 | Bloqueos | ninguno |
+
+### Cómo verificar el backend antes de tocar nada
+
+```bash
+cd backend
+docker compose up -d                     # Postgres 16 en el puerto 5433 (el 5432 lo ocupa un Postgres nativo)
+export DATABASE_URL="postgresql+psycopg://conecta:conecta@localhost:5433/conecta"
+.venv/Scripts/python.exe -m alembic upgrade head
+.venv/Scripts/python.exe -m app.seeds.run          # idempotente
+.venv/Scripts/python.exe -m pytest -q              # 43 en verde
+.venv/Scripts/python.exe scripts/verify_b5_b8.py   # 34 verificaciones de punta a punta
+```
+
+**Siempre con `DATABASE_URL` explícito**: esta máquina tiene una variable global de otro proyecto (Supabase, formato JDBC) que `pydantic-settings` prioriza sobre `.env`. Desde el commit `3757311` la config la rechaza con un mensaje accionable en vez de fallar de forma confusa.
 
 ### Cómo verificar el frontend antes de tocar nada
 
@@ -59,10 +73,10 @@ sugerido). Esta tabla es el estado vivo — un subagente solo cambia su propia f
 | B2 | Catálogo y semillas: `job_families`, `competencies`, `skills`, `rubrics`, `learning_catalog` | sonnet | DONE | 38df003 |
 | B3 | Perfil de candidato + documentos | sonnet | DONE | c1cfda9 |
 | B4 | `AIPort` v1.1, `invoke.py`, `DeterministicAdapter`, tabla `jobs` + runner | sonnet | DONE | c1cfda9 |
-| B5 | Extracción de CV y claims, `cv-builder` sessions | sonnet | PENDING | — |
+| B5 | Extracción de CV y claims, `cv-builder` sessions | sonnet | DONE | 05ab4ef |
 | B6 | Entrevista: sesiones, turnos, orquestador, Guardián de Equidad | opus | PENDING | — |
 | B7 | Evaluación y perfil: A3, `competency_evaluations`, `candidate_skills`, `talent_profiles`, A4 | opus | PENDING | — |
-| B8 | Empresa y vacantes: `companies` (extendido), `vacancies`, `vacancy_requirements`, A5 RESOLVE | sonnet | PENDING | — |
+| B8 | Empresa y vacantes: `companies` (extendido), `vacancies`, `vacancy_requirements`, A5 RESOLVE | sonnet | DONE | 05ab4ef |
 | B9 | Motor de matching determinista, `match_runs`, `match_results` | opus | PENDING | — |
 | B10 | Marketplace y anonimización, `candidate_unlocks`, compare, shortlist, A5 EXPLAIN | sonnet | PENDING | — |
 | B11 | `AgenticAdapter` real (Anthropic + OpenAI, failover, prompts A1-A5) | opus | PENDING | — |
@@ -633,3 +647,19 @@ Solo E12 y el sub-componente `UnlockedEntryName` de E11 (montado únicamente cua
 
 ### 2026-09-09 — Orquestador (Fable)
 - Creado el tablero y las specs `01`–`05`. Decisiones del usuario: constructores Sonnet 5 con Opus 5 en F4 y F7; PNG de raíz se mueven a `frontend/public/assets/brand/backgrounds/` en WebP; `PRUEBA - ORB/` queda fuera de git y se borra solo con confirmación del usuario; alcance FE = P0 + P1 completos, P2 como stubs; marketplace de candidato (oportunidades + postulación) se construye con mock y se agrega al contrato API como Should Have.
+
+### 2026-09-09 — B5 + B8 (recuperados por el orquestador, Opus)
+
+Ambos agentes constructores se quedaron sin límite de sesión a media tarea y **no alcanzaron a commitear**. El orquestador recuperó el árbol de trabajo, completó lo que faltaba y verificó todo. Commit `05ab4ef`.
+
+Lo que faltaba y se completó:
+- Import de `SkillClaimDTO` en `app/ai/adapters/deterministic.py` (el DTO existía en `contracts/profiling.py` pero no estaba importado; rompía `parse_cv`).
+- Migración `879be33e9940` con `cv_extractions`, `claims`, `cv_builder_sessions` y `cv_builder_messages`. B5 había escrito los modelos pero no la migración.
+- Registro de `cv_builder.models` en `alembic/env.py` (sin él, autogenerate no veía esas tablas).
+- `app/modules/cv_builder/router.py` completo: el servicio (404 líneas) ya estaba, faltaba exponerlo. Registrado en `main.py`.
+- `POST /vacancies/{id}/resolve-requirements` ahora acepta llamada **sin cuerpo** y cae a la descripción guardada de la vacante, que es el caso normal cuando la empresa entra a "perfil ideal" recién creada la vacante.
+- `test_status_next_step_review_claims_when_cv_parsed` quedó obsoleto: B5 cambió (bien) la señal de `Document.status == "PARSED"` a `cv_extractions.confirmed_by_candidate`. Se actualizó el test a la señal real y se agregó `test_status_stays_on_cv_when_extraction_already_confirmed`.
+
+Verificación: **43 pruebas en verde**, `ruff` limpio, una sola cabeza de Alembic, semillas idempotentes, y `scripts/verify_b5_b8.py` con **34 verificaciones de punta a punta en verde**, incluidas: subida real del PDF de demo → job `DONE` → extracción con claims citables → confirmación que copia la experiencia al perfil y avanza a `CV_READY`; los 8 turnos del CV conversacional hasta el documento descargable; y del lado de empresa, la detección del requisito "máximo 30 años" como advertencia **sin incorporarlo al mapeo**, la normalización de pesos a 100 (RB-07) y el aislamiento entre empresas (404 al leer una vacante ajena).
+
+Para B6 (entrevista): el perfil ya llega a `CV_READY` con `next_step = INTERVIEW`, los `claims` están persistidos con `source_ref` citable, y `compute_status_view` deja `interview_session_id` y `has_talent_profile` en `None`/`False` esperando a B6 y B7. El `DeterministicAdapter` ya implementa `next_interview_question` con presupuesto y `references_turn_id`.

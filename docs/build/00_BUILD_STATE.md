@@ -13,7 +13,7 @@
 | Fase activa | **FRONTEND** (fase 1). Backend es fase 2, ver `05_BACKEND_TASKS.md` |
 | Siguiente tarea | **F3, F4, F5, F6, F7 (en paralelo)** |
 | Tarea en curso | ninguna |
-| Último commit de construcción | d4eb5e5 |
+| Último commit de construcción | d1c43cd |
 | Bloqueos | ninguno |
 
 ## Cola de tareas — frontend
@@ -31,7 +31,7 @@ Estados: `PENDING` · `IN_PROGRESS` · `DONE` · `BLOCKED`. Un subagente solo ca
 | F6 | Empresa A: auth, onboarding, home, perfil empresa, nueva vacante, perfil ideal (requisitos + pesos), lista y detalle de vacante | sonnet | F1, F2 | 04 §E0-§E7 | DONE | 4e401d5 |
 | F7 | Empresa B: talento compatible (ranking anónimo), detalle anónimo con explicación, comparar, finalistas, desbloqueo, perfil desbloqueado | **opus** | F1, F2 | 04 §E8-§E12 | DONE | a49ad85 |
 | F8 | Stubs P2 (notificaciones, mensajes, planes) + polish: responsive, a11y, reduced-motion, loading/empty/error, consistencia | sonnet | F3-F7 | 03 §C15, 04 §E13, 01 §10 | DONE | 60a8bce |
-| F9 | Calidad de demo: candidatos de semilla diferenciados, evidencia sin repetir, curva de EXPERIENCE, layout del comparador, CTAs y ProgressRing sobre fondo oscuro | sonnet | F8 | ver bitácora | DONE | _pendiente_ |
+| F9 | Calidad de demo: candidatos de semilla diferenciados, evidencia sin repetir, curva de EXPERIENCE, layout del comparador, CTAs y ProgressRing sobre fondo oscuro | sonnet | F8 | ver bitácora | DONE | d1c43cd |
 
 Paralelismo permitido: F1 ∥ F2 · luego F3 ∥ F4 ∥ F5 ∥ F6 ∥ F7 (carpetas disjuntas, ver protocolo). F8 al final.
 

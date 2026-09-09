@@ -64,6 +64,17 @@ export function useUploadCV() {
   });
 }
 
+/** F5: sube una certificación opcionalmente ligada a una skill del candidato (queda `pending` de revisión). */
+export function useUploadCertification() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (vars: { file: File; skillCode?: string }) => api.documents.uploadCertification(vars.file, vars.skillCode),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: queryKeys.candidateSkills() });
+    },
+  });
+}
+
 export function useConfirmExtraction() {
   const qc = useQueryClient();
   return useMutation({

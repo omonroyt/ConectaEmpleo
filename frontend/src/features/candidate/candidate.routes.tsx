@@ -22,6 +22,34 @@ const shellRoutes: RouteObject[] = [
       return { Component };
     },
   },
+  {
+    path: "profile",
+    lazy: async () => {
+      const { Component } = await import("@/features/candidate/profile/ProfilePage");
+      return { Component };
+    },
+  },
+  {
+    path: "profile/edit",
+    lazy: async () => {
+      const { Component } = await import("@/features/candidate/profile/ProfileEditPage");
+      return { Component };
+    },
+  },
+  {
+    path: "opportunities",
+    lazy: async () => {
+      const { Component } = await import("@/features/candidate/opportunities/OpportunitiesPage");
+      return { Component };
+    },
+  },
+  {
+    path: "opportunities/:id",
+    lazy: async () => {
+      const { Component } = await import("@/features/candidate/opportunities/OpportunityDetailPage");
+      return { Component };
+    },
+  },
 ];
 
 // ---- F3: onboarding, cv/* ------------------------------------------------------

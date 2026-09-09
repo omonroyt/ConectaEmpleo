@@ -1,0 +1,39 @@
+# Repo de prueba del Orb: fuente de componente, no se versiona (src/orb ya extraído a frontend/)
+/PRUEBA - ORB/
+
+# Fondos originales en raíz: se movieron a frontend/public/assets/brand/backgrounds/*.webp
+/fondo_*.png
+
+# Node
+node_modules/
+dist/
+dist-lib/
+*.tgz
+.vite/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Entornos y secretos
+.env
+.env.*
+!.env.example
+
+# Editor / SO
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Salidas de herramientas
+.playwright-cli/
+output/
+test-results/
+*.log

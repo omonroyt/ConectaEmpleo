@@ -43,8 +43,24 @@ function pickSpanishVoice(): SpeechSynthesisVoice | null {
  * TTS: speechSynthesis en es-MX. STT: webkitSpeechRecognition si existe (si no, transcript "").
  * Micrófono: getUserMedia + connectAudio() del Orb para alimentar el analyser visual.
  */
+export interface BrowserVoiceGatewayOptions {
+  /**
+   * `AudioContext` compartido para el análisis del micrófono. Si se pasa, el
+   * gateway lo reutiliza en cada `startListening` y **no** lo cierra (lo cierra
+   * quien lo creó): evita crear y destruir un contexto por turno de entrevista.
+   * Si se omite, `connectAudio` crea uno propio por sesión de escucha.
+   */
+  audioContext?: AudioContext;
+}
+
 export class BrowserVoiceGateway implements VoiceGateway {
   readonly available: boolean = typeof speechSynthesis !== "undefined";
+
+  private readonly options: BrowserVoiceGatewayOptions;
+
+  constructor(options: BrowserVoiceGatewayOptions = {}) {
+    this.options = options;
+  }
 
   private recognition: SpeechRecognitionLike | null = null;
   private transcript = "";
@@ -80,7 +96,10 @@ export class BrowserVoiceGateway implements VoiceGateway {
     this.transcript = "";
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     this.mediaStream = stream;
-    this.audioConnection = await connectAudio(stream);
+    this.audioConnection = await connectAudio(
+      stream,
+      this.options.audioContext ? { context: this.options.audioContext } : {},
+    );
 
     const RecognitionCtor = getRecognitionCtor();
     if (RecognitionCtor) {

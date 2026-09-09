@@ -71,7 +71,7 @@ sugerido). Esta tabla es el estado vivo — un subagente solo cambia su propia f
 | B0 | Base: pyproject, Docker, docker-compose Postgres, config, `database.py`, Alembic, `/health`, CORS, errores, logging | sonnet | DONE | 38df003 |
 | B1 | Identidad: `users`, registro/login/me, JWT, `require_candidate/require_company` | sonnet | DONE | 38df003 |
 | B2 | Catálogo y semillas: `job_families`, `competencies`, `skills`, `rubrics`, `learning_catalog` | sonnet | DONE | 38df003 |
-| B2b | Realineación del catálogo al master prompt: 42 competencias, 42 rúbricas, banco de 42 preguntas (`interview_questions`) | sonnet | DONE | (ver bitácora) |
+| B2b | Realineación del catálogo al master prompt: 42 competencias, 42 rúbricas, banco de 42 preguntas (`interview_questions`) | sonnet | DONE | 0c9a15d |
 | B3 | Perfil de candidato + documentos | sonnet | DONE | c1cfda9 |
 | B4 | `AIPort` v1.1, `invoke.py`, `DeterministicAdapter`, tabla `jobs` + runner | sonnet | DONE | c1cfda9 |
 | B5 | Extracción de CV y claims, `cv-builder` sessions | sonnet | DONE | 05ab4ef |

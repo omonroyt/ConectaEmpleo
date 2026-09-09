@@ -30,6 +30,33 @@ const ROOT = path.resolve(__dirname, "..");
 const OUT_DIR = path.join(ROOT, "output", "e2e");
 const DEMO_CV = path.join(ROOT, "public", "demo", "cv-ejemplo.pdf");
 
+/**
+ * B13 — `E2E_TARGET=mock|http` (default `mock`) elige contra qué backend
+ * corre el recorrido:
+ *   - `mock`: comportamiento original (F8/F9), `VITE_API_MODE=mock`, usa
+ *     `window.__ce.resetMock()` y el candidato fijo `candidato@demo.mx`.
+ *   - `http`: arranca `vite` con `VITE_API_MODE=http` + `VITE_API_URL`
+ *     (`E2E_API_URL`, default `http://localhost:8000/api/v1`) contra un
+ *     backend real ya corriendo (`uvicorn`, ver `README.md`). No existe
+ *     `resetMock()` en este modo (es una función del mock en memoria) ni una
+ *     forma de reiniciar el estado de un usuario ya `EVALUATED` en Postgres,
+ *     así que el journey de candidato **registra una cuenta nueva** en cada
+ *     corrida (email con sufijo aleatorio) en vez de reusar
+ *     `candidato@demo.mx` -- así el golden path completo (DRAFT → EVALUATED)
+ *     es repetible indefinidamente contra la misma base real. `maria@demo.mx`
+ *     y `empresa@demo.mx` sí se reusan (son de solo lectura para el journey).
+ *     El presupuesto de preguntas de la entrevista real es 14 por defecto
+ *     (7+7) en vez de las 6 del mock -- ver `INTERVIEW_DEMO_MODE=true` en el
+ *     backend para acelerarlo -- así que el bucle de respuestas es dinámico
+ *     (repite el banco de respuestas hasta que la entrevista termine) en vez
+ *     de asumir un número fijo de turnos.
+ */
+const TARGET = (process.env.E2E_TARGET || "mock").toLowerCase() === "http" ? "http" : "mock";
+const IS_HTTP = TARGET === "http";
+const API_URL = process.env.E2E_API_URL || "http://localhost:8000/api/v1";
+// Los tiempos de red+Postgres reales son más largos que los del mock en memoria.
+const T = (ms) => (IS_HTTP ? Math.round(ms * 1.8) : ms);
+
 const MOBILE = { width: 390, height: 844 };
 const DESKTOP = { width: 1280, height: 800 };
 const CANDIDATE_ANON_EMAIL = "candidato@demo.mx";
@@ -144,7 +171,12 @@ async function startDevServer() {
     const bin = process.platform === "win32" ? "npx.cmd" : "npx";
     const child = spawn(`${bin} vite --port 5183`, {
       cwd: ROOT,
-      env: { ...process.env },
+      // Las variables `process.env` tienen prioridad sobre `.env` en Vite
+      // (documentado: "Environment variables that already exist when Vite is
+      // executed have the highest priority"), así que esto fuerza el modo
+      // sin tocar `frontend/.env` -- mock y http pueden correr uno tras otro
+      // sin editar archivos entre corridas.
+      env: { ...process.env, VITE_API_MODE: TARGET, VITE_API_URL: API_URL },
       shell: true,
     });
     let buffer = "";
@@ -198,6 +230,23 @@ async function login(page, { email, password, role }) {
   await page.getByRole("button", { name: "Entrar" }).click();
 }
 
+/** Solo modo http: registra una cuenta de candidato nueva (email único por
+ * corrida) para poder recorrer el golden path DRAFT→EVALUATED las veces que
+ * haga falta contra la misma base real, sin depender de poder "reiniciar"
+ * `candidato@demo.mx` (que sí existe como usuario semilla, pero una vez que
+ * queda EVALUATED en Postgres se queda así -- a diferencia del mock, que
+ * vuelve a DRAFT con `resetMock()`). */
+async function registerFreshCandidate(page) {
+  const email = `qa-e2e-${Date.now()}@demo.mx`;
+  await page.getByRole("button", { name: "Soy candidato" }).click();
+  await page.waitForURL(/\/register/);
+  await page.getByLabel("Correo").fill(email);
+  await page.getByLabel("Contraseña", { exact: true }).fill(CANDIDATE_PASSWORD);
+  await page.getByLabel("Confirmar contraseña").fill(CANDIDATE_PASSWORD);
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
+  return email;
+}
+
 async function runCandidateJourney(browser, baseURL) {
   const journey = "candidato";
   const context = await browser.newContext({ viewport: DESKTOP, baseURL });
@@ -210,19 +259,26 @@ async function runCandidateJourney(browser, baseURL) {
   });
   await snap(page, "c-landing");
 
-  await step("candidato: resetMock()", async () => {
-    await page.evaluate(() => {
-      const w = /** @type {{ __ce?: { resetMock: () => void } }} */ (window);
-      w.__ce?.resetMock();
+  if (IS_HTTP) {
+    await step("candidato: registro (cuenta nueva, modo http)", async () => {
+      await registerFreshCandidate(page);
+      await page.waitForURL(/\/candidate\/onboarding/, { timeout: T(15000) });
     });
-    await page.reload();
-    await page.waitForSelector("text=Marketplace de talento verificado");
-  });
+  } else {
+    await step("candidato: resetMock()", async () => {
+      await page.evaluate(() => {
+        const w = /** @type {{ __ce?: { resetMock: () => void } }} */ (window);
+        w.__ce?.resetMock();
+      });
+      await page.reload();
+      await page.waitForSelector("text=Marketplace de talento verificado");
+    });
 
-  await step("candidato: login", async () => {
-    await login(page, { email: CANDIDATE_ANON_EMAIL, password: CANDIDATE_PASSWORD, role: "CANDIDATE" });
-    await page.waitForURL(/\/candidate\/onboarding/, { timeout: 15000 });
-  });
+    await step("candidato: login", async () => {
+      await login(page, { email: CANDIDATE_ANON_EMAIL, password: CANDIDATE_PASSWORD, role: "CANDIDATE" });
+      await page.waitForURL(/\/candidate\/onboarding/, { timeout: 15000 });
+    });
+  }
   await snap(page, "c-onboarding-1");
 
   await step("candidato: onboarding paso 1 (familia)", async () => {
@@ -251,22 +307,29 @@ async function runCandidateJourney(browser, baseURL) {
   await step("candidato: sube CV de ejemplo", async () => {
     await snap(page, "c-cv-upload");
     await page.locator('input[type="file"]').setInputFiles(DEMO_CV);
-    await page.waitForURL(/\/candidate\/cv\/review/, { timeout: 20000 });
+    await page.waitForURL(/\/candidate\/cv\/review/, { timeout: T(20000) });
   });
   await snap(page, "c-cv-review");
 
   await step("candidato: confirma revisión de CV", async () => {
     await page.getByRole("button", { name: "Confirmar y continuar" }).click();
-    await page.waitForURL(/\/candidate\/interview\/prepare/, { timeout: 15000 });
+    await page.waitForURL(/\/candidate\/interview\/prepare/, { timeout: T(15000) });
   });
   await snap(page, "c-interview-prepare");
 
   await step("candidato: elige modo texto y comienza entrevista", async () => {
     await page.getByRole("radio", { name: "Por texto" }).click();
     await page.getByRole("button", { name: /Comenzar entrevista|Continuar entrevista/ }).click();
-    await page.waitForURL(/\/candidate\/interview\/[^/]+$/, { timeout: 15000 });
+    await page.waitForURL(/\/candidate\/interview\/[^/]+$/, { timeout: T(15000) });
   });
 
+  // Banco de respuestas largas (>=12 palabras, para que el `DeterministicAdapter`
+  // real las califique nivel 3-4 y también pueda disparar algún follow-up
+  // PROBE) — se repite en ciclo tantas veces como preguntas haga falta: el
+  // presupuesto real del backend es 14 (7 HARD + 7 SOFT, o 6 en
+  // `INTERVIEW_DEMO_MODE=true`), contra las 6 fijas del mock, así que el
+  // bucle no asume un número fijo de turnos y simplemente contesta hasta que
+  // la entrevista misma anuncie que terminó.
   const ANSWERS = [
     "En mi trabajo anterior organizaba la agenda de la gerencia, controlaba el archivo físico y digital, y daba seguimiento puntual a pendientes de varios equipos a la vez.",
     "Cuando surgía un conflicto de prioridades, hablaba directamente con las personas involucradas, proponía una fecha realista y avisaba con anticipación si algo se iba a retrasar.",
@@ -275,20 +338,33 @@ async function runCandidateJourney(browser, baseURL) {
     "Me organizo con listas de tareas por prioridad cada mañana, reviso correos pendientes primero y bloqueo tiempo específico para tareas que requieren concentración.",
     "Disfruto trabajar en equipo porque puedo apoyar a mis compañeros cuando tienen carga de trabajo alta, y también pedir ayuda cuando yo la necesito sin ningún problema.",
   ];
-  for (let i = 0; i < ANSWERS.length; i += 1) {
-    await step(`candidato: responde pregunta ${i + 1}/6`, async () => {
+  const RESULT_URL_RE = /\/candidate\/interview\/[^/]+\/result/;
+  const MAX_TURNS = 50; // guard de seguridad: 14 base + hasta 2 follow-ups por pregunta (máx. 42) nunca llega aquí.
+  for (let i = 0; i < MAX_TURNS; i += 1) {
+    if (RESULT_URL_RE.test(page.url())) break;
+    await step(`candidato: responde turno ${i + 1}`, async () => {
       const textarea = page.getByLabel("Tu respuesta");
-      await textarea.waitFor({ state: "visible", timeout: 15000 });
-      await expectEnabled(textarea, 15000);
-      await textarea.fill(ANSWERS[i]);
+      await textarea.waitFor({ state: "visible", timeout: T(15000) });
+      await expectEnabled(textarea, T(15000));
+      await textarea.fill(ANSWERS[i % ANSWERS.length]);
       if (i === 2) await snap(page, "c-interview-inprogress");
       await page.getByRole("button", { name: "Enviar respuesta" }).click();
+      // Tras el último turno la app navega directo a `.../result` en vez de
+      // mostrar otra pregunta — esperar cualquiera de los dos evita una
+      // carrera entre "ya navegó" y "todavía no renderiza el siguiente turno".
+      await Promise.race([
+        page.waitForURL(RESULT_URL_RE, { timeout: T(20000) }),
+        page.getByLabel("Tu respuesta").waitFor({ state: "visible", timeout: T(20000) }),
+      ]).catch(() => {});
     });
+  }
+  if (!RESULT_URL_RE.test(page.url())) {
+    throw new Error(`La entrevista no llegó a /result tras ${MAX_TURNS} turnos (revisar presupuesto real).`);
   }
 
   await step("candidato: espera resultado de entrevista", async () => {
-    await page.waitForURL(/\/candidate\/interview\/[^/]+\/result/, { timeout: 15000 });
-    await page.waitForSelector("text=Ver mi Perfil de Talento Verificado", { timeout: 20000 });
+    await page.waitForURL(RESULT_URL_RE, { timeout: T(15000) });
+    await page.waitForSelector("text=Ver mi Perfil de Talento Verificado", { timeout: T(30000) });
   });
   await snap(page, "c-interview-result");
 
@@ -402,7 +478,14 @@ async function runEmployerJourney(browser, baseURL) {
     await page.locator("label", { hasText: "Encargado de almacén" }).click();
     await page.getByRole("button", { name: "Presencial" }).click();
     await page.getByLabel("Ciudad").fill("León");
-    await page.getByLabel("Estado").fill("Guanajuato");
+    // Por id, no por label: la familia "Encargado de almacén" (WAREHOUSE_SUPERVISOR)
+    // tiene "...buen estado de los productos" en su `role_objective`, que
+    // RadioCards renderiza como descripción dentro del mismo `<label>` del
+    // radio, así que `getByLabel("Estado")` (substring) matchea ese radio
+    // también -- y `{ exact: true }` tampoco sirve porque el campo es
+    // `required` y su `<label>` real incluye el asterisco oculto
+    // (`aria-hidden`) en el texto, o sea "Estado *", no "Estado" a secas.
+    await page.locator("#vacancy_state").fill("Guanajuato");
     await page.getByLabel("Salario mínimo (MXN)").fill("12000");
     await page.getByLabel("Salario máximo (MXN)").fill("16000");
     await page
@@ -412,22 +495,22 @@ async function runEmployerJourney(browser, baseURL) {
       );
     await snap(page, "e-new-vacancy");
     await page.getByRole("button", { name: "Definir perfil ideal" }).click();
-    await page.waitForURL(/\/employer\/vacancies\/[^/]+\/ideal-profile/, { timeout: 15000 });
+    await page.waitForURL(/\/employer\/vacancies\/[^/]+\/ideal-profile/, { timeout: T(15000) });
     vacancyId = new URL(page.url()).pathname.split("/")[3];
   });
 
   await step("empresa: perfil ideal muestra advertencia discriminatoria", async () => {
-    await page.waitForSelector("text=/discriminatori/i", { timeout: 20000 });
+    await page.waitForSelector("text=/discriminatori/i", { timeout: T(20000) });
   });
   await snap(page, "e-ideal-profile-warning");
 
   await step("empresa: guarda y busca talento", async () => {
     await page.getByRole("button", { name: "Guardar y buscar talento" }).click();
-    await page.waitForURL(/\/employer\/vacancies\/[^/]+\/talent/, { timeout: 15000 });
+    await page.waitForURL(/\/employer\/vacancies\/[^/]+\/talent/, { timeout: T(15000) });
   });
 
   await step("empresa: espera el ranking de talento (≥5 candidatos)", async () => {
-    await waitForCount(page.getByRole("button", { name: /^Ver perfil/ }), 5, 25000);
+    await waitForCount(page.getByRole("button", { name: /^Ver perfil/ }), 5, T(25000));
   });
   await snap(page, "e-talent");
 
@@ -464,8 +547,8 @@ async function runEmployerJourney(browser, baseURL) {
     await page.getByRole("button", { name: "Desbloquear identidad" }).click();
     const dialog = page.getByRole("dialog");
     await dialog.getByRole("button", { name: "Desbloquear identidad" }).click();
-    await page.waitForURL(/\/employer\/candidates\/[^/]+\/full/, { timeout: 15000 });
-    await page.waitForSelector("text=Identidad desbloqueada", { timeout: 15000 });
+    await page.waitForURL(/\/employer\/candidates\/[^/]+\/full/, { timeout: T(15000) });
+    await page.waitForSelector("text=Identidad desbloqueada", { timeout: T(15000) });
   });
 
   await step("empresa: el perfil desbloqueado ahora sí muestra el nombre", async () => {
@@ -479,7 +562,7 @@ async function runEmployerJourney(browser, baseURL) {
 
   await step("empresa: vuelve al ranking para comparar", async () => {
     await page.goto(matchResultUrl.replace(/\/employer\/candidates\/.+/, `/employer/vacancies/${vacancyId}/talent`));
-    await waitForCount(page.getByRole("button", { name: /^Ver perfil/ }), 5, 20000);
+    await waitForCount(page.getByRole("button", { name: /^Ver perfil/ }), 5, T(20000));
   });
 
   await step("empresa: selecciona 3 candidatos y compara", async () => {
@@ -594,6 +677,7 @@ async function main() {
   }
   mkdirSync(OUT_DIR, { recursive: true });
 
+  log(`E2E_TARGET=${TARGET}${IS_HTTP ? ` (API_URL=${API_URL}, verifica que el backend real ya esté corriendo)` : ""}`);
   log("Levantando `vite` (modo dev)…");
   const { child, baseURL } = await startDevServer();
   log(`Servidor listo en ${baseURL}`);

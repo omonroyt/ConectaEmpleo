@@ -11,9 +11,32 @@ npm run typecheck       # tsc --noEmit
 npm run build           # typecheck + build de producción (dist/)
 npm run preview         # sirve dist/ localmente
 npm run optimize:backgrounds  # regenera los WebP de fondo de marca
+npm run smoke:mock     # 22 pasos, golden path contra el mock
+npm run smoke:interview # 13 pasos, entrevista + evaluación contra el mock
+npm run e2e:smoke       # Playwright/Chromium, ambos journeys — ver abajo
 ```
 
 Variables de entorno: copiar `.env.example` a `.env` (`VITE_API_MODE=mock|http`, `VITE_API_URL`).
+Con `VITE_API_MODE=http` el frontend habla con el backend real (`../backend`, ver su README) — debe
+estar corriendo en `VITE_API_URL` (default `http://localhost:8000/api/v1`) con las semillas de
+`python -m app.seeds.run` + `python -m app.seeds.demo` ya aplicadas.
+
+### `npm run e2e:smoke` — mock vs. backend real
+
+`E2E_TARGET=mock` (default) o `E2E_TARGET=http` eligen contra qué API corre el recorrido de
+Playwright, sin tocar el archivo `.env` (la variable de entorno tiene prioridad sobre `.env` al
+arrancar `vite`):
+
+```bash
+npm run e2e:smoke                    # contra el mock en memoria (igual que antes de B13)
+E2E_TARGET=http npm run e2e:smoke    # contra el backend real — debe estar corriendo primero
+```
+
+En `http` el journey de candidato registra una cuenta nueva en cada corrida (no reutiliza
+`candidato@demo.mx`, que en Postgres se queda `EVALUATED` después de la primera corrida y no hay
+`resetMock()` para un backend real) y el bucle de respuestas de la entrevista es dinámico (el
+presupuesto real es 14 preguntas, o 6 con `INTERVIEW_DEMO_MODE=true` en el backend, contra las 6
+fijas del mock). `maria@demo.mx` y `empresa@demo.mx` sí se reutilizan.
 
 ## Estructura
 

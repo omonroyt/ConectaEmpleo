@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
+from app.ai.voice.router import router as voice_router
 from app.config import get_settings
 from app.core.errors import register_error_handlers
 from app.core.jobs import router as jobs_router
@@ -49,6 +50,7 @@ app.include_router(cv_builder_router, prefix=API_PREFIX)
 app.include_router(companies_router, prefix=API_PREFIX)
 app.include_router(vacancies_router, prefix=API_PREFIX)
 app.include_router(jobs_router, prefix=API_PREFIX)
+app.include_router(voice_router, prefix=API_PREFIX)
 
 if settings.storage_provider == "local":
     # Sirve los archivos de `LocalStorageAdapter` para que `DocumentRef.url` sea navegable

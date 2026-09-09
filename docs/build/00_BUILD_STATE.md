@@ -123,6 +123,158 @@ Detectada al construir el frontend contra el contrato de `02_API_CONTRACT.md`. C
 
 ## Bitácora (más reciente arriba)
 
+### 2026-09-09 — B12 (Sonnet)
+
+**Qué se construyó** (`backend/app/ai/voice/`, `backend/tests/test_voice.py`,
+`backend/tests/test_voice_live_elevenlabs.py`, `frontend/src/voice/`; archivos
+compartidos tocados de forma mínima y aditiva: `backend/app/main.py`,
+`backend/app/config.py`, `backend/.env.example`):
+
+- **Puertos y adaptador**: `app/ai/voice/ports.py` (`STTPort`/`TTSPort` literales de
+  docs/05 §5.2). `app/ai/voice/adapters/elevenlabs.py`: único adaptador, Scribe
+  (`scribe_v1`) + Flash v2.5 (`eleven_flash_v2_5`), un solo `httpx.AsyncClient` con la
+  misma API key para ambos endpoints. Parámetros fijados por §5.5:
+  `output_format=mp3_22050_32`, `stability=0.55`, `speed=0.95`, `language_code=es` (solo
+  STT). TTS siempre streaming (`POST /v1/text-to-speech/{voice_id}/stream`); STT batch
+  (`POST /v1/speech-to-text`). Nota de diseño: `STTPort.stream` (transcripción en vivo)
+  y `TTSPort.stream` comparten nombre con firmas distintas — Python no soporta overload
+  real, así que (igual que el propio pseudocódigo de docs/05 §5.5) el adaptador solo
+  implementa el `stream` de TTS; el de STT en vivo queda como `stream_transcription`
+  explícito que lanza `NotImplementedError` (fuera de alcance de B12 por decisión de la
+  tarea: "WebSocket solo si sobra tiempo").
+- **Voces elegidas** (§0.1, consultadas vía `GET /v1/voices` sobre la cuenta real — 28
+  voces, tier `payg`, verificada con 0 caracteres usados antes de empezar): "Sofía"
+  (perfilador) = `nfyTTmgO0f6GV9CKrMWL` (Valeria — femenina, `latin american`,
+  `conversational`, profesional). "Daniel" (entrevistador) = `pC0w7bOSDTlgiOCrNBX3`
+  (Enrique González — masculino, `mexican`, `narrative_story`, profesional). Única
+  desviación de docs/05 §0.1: no se probó cada voz leyendo una pregunta real de la
+  rúbrica antes de fijar el `voice_id` (paso explícito de la sección "Personas de voz")
+  porque la tarea B12 exige minimizar llamadas reales ("no hagas más llamadas reales de
+  las necesarias") — la selección se basó en los `labels` del catálogo (idioma, acento,
+  género, `use_case`), no en escucha real. Quedan como valor por defecto comentado en
+  `.env.example`, configurables por `TTS_VOICE_PROFILER`/`TTS_VOICE_INTERVIEWER`.
+- **Salvaguarda de cuota (obligatoria)**: tabla propia `tts_usage_events` (migración
+  `3f5adcf29fbb`, escrita a mano — `alembic revision --autogenerate` en este punto
+  también detectó `interview_questions` de B2b, todavía sin migración propia en ese
+  momento; se descartó y se escribió solo la tabla de B12). Decisión documentada en
+  `app/ai/voice/models.py`: **no** se reutilizó `ai_invocations` porque esa tabla exige
+  `contract_version`/`adapter`/`input_digest` del `AIPort` de texto, sin significado
+  natural para "caracteres enviados a Flash v2.5". `app/ai/voice/quota.py`:
+  `TTS_CHARACTER_BUDGET` (default 10000) y `TTS_QUOTA_THRESHOLD_PCT` (default 0.85,
+  ambos nuevos en `Settings`); `get_quota_status()` solo cuenta filas `SUCCESS` (un
+  intento fallido no lo factura ElevenLabs) y corta **antes** de tocar la red en cuanto
+  el uso llega al 85 % — verificado con un test que revisa que el adaptador falso recibe
+  cero llamadas una vez agotado el presupuesto. `GET /api/v1/voice/quota` expone
+  `characters_used`, `character_budget`, `budget_used_pct`, `voice_available`, `reason`.
+- **Gateway y transporte**: `app/ai/voice/gateway.py` (`VoiceGateway`, no confundir con
+  `frontend/src/voice/VoiceGateway.ts`) implementa la política de errores de §5.5 —
+  reintento 1 inmediato, reintento 2 con backoff de 1s (3 intentos totales) — **fuera**
+  del adaptador, igual que `invoke.py` separa "ejecutar" de "decidir ante fallo". Si los
+  3 intentos de TTS fallan: se registra `PROVIDER_FAILED` (no cuenta contra el
+  presupuesto) y se conmuta a modo texto sin perder el turno — el texto de la pregunta
+  siempre estuvo disponible antes de llamar a `speak_question`, así que "no perder el
+  turno" en la práctica es "no fallar la respuesta HTTP completa". `POST /api/v1/voice/tts`
+  (`app/ai/voice/router.py`) responde `audio/mpeg` en streaming o, si la cuota se agotó o
+  ElevenLabs falló, un JSON `{"mode":"text", message, characters_used, character_budget}`
+  con **200 OK** (no es un error, es un modo válido de responder la misma pregunta); el
+  front distingue por `Content-Type`. `POST /api/v1/voice/stt` transcribe y nunca lanza:
+  responde `TRANSCRIPTION_FAILED` con `transcript=""` tras los 3 intentos. El audio del
+  candidato se guarda para auditoría reutilizando el `StoragePort`/`LocalStorageAdapter`
+  de `app/modules/documents` ya existente (`DOCUMENT_TYPES` ya incluía `AUDIO_ANSWER`
+  desde B3) **sin** crear una fila `Document` ni ligarla a un `interview_turn`: esa FK no
+  existe todavía (B6 sigue `PENDING`); el archivo se guarda con un nombre que codifica
+  `turn_id` (`turn-{turn_id}.webm`) para que B6 pueda indexarlo sin perder el archivo.
+  Best-effort explícito: un fallo de storage nunca rompe la respuesta de `/voice/stt`.
+- **`ServerVoiceGateway` (frontend)**: `frontend/src/voice/ServerVoiceGateway.ts`
+  implementa `VoiceGateway` (02 §6) exactamente — mismo contrato que
+  `BrowserVoiceGateway`. `speak()` hace `POST /voice/tts`, distingue audio vs. JSON de
+  texto por `Content-Type` y **rechaza** la promesa en el segundo caso (igual que
+  `BrowserVoiceGateway` cuando `speechSynthesis` no reprodujo nada), para que
+  `useInterviewVoice` (que ya sabe convertir cualquier `speak()` rechazado en
+  `VoiceUnavailableError` y caer a texto) trate ambos gateways de forma idéntica sin
+  cambios. Usa `connectAudio()` del Orb sobre un `<audio>` reutilizable para exponer un
+  `analyser` real (no procedural) durante la reproducción del servidor.
+  `startListening`/`stopListening` graban con `MediaRecorder` (codec `webm/opus` si el
+  navegador lo soporta) y suben el blob a `/voice/stt`; `stopListening` nunca lanza
+  (transcript `""` = "no hubo STT", mismo contrato que el gateway del navegador).
+  `frontend/src/voice/createVoiceGateway.ts`: factory async (`Promise<VoiceGateway>`)
+  que resuelve la selección de docs/build D-08 / sección D de la tarea ("con
+  `VITE_API_MODE=http` y voz disponible usa el del servidor; si no, el del navegador"),
+  consultando `ServerVoiceGateway.checkAvailable()` (`GET /voice/quota`) antes de decidir
+  — tiene que ser async porque `VoiceGateway.available` es una propiedad síncrona y
+  comprobar disponibilidad real requiere red. **Límite de alcance explícito, documentado
+  en el docstring de `createVoiceGateway.ts`**: nada la invoca todavía.
+  `frontend/src/features/candidate/interview/useInterviewVoice.ts` sigue construyendo
+  `new BrowserVoiceGateway(...)` directamente porque ese archivo está **fuera** de las
+  rutas asignadas a B12 (`frontend/src/voice/` únicamente) y la tarea es explícita: "la
+  pantalla de entrevista no debe cambiar; si tienes que tocarla, es señal de que la
+  interfaz no se respetó". El enganche queda listo para quien conecte el backend de
+  entrevista de verdad (B6): sustituir esa línea por
+  `await createVoiceGateway({ persona, audioContext })`.
+- **Pruebas simuladas** (`tests/test_voice.py`, 13 tests, cero llamadas HTTP reales —
+  dobles `ScriptedTTSAdapter`/`ScriptedSTTAdapter` inyectados vía
+  `VoiceGateway(adapter=...)` o `app.dependency_overrides[get_voice_gateway]`, mismo
+  patrón que `get_db` en `conftest.py`): reintento con éxito al segundo intento; fallo de
+  los 3 intentos → modo texto + evento `PROVIDER_FAILED` sin sumar al presupuesto; mismo
+  esquema para STT; contador que suma solo `SUCCESS` y acumula a través de varias
+  llamadas; corte al 85 % (antes y después del umbral) y que `speak_question` ni siquiera
+  llama al adaptador una vez agotada la cuota; `GET /voice/quota` reflejando el corte;
+  `POST /voice/tts` devolviendo JSON de texto o `audio/mpeg` según disponibilidad; y la
+  invariante de docs/05 §10.2 — `EvaluationRequest`/`TurnDTO` no declaran ningún campo de
+  audio (introspección de `model_fields`) y rechazan un campo `audio_*` extra
+  (`AIBaseModel` con `extra="forbid"`, ya existente de B4). `pytest -q` completo del
+  backend: **129 passed, 2 skipped** (el propio B12 no rompió nada de B0-B11; los 2
+  skipped son la prueba real de voz, guardada aparte, y una preexistente de otro módulo).
+- **Prueba real única contra ElevenLabs** (`tests/test_voice_live_elevenlabs.py`, con
+  guard `RUN_LIVE_VOICE_TEST=1` para no correr en cada `pytest -q`): sintetiza "Hola,
+  comencemos la entrevista." (31 caracteres) con la cuenta real, verifica cabecera MP3
+  válida (`ID3` o frame sync) y que el contador local sube exactamente 31. **Bug
+  encontrado y corregido durante la verificación**: la primera versión del test cerraba
+  el `httpx.AsyncClient` (`adapter.aclose()`) antes de drenar el `AsyncIterator` de
+  audio devuelto por `speak_question` — como el streaming real permanece abierto
+  mientras se sigue iterando (igual que pasará en el navegador), cerrar el cliente a
+  medio stream cortaba la conexión con un `httpx.HTTPError` de mensaje vacío. Corregido
+  moviendo `aclose()` a después de drenar todos los chunks; queda anotado en el
+  docstring del test como advertencia para cualquier otro consumidor del `stream()` del
+  adaptador. **Consumo real verificado con `GET /v1/user/subscription` de la cuenta**
+  (fuente de verdad, no el contador local — el test usa la `db_session` transaccional de
+  `conftest.py`, que hace rollback al final, así que el conteo local de esa corrida no
+  persiste; el consumo en ElevenLabs sí es real e irreversible): **12 caracteres usados
+  de 10,000, 9,988 restantes** tras las únicas dos llamadas reales de esta tarea (un
+  diagnóstico manual de la misma frase corta durante la depuración del bug de arriba, y
+  la corrida final del test). El número reportado por ElevenLabs es menor a los ~62
+  caracteres nominales enviados en total — atribuible a cómo la cuenta cuenta/factura
+  caracteres (redondeo o descuentos de puntuación/espacios), no a un error de nuestro
+  lado; se reporta el número de la cuenta, no el nominal, por ser la fuente autoritativa.
+- **Decisiones y desviaciones documentadas en el código**:
+  1. Puertos `async def` (docs/05 §5.2 literal) mientras el resto del backend usa
+     `Session` síncrono de SQLAlchemy — deliberado y distinto de la decisión de B4 para
+     `AIPort`: los endpoints de voz son I/O de red hacia ElevenLabs, así que async encaja
+     mejor aquí; las escrituras de cuota son consultas cortas y aceptables dentro de un
+     `async def` para el alcance de un hackatón.
+  2. Migración de `tts_usage_events` escrita a mano en vez de `--autogenerate` (ver
+     arriba) para no arrastrar el modelo `interview_questions` de B2b, que compartía
+     `Base.metadata` sin migración propia en el momento de generar la mía.
+  3. `backend/.env`: se puso `VOICE_ENABLED=true` y los dos `voice_id` reales para poder
+     correr la prueba real y dejar el entorno listo para una demo con voz — **no se
+     commiteó** (ignorado por git, verificado con `git status` antes de commitear).
+  4. `app/config.py`/`backend/.env.example` se tocaron de forma mínima y aditiva (dos
+     variables nuevas, comentario del catálogo de voces). Se aislaron con un patch
+     quirúrgico (`git apply --cached`) para no mezclar las ediciones concurrentes de B11
+     en esos mismos archivos (`AI_MODE=live`, `LLM_TEMPERATURE*`) bajo este commit — pero
+     B11 terminó y commiteó esos archivos completos (`git add`) antes que B12, así que las
+     dos variables de cuota de voz (`TTS_CHARACTER_BUDGET`/`TTS_QUOTA_THRESHOLD_PCT`) y el
+     comentario del catálogo de voces ya están en el historial bajo el commit de B11
+     (`99cf29f`), no bajo el de B12. Efecto puramente de atribución de mensaje de commit
+     en un árbol de trabajo compartido entre tres agentes en paralelo: el contenido es
+     correcto y ya vive en `main`, solo el commit que lo introdujo no es el de esta tarea.
+- **Qué queda fuera** (documentado, no oculto): STT/TTS en vivo por WebSocket (§5.3
+  completo con orquestador de texto) es de B6, que sigue `PENDING` — B12 entrega la capa
+  de voz de transporte lista para que B6 la llame. `ServerVoiceGateway` no está conectado
+  en `useInterviewVoice.ts` (ver límite de alcance arriba). No se implementó
+  `STTPort.stream` (transcripción en vivo) ni el WebSocket opcional de la sección C de la
+  tarea, por decisión explícita de tiempo/alcance de la propia tarea.
+
 ### 2026-09-09 — B11 (Sonnet)
 
 **Qué se construyó** (`backend/app/ai/adapters/llm/`, `backend/app/ai/adapters/agentic.py`,

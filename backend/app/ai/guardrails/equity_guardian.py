@@ -23,7 +23,6 @@ discriminación").
 from __future__ import annotations
 
 import hashlib
-import re
 from collections.abc import Callable
 
 from sqlalchemy.orm import Session

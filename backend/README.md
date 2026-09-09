@@ -38,11 +38,19 @@ cp .env.example .env          # ajustar si es necesario
 
 ```bash
 alembic upgrade head
-python -m app.seeds.run
+python -m app.seeds.run    # catálogo: familias, competencias, skills, rúbricas, banco de preguntas
+python -m app.seeds.demo   # demo: 15 candidatos EVALUATED, empresa + 3 vacantes, match runs
 ```
 
 `app/seeds/run.py` es idempotente: correrlo varias veces no duplica familias, competencias,
 skills, rúbricas ni el catálogo de aprendizaje (busca por código/clave natural antes de insertar).
+
+`app/seeds/demo.py` (B13) también es idempotente (busca por email/título antes de crear) y deja la
+base lista para presentar: 5 candidatos `EVALUATED` por familia (15 en total, nombres y ciudades
+mexicanas realistas, perfiles claramente diferenciados — recorre el flujo real de entrevista con el
+`DeterministicAdapter`, cero tokens de LLM), la empresa demo verificada "Logística del Bajío S.A. de
+C.V." con 3 vacantes `OPEN` (una por familia) y un match run ya ejecutado por vacante, y los 3
+usuarios demo de abajo. Tarda ~15-20 s (15 entrevistas completas de 14 turnos cada una).
 
 ## Levantar la API
 
@@ -69,6 +77,16 @@ curl -X POST http://localhost:8000/api/v1/auth/login \
 
 curl http://localhost:8000/api/v1/job-families
 ```
+
+### Usuarios demo (después de `python -m app.seeds.demo`)
+
+Contraseña `demo1234` para los tres:
+
+| Email | Rol | Estado |
+|---|---|---|
+| `candidato@demo.mx` | CANDIDATE | `DRAFT`, perfil nuevo — para recorrer el golden path completo en vivo |
+| `maria@demo.mx` | CANDIDATE | `EVALUATED`, familia `WAREHOUSE_SUPERVISOR`, la mejor evaluada de su familia |
+| `empresa@demo.mx` | COMPANY | Empresa verificada, 3 vacantes `OPEN` con match run ya ejecutado |
 
 ## Tests
 

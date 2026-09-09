@@ -31,7 +31,7 @@ from app.modules.assessments.models import TalentProfile
 from app.modules.candidates.models import CandidateProfile
 from app.modules.catalog.models import JobFamily
 from app.modules.catalog.service import resolve_rubric_specs_for_family
-from app.modules.interviews.models import InterviewSession, InterviewTurn
+from app.modules.interviews.models import InterviewSession
 
 
 class _FakeJob:
@@ -122,8 +122,7 @@ def test_i04_score_out_of_range_raises_not_clamps() -> None:
 
 def test_i02_rejects_evaluation_citing_nonexistent_turns(client: TestClient, db_session: Session, unique_email: str) -> None:
     token, family_id = _setup_candidate_with_family(client, db_session, unique_email)
-    resp = client.post("/api/v1/interviews", json={"mode": "TEXT"}, headers=_auth(token))
-    interview_id = resp.json()["id"]
+    client.post("/api/v1/interviews", json={"mode": "TEXT"}, headers=_auth(token))
 
     profile = db_session.query(CandidateProfile).filter(CandidateProfile.job_family_id == family_id).order_by(CandidateProfile.created_at.desc()).first()
     session = _get_session(db_session, profile.id)

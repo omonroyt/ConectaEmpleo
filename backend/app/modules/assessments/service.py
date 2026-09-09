@@ -701,7 +701,35 @@ def to_talent_profile_schema(db: Session, row: TalentProfile) -> schemas.TalentP
         if e.competency_id in competencies_by_id
     ]
 
-    top_skills = [schemas.CandidateSkill.model_validate(s) for s in row.top_skills]
+    # B13: `row.top_skills` guarda `CandidateSkillDTO` (narrativa de A3 PROFILE)
+    # -- ese DTO **no declara** `is_verified` a propósito (I-03: un agente
+    # nunca puede rellenar esa bandera, ver `accept_skill_evidence` arriba),
+    # así que valida directo contra `schemas.CandidateSkill` (que sí la exige,
+    # por ser el tipo HTTP público) fallaba con 500 `ValidationError` en
+    # cualquier candidato real. La fuente de verdad de `is_verified` (y de
+    # `is_declared`/`is_evaluated`, por consistencia) sigue siendo la fila
+    # real de `candidate_skills`, cruzada aquí por `skill_code`.
+    candidate_skills_by_code = {
+        r.skill_code: r
+        for r in db.execute(
+            select(CandidateSkill).where(CandidateSkill.candidate_id == row.candidate_id)
+        ).scalars().all()
+    }
+    top_skills = []
+    for s in row.top_skills:
+        real = candidate_skills_by_code.get(s.get("skill_code"))
+        top_skills.append(
+            schemas.CandidateSkill(
+                skill_code=s.get("skill_code", ""),
+                skill_name=s.get("skill_name", ""),
+                is_declared=real.is_declared if real else bool(s.get("is_declared", False)),
+                is_evaluated=real.is_evaluated if real else bool(s.get("is_evaluated", True)),
+                is_verified=real.is_verified if real else False,
+                evaluated_score=s.get("evaluated_score"),
+                confidence=s.get("confidence"),
+                evidence_summary=s.get("evidence_summary"),
+            )
+        )
     risk_flags = [schemas.RiskFlag.model_validate(f) for f in row.risk_flags]
     inconsistencies = [schemas.Inconsistency.model_validate(i) for i in row.inconsistencies]
 

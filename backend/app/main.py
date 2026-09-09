@@ -14,6 +14,7 @@ from app.core.errors import register_error_handlers
 from app.core.jobs import router as jobs_router
 from app.core.logging import install_logging
 from app.database import get_db
+from app.modules.admin.router import router as admin_router
 from app.modules.assessments.router import router as assessments_router
 from app.modules.candidates.router import router as candidates_router
 from app.modules.catalog.router import router as catalog_router
@@ -24,6 +25,7 @@ from app.modules.identity.router import router as identity_router
 from app.modules.interviews.router import router as interviews_router
 from app.modules.marketplace.router import router as marketplace_router
 from app.modules.matching.router import router as matching_router
+from app.modules.misc.router import router as misc_router
 from app.modules.vacancies.router import router as vacancies_router
 
 settings = get_settings()
@@ -64,6 +66,8 @@ app.include_router(interviews_router, prefix=API_PREFIX)
 app.include_router(assessments_router, prefix=API_PREFIX)
 app.include_router(jobs_router, prefix=API_PREFIX)
 app.include_router(voice_router, prefix=API_PREFIX)
+app.include_router(misc_router, prefix=API_PREFIX)
+app.include_router(admin_router, prefix=API_PREFIX)
 
 if settings.storage_provider == "local":
     # Sirve los archivos de `LocalStorageAdapter` para que `DocumentRef.url` sea navegable

@@ -5,7 +5,6 @@ reales del banco semilla (`HM-05`, `SE-07`, `SA-07`)."""
 
 from __future__ import annotations
 
-import uuid
 
 from sqlalchemy.orm import Session
 

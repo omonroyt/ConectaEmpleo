@@ -58,7 +58,10 @@ class Settings(BaseSettings):
     jwt_expire_minutes: int = 60
 
     # --- CORS ---
-    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    # :5183 es el puerto fijo que usa `frontend/scripts/e2e-smoke.mjs` (Playwright)
+    # para no chocar con un `vite` de desarrollo ya corriendo en :5173 -- B13
+    # (`E2E_TARGET=http`) necesita que el backend real también lo acepte.
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5183,http://127.0.0.1:5183"
 
     # --- Entorno ---
     environment: Literal["local", "staging", "production"] = "local"

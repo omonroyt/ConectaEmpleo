@@ -1,0 +1,186 @@
+[
+  {
+    "competency_code": "OFFICE_TOOLS",
+    "job_family": "ADMIN_ASSISTANT",
+    "version": 1,
+    "name": "Herramientas de oficina (Excel, Word, correo)",
+    "type": "TECHNICAL",
+    "is_core": true,
+    "what_to_probe": [
+      "Qué funciones de Excel usa realmente (fórmulas, filtros, tablas dinámicas) y para qué reporte",
+      "Cómo organiza y da formato a un documento de Word con varias secciones",
+      "Cómo administra su bandeja de correo (carpetas, prioridad, seguimiento de pendientes)"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ninguna herramienta ni tarea concreta realizada con ellas."},
+      {"level": 1, "label": "Básico", "descriptor": "Menciona haber usado Excel o Word pero solo para escribir texto o capturar datos sueltos, sin fórmulas ni formato."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Usa fórmulas simples (sumas, promedios) y da formato básico a documentos, pero no menciona filtros, tablas dinámicas ni plantillas."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un reporte o documento real que arma de forma recurrente usando fórmulas condicionales o tablas dinámicas, y gestiona su correo con carpetas o reglas."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además automatiza tareas repetitivas (macros, plantillas reutilizables, combinación de correspondencia) y explica cómo eso redujo tiempo o errores."}
+    ],
+    "positive_signals": ["nombra una fórmula o función específica de Excel", "describe un documento o reporte real que produce", "explica cómo organiza su bandeja de entrada"],
+    "negative_signals": ["responde solo 'sí sé usar Excel' sin ejemplo", "confunde Excel con Word", "no distingue entre capturar datos y analizarlos"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "DOCUMENT_CONTROL",
+    "job_family": "ADMIN_ASSISTANT",
+    "version": 1,
+    "name": "Control documental y archivo",
+    "type": "TECHNICAL",
+    "is_core": true,
+    "what_to_probe": [
+      "Cómo clasifica y nombra los documentos físicos o digitales que resguarda",
+      "Cómo encuentra un documento específico meses después de archivado",
+      "Qué hace cuando falta un documento o está mal clasificado"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún método de archivo ni ejemplo de documentos manejados."},
+      {"level": 1, "label": "Básico", "descriptor": "Guarda documentos en carpetas sin un criterio consistente de nombre o clasificación."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Usa una clasificación propia (por fecha, cliente o tipo) pero no explica cómo garantiza que no se pierda algo."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un sistema de clasificación consistente (físico o digital), cómo nombra archivos y cómo localiza un documento específico rápidamente, con un ejemplo real."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además implementó o mejoró el sistema de archivo de su área, con control de versiones o bitácora de préstamos/consultas, y mide su efectividad."}
+    ],
+    "positive_signals": ["describe una convención de nombres o carpetas concreta", "da un ejemplo de haber encontrado algo archivado tiempo atrás", "menciona control de versiones o resguardo digital"],
+    "negative_signals": ["dice 'todo está en orden' sin describir el orden", "no distingue documentos físicos de digitales", "no explica qué hace ante un documento extraviado"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "SCHEDULING_COORDINATION",
+    "job_family": "ADMIN_ASSISTANT",
+    "version": 1,
+    "name": "Agenda y coordinación",
+    "type": "TECHNICAL",
+    "is_core": false,
+    "what_to_probe": [
+      "Cómo coordina la agenda de una o varias personas sin que se empalmen citas",
+      "Qué hace cuando dos reuniones importantes chocan de último momento",
+      "Cómo organiza viajes o logística de eventos"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No aporta ejemplos de haber coordinado agendas o citas."},
+      {"level": 1, "label": "Básico", "descriptor": "Ha anotado citas en un calendario pero no describe cómo evita choques o prioriza."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Usa un calendario compartido o recordatorios, pero no da un ejemplo de haber resuelto un conflicto de horarios."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de reprogramar o priorizar citas ante un conflicto, considerando la urgencia de cada una."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además coordina logística compleja (viajes, salas, múltiples personas con husos horarios o prioridades distintas) de forma proactiva, anticipando conflictos antes de que ocurran."}
+    ],
+    "positive_signals": ["da un ejemplo concreto de reprogramación", "menciona una herramienta de calendario compartido", "explica un criterio de prioridad usado"],
+    "negative_signals": ["responde en abstracto sin caso real", "no menciona ninguna herramienta de agenda", "confunde coordinar agenda con solo recordar citas"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "CUSTOMER_SERVICE",
+    "job_family": "ADMIN_ASSISTANT",
+    "version": 1,
+    "name": "Atención a clientes y proveedores",
+    "type": "TECHNICAL",
+    "is_core": true,
+    "what_to_probe": [
+      "Cómo atendió una solicitud difícil de un cliente o proveedor",
+      "Qué hace para dar seguimiento a una solicitud que no puede resolver de inmediato",
+      "Cómo maneja a alguien molesto o impaciente"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe interacciones reales con clientes o proveedores."},
+      {"level": 1, "label": "Básico", "descriptor": "Describe atención genérica ('siempre soy amable') sin un caso concreto ni resultado."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Da un ejemplo de atención a una solicitud, pero no explica el seguimiento posterior ni el cierre."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de principio a fin: la solicitud, cómo la atendió, el seguimiento dado y cómo confirmó que quedó resuelta."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además describe cómo desactivó una situación tensa con un cliente o proveedor molesto, o mejoró un proceso de atención a partir de solicitudes repetidas."}
+    ],
+    "positive_signals": ["describe una solicitud real con inicio y cierre", "menciona cómo confirmó que el cliente quedó satisfecho", "da un ejemplo de manejo de una queja"],
+    "negative_signals": ["solo dice 'doy buen servicio' sin ejemplo", "no menciona seguimiento posterior", "describe el problema pero no la resolución"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "WRITTEN_COMMUNICATION",
+    "job_family": "ADMIN_ASSISTANT",
+    "version": 1,
+    "name": "Comunicación escrita",
+    "type": "TECHNICAL",
+    "is_core": false,
+    "what_to_probe": [
+      "Qué tipo de correos, minutas o reportes redacta con más frecuencia",
+      "Cómo adapta el tono según a quién le escribe (jefe, cliente, compañero)",
+      "Un ejemplo de un mensaje que tuvo que aclarar o corregir por ser mal entendido"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No aporta ejemplos de redacción de correos, minutas o reportes."},
+      {"level": 1, "label": "Básico", "descriptor": "Redacta mensajes cortos e informales; no menciona estructura ni revisión previa al envío."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Redacta correos o minutas con estructura básica (saludo, cuerpo, cierre) pero no adapta el tono según el destinatario."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe cómo adapta tono y nivel de detalle según el destinatario, con un ejemplo real de un reporte o correo formal que redactó."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además da un ejemplo de haber evitado o corregido un malentendido importante por escrito, o de simplificar comunicación compleja para que otros la entendieran."}
+    ],
+    "positive_signals": ["distingue el tono usado con distintos destinatarios", "da un ejemplo de un documento escrito real", "menciona revisar antes de enviar"],
+    "negative_signals": ["solo dice 'escribo bien' sin ejemplo", "no distingue entre un mensaje informal y uno formal", "no menciona ningún documento concreto"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "ORGANIZATION_PRIORITIZATION",
+    "job_family": "ADMIN_ASSISTANT",
+    "version": 1,
+    "name": "Organización y priorización",
+    "type": "BEHAVIORAL",
+    "is_core": true,
+    "what_to_probe": [
+      "Cómo decide qué tarea hacer primero cuando tiene varias pendientes",
+      "Un día con muchos imprevistos: cómo lo organizó",
+      "Qué herramienta o método usa para no olvidar pendientes"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún método ni ejemplo de organización de tareas."},
+      {"level": 1, "label": "Básico", "descriptor": "Dice que 'organiza mentalmente' sin lista, método ni ejemplo concreto."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Usa una lista de pendientes o agenda, pero no explica un criterio claro de qué va primero."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un criterio explícito (urgencia, impacto, fecha límite) con un ejemplo real de un día con varias tareas en conflicto y cómo las priorizó."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además anticipa cargas de trabajo (por ejemplo, adelanta tareas antes de una fecha pico) y ajusta su plan cuando surge un imprevisto, sin dejar de cumplir lo crítico."}
+    ],
+    "positive_signals": ["nombra un criterio explícito de prioridad", "da un ejemplo real de un día saturado", "menciona una herramienta de gestión de tareas"],
+    "negative_signals": ["responde en abstracto sin ejemplo", "no distingue urgente de importante", "dice que nunca tiene pendientes atrasados sin explicar cómo lo logra"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "TEAM_COLLABORATION",
+    "job_family": "ADMIN_ASSISTANT",
+    "version": 1,
+    "name": "Colaboración en equipo",
+    "type": "BEHAVIORAL",
+    "is_core": false,
+    "what_to_probe": [
+      "Un ejemplo de haber ayudado a un compañero de otra área a sacar adelante algo",
+      "Cómo maneja una tarea que depende de que alguien más entregue su parte a tiempo",
+      "Qué hace cuando no está de acuerdo con cómo un compañero está haciendo algo"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No aporta ejemplos de trabajo colaborativo con otras personas o áreas."},
+      {"level": 1, "label": "Básico", "descriptor": "Describe trabajo en equipo en términos generales ('nos llevamos bien') sin un caso concreto."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Da un ejemplo de haber apoyado a un compañero, pero no explica el resultado ni el impacto."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de colaboración con otra área o compañero, incluyendo el resultado obtenido gracias a esa cooperación."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además describe cómo manejó un desacuerdo con un compañero de forma constructiva, o cómo facilitó que un equipo con fricciones lograra un objetivo común."}
+    ],
+    "positive_signals": ["da un ejemplo real de ayuda a otra área", "explica el resultado de la colaboración", "describe cómo resolvió un desacuerdo sin conflicto"],
+    "negative_signals": ["solo dice 'trabajo bien en equipo' sin ejemplo", "describe una situación pero no su propio rol en ella", "atribuye todo el mérito a otros sin explicar su aporte"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "PROBLEM_SOLVING",
+    "job_family": "ADMIN_ASSISTANT",
+    "version": 1,
+    "name": "Resolución de problemas",
+    "type": "BEHAVIORAL",
+    "is_core": false,
+    "what_to_probe": [
+      "Un contratiempo administrativo real (factura perdida, cita duplicada, error de captura) y cómo lo resolvió",
+      "Cómo decide si resuelve algo por su cuenta o lo escala a su jefe",
+      "Qué cambió en su forma de trabajar después de ese problema"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No aporta ejemplos de haber resuelto un contratiempo administrativo."},
+      {"level": 1, "label": "Básico", "descriptor": "Menciona un problema pero no explica qué hizo para resolverlo, o dice que solo lo reportó a alguien más."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Describe un problema y una acción tomada, pero sin explicar por qué eligió esa solución sobre otras."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un problema real, identifica su causa y explica la solución elegida y por qué, con un resultado verificable."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además implementó un cambio para que el problema no se repitiera (un nuevo control, un checklist, una alerta) y puede describir su efecto."}
+    ],
+    "positive_signals": ["identifica la causa raíz del problema", "explica por qué eligió esa solución", "describe una mejora para prevenir que se repita"],
+    "negative_signals": ["repite el enunciado de la pregunta sin dar un caso", "solo describe el problema sin la solución", "atribuye la solución únicamente a otra persona"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  }
+]

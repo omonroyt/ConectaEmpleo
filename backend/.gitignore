@@ -1,0 +1,6 @@
+# El .gitignore raíz ya cubre __pycache__/, .venv/, .env, etc.
+# Estas reglas son específicas del backend.
+*.egg-info/
+build/
+.env.local
+conecta-empleo-api.egg-info/

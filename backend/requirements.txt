@@ -1,0 +1,23 @@
+# Generado a mano a partir de pyproject.toml para que `pip install -r requirements.txt`
+# funcione sin instalar herramientas de build adicionales. Mantener sincronizado con
+# [project.dependencies] en pyproject.toml.
+
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+pydantic>=2.9,<3
+pydantic-settings==2.6.1
+email-validator==2.2.0
+sqlalchemy>=2.0.36,<2.1
+alembic==1.14.0
+psycopg[binary]==3.2.3
+pyjwt==2.10.0
+passlib[argon2]==1.7.4
+argon2-cffi==23.1.0
+python-multipart==0.0.17
+structlog==24.4.0
+
+# --- dev / test (opcional: pip install -r requirements.txt -r requirements-dev.txt) ---
+pytest==8.3.3
+pytest-asyncio==0.24.0
+httpx==0.27.2
+ruff==0.7.4

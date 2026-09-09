@@ -1,0 +1,186 @@
+[
+  {
+    "competency_code": "MACHINERY_OPERATION",
+    "job_family": "HEAVY_MACHINERY_OPERATOR",
+    "version": 1,
+    "name": "Operación de maquinaria",
+    "type": "TECHNICAL",
+    "is_core": true,
+    "what_to_probe": [
+      "Qué máquinas ha operado (retroexcavadora, cargador, grúa) y en qué tipo de obra",
+      "Una maniobra difícil que haya tenido que hacer y cómo la resolvió",
+      "Cómo revisa que la máquina esté lista antes de empezar a operar"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No nombra ninguna máquina operada ni describe una maniobra concreta."},
+      {"level": 1, "label": "Básico", "descriptor": "Nombra una máquina que ha operado pero no describe ninguna maniobra ni contexto de obra."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Describe tareas básicas de operación (mover material, nivelar) sin mencionar una maniobra compleja ni cómo verifica precisión."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe una maniobra concreta y de cierta dificultad (espacio reducido, terreno irregular, carga delicada) explicando cómo la ejecutó con control y precisión."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además explica cómo adapta su técnica según condiciones cambiantes (clima, terreno, tipo de material) y ha entrenado o guiado a otro operador."}
+    ],
+    "positive_signals": ["nombra una máquina específica con detalle técnico", "describe una maniobra concreta con contexto de obra", "explica cómo verificó la máquina antes de operar"],
+    "negative_signals": ["responde en abstracto ('sé operar de todo')", "no distingue entre tipos de máquina", "no menciona ninguna revisión previa"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "SAFETY_PROTOCOLS",
+    "job_family": "HEAVY_MACHINERY_OPERATOR",
+    "version": 1,
+    "name": "Protocolos de seguridad",
+    "type": "TECHNICAL",
+    "is_core": true,
+    "what_to_probe": [
+      "Qué protocolos de seguridad sigue antes, durante y después de operar",
+      "Un ejemplo de haber usado bloqueo/etiquetado (LOTO) o equipo de protección personal",
+      "Qué hizo ante una condición insegura que detectó en obra"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No menciona ningún protocolo de seguridad ni equipo de protección."},
+      {"level": 1, "label": "Básico", "descriptor": "Menciona el uso de equipo de protección personal (casco, chaleco) sin describir protocolos formales."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Describe protocolos generales (checklist antes de operar) pero no un caso concreto de aplicación de bloqueo/etiquetado o de haber detenido una operación insegura."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de aplicar bloqueo/etiquetado o de detener una operación por una condición insegura, explicando el procedimiento seguido."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además ha participado en una auditoría de seguridad o ha corregido una práctica insegura de un compañero, explicando cómo lo abordó sin generar conflicto."}
+    ],
+    "positive_signals": ["nombra un protocolo específico (LOTO, permiso de trabajo)", "da un ejemplo real de haber detenido una operación insegura", "menciona equipo de protección específico para la tarea"],
+    "negative_signals": ["responde en abstracto sin caso real", "minimiza la importancia de un incidente cercano", "no menciona ningún equipo de protección"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "PREVENTIVE_MAINTENANCE",
+    "job_family": "HEAVY_MACHINERY_OPERATOR",
+    "version": 1,
+    "name": "Mantenimiento preventivo",
+    "type": "TECHNICAL",
+    "is_core": false,
+    "what_to_probe": [
+      "Qué revisa en la máquina antes de empezar a operar (niveles, filtros, desgaste)",
+      "Un caso en el que detectó una falla antes de que causara un problema mayor",
+      "Cada cuánto y cómo reporta el estado de la máquina"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ninguna revisión de mantenimiento realizada."},
+      {"level": 1, "label": "Básico", "descriptor": "Menciona revisar la máquina 'por rutina' sin especificar qué revisa."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Nombra elementos concretos que revisa (niveles de aceite, llantas, luces) pero no da un ejemplo de haber detectado una falla real."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de haber detectado un desgaste o falla incipiente durante la revisión y cómo la reportó o corrigió a tiempo."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además lleva o propuso una bitácora de mantenimiento y puede explicar cómo eso redujo fallas o tiempo muerto de la máquina."}
+    ],
+    "positive_signals": ["nombra elementos específicos de revisión (niveles, filtros, mangueras)", "da un ejemplo de una falla detectada a tiempo", "menciona un reporte o bitácora"],
+    "negative_signals": ["dice 'reviso todo' sin detalle", "no distingue mantenimiento preventivo de correctivo", "no menciona a quién reporta una falla"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "LOAD_HANDLING",
+    "job_family": "HEAVY_MACHINERY_OPERATOR",
+    "version": 1,
+    "name": "Manejo de cargas",
+    "type": "TECHNICAL",
+    "is_core": true,
+    "what_to_probe": [
+      "Cómo calcula si una carga es segura para la máquina o el aparejo que usa",
+      "Un ejemplo de una carga difícil de maniobrar (peso, forma o espacio) y cómo la resolvió",
+      "Qué hace si una carga se ve inestable o mal asegurada"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún cálculo o ejemplo de manejo de cargas pesadas."},
+      {"level": 1, "label": "Básico", "descriptor": "Menciona haber movido cargas pesadas sin explicar cómo verifica peso o equilibrio."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Describe verificar el peso aproximado antes de levantar, pero no da un ejemplo de una carga particularmente difícil."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de una carga pesada o de forma irregular, explicando cómo calculó el peso, aseguró el equilibrio y evitó un accidente."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además explica cómo coordina con otros (maniobristas, señalización) en cargas complejas de varias personas, y qué límites de peso nunca excede aunque se lo pidan."}
+    ],
+    "positive_signals": ["menciona un cálculo o verificación de peso concreto", "da un ejemplo de una carga difícil resuelta con seguridad", "explica un límite de seguridad que respeta siempre"],
+    "negative_signals": ["responde en abstracto sin ejemplo de carga real", "no menciona verificación de equilibrio", "sugiere haber excedido límites de seguridad sin reflexión crítica"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "SITE_SIGNALING",
+    "job_family": "HEAVY_MACHINERY_OPERATOR",
+    "version": 1,
+    "name": "Señalización y comunicación en obra",
+    "type": "TECHNICAL",
+    "is_core": false,
+    "what_to_probe": [
+      "Qué señales manuales o de radio usa para coordinarse con otros en obra",
+      "Un ejemplo de haber coordinado una maniobra con un señalero o compañero",
+      "Qué hace si pierde contacto visual o de radio durante una maniobra"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún método de señalización o comunicación en obra."},
+      {"level": 1, "label": "Básico", "descriptor": "Menciona usar señales o radio de forma genérica sin ejemplo concreto."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Nombra señales manuales o códigos de radio específicos, pero no da un ejemplo de una maniobra coordinada con ellos."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de coordinar una maniobra con un señalero o compañero usando señales o radio, incluyendo qué hizo ante una señal ambigua o pérdida de contacto."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además ha capacitado a otros en señalización o ha establecido protocolos de comunicación en un equipo nuevo."}
+    ],
+    "positive_signals": ["nombra señales o códigos de radio específicos", "da un ejemplo real de coordinación con un señalero", "explica qué hace ante pérdida de contacto o señal ambigua"],
+    "negative_signals": ["responde en abstracto sin ejemplo", "no distingue entre señales manuales y radio", "no menciona qué hacer si pierde contacto"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "RISK_AWARENESS",
+    "job_family": "HEAVY_MACHINERY_OPERATOR",
+    "version": 1,
+    "name": "Conciencia de riesgo",
+    "type": "BEHAVIORAL",
+    "is_core": true,
+    "what_to_probe": [
+      "Un ejemplo de haber detectado una condición insegura antes de que pasara algo",
+      "Cómo decide si algo es lo suficientemente riesgoso para detener el trabajo",
+      "Qué aprendió de una situación de riesgo que vivió o presenció"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No aporta ejemplos de haber identificado un riesgo antes de un incidente."},
+      {"level": 1, "label": "Básico", "descriptor": "Dice ser 'cuidadoso' sin describir una situación de riesgo real detectada."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Describe una condición insegura observada, pero no explica qué acción tomó al respecto."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de haber detectado un riesgo y haber actuado antes de que ocurriera un incidente (avisar, detener, corregir)."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además describe cómo ese aprendizaje cambió su forma de trabajar de manera permanente, o cómo ayudó a que otros adoptaran la misma precaución."}
+    ],
+    "positive_signals": ["describe una condición de riesgo específica y observable", "explica la acción tomada antes del incidente", "conecta el aprendizaje con un cambio de conducta duradero"],
+    "negative_signals": ["responde en abstracto ('siempre soy precavido')", "describe el riesgo pero no ninguna acción", "minimiza la gravedad de una situación peligrosa"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "INSTRUCTION_FOLLOWING",
+    "job_family": "HEAVY_MACHINERY_OPERATOR",
+    "version": 1,
+    "name": "Seguimiento de instrucciones",
+    "type": "BEHAVIORAL",
+    "is_core": false,
+    "what_to_probe": [
+      "Un ejemplo de una instrucción compleja del supervisor que ejecutó al pie de la letra",
+      "Qué hace si una instrucción no le queda clara antes de empezar",
+      "Qué hace si detecta que una instrucción podría ser insegura o incorrecta"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún ejemplo de seguimiento de instrucciones de un supervisor."},
+      {"level": 1, "label": "Básico", "descriptor": "Dice que 'siempre sigue instrucciones' sin ejemplo ni detalle de un caso."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Da un ejemplo simple de una tarea instruida y ejecutada, sin mencionar cómo aclaró dudas o verificó que la entendió bien."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe una instrucción con varios pasos que ejecutó correctamente, incluyendo cómo confirmó su comprensión antes de empezar."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además describe un caso en el que señaló a su supervisor una instrucción que parecía insegura o incorrecta antes de ejecutarla, de forma respetuosa y sin insubordinación."}
+    ],
+    "positive_signals": ["da un ejemplo concreto de instrucción con varios pasos", "menciona haber confirmado que entendió antes de actuar", "describe haber señalado una instrucción riesgosa con respeto"],
+    "negative_signals": ["responde en abstracto sin ejemplo", "sugiere ejecutar instrucciones sin cuestionar aunque sean inseguras", "no menciona ninguna aclaración de dudas"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "TEAM_COORDINATION",
+    "job_family": "HEAVY_MACHINERY_OPERATOR",
+    "version": 1,
+    "name": "Coordinación con el equipo",
+    "type": "BEHAVIORAL",
+    "is_core": false,
+    "what_to_probe": [
+      "Un ejemplo de coordinarse con otros operadores o maniobristas para no chocar tiempos",
+      "Qué hace cuando su ritmo de trabajo depende del de otra persona",
+      "Cómo resuelve un desacuerdo con un compañero sobre cómo hacer una maniobra"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No aporta ejemplos de coordinación con otros operadores o el equipo de obra."},
+      {"level": 1, "label": "Básico", "descriptor": "Describe trabajo en equipo de forma genérica sin un caso concreto."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Da un ejemplo de haberse coordinado con otro operador, pero no explica cómo evitaron un choque de tiempos o espacio."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de coordinación con otro operador o maniobrista para evitar tiempos muertos o choques, explicando el acuerdo alcanzado."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además describe cómo resolvió un desacuerdo técnico con un compañero sobre la forma de ejecutar una maniobra, llegando a un acuerdo sin afectar la seguridad ni el avance."}
+    ],
+    "positive_signals": ["describe un acuerdo concreto de coordinación de tiempos", "da un ejemplo de haber evitado un choque o tiempo muerto", "explica cómo resolvió un desacuerdo técnico"],
+    "negative_signals": ["responde en abstracto sin ejemplo", "no menciona a ningún otro operador o compañero", "atribuye cualquier fricción únicamente al otro"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  }
+]

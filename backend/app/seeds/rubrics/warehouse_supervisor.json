@@ -1,0 +1,186 @@
+[
+  {
+    "competency_code": "INVENTORY_CONTROL",
+    "job_family": "WAREHOUSE_SUPERVISOR",
+    "version": 1,
+    "name": "Control de inventarios",
+    "type": "TECHNICAL",
+    "is_core": true,
+    "what_to_probe": [
+      "Métodos de conteo utilizados y su periodicidad",
+      "Cómo detecta y resuelve diferencias entre físico y sistema",
+      "Herramientas o sistemas que ha operado"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No aporta ejemplos ni describe prácticas."},
+      {"level": 1, "label": "Básico", "descriptor": "Menciona conteos pero sin método ni periodicidad."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Describe un método propio; no explica manejo de diferencias."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe método, periodicidad y cómo concilia diferencias, con ejemplo concreto."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además propone mejoras, usa indicadores y explica impacto medible."}
+    ],
+    "positive_signals": ["cita cifras", "nombra un sistema real", "describe una decisión propia"],
+    "negative_signals": ["responde en abstracto", "repite el enunciado de la pregunta"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "FORKLIFT_SAFETY",
+    "job_family": "WAREHOUSE_SUPERVISOR",
+    "version": 1,
+    "name": "Seguridad en montacargas",
+    "type": "TECHNICAL",
+    "is_core": true,
+    "what_to_probe": [
+      "Qué reglas de velocidad, carga y señalización sigue al operar o supervisar montacargas",
+      "Un ejemplo de haber corregido una práctica insegura de un montacarguista",
+      "Cómo verifica que un montacargas esté en condiciones de operar"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No menciona ninguna regla de seguridad de montacargas ni ejemplo relacionado."},
+      {"level": 1, "label": "Básico", "descriptor": "Menciona reglas generales ('hay que ir despacio') sin especificar límites ni protocolo."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Nombra reglas concretas (límite de velocidad, altura máxima de carga, uso de claxon en cruces) pero no da un ejemplo real de aplicación o corrección."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de haber corregido o evitado una práctica insegura con montacargas, explicando la regla violada y la acción tomada."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además ha implementado o reforzado un protocolo de seguridad de montacargas para todo el equipo (checklist, señalización de pasillos, capacitación) y puede describir su efecto."}
+    ],
+    "positive_signals": ["nombra un límite o regla específica de operación", "da un ejemplo real de corrección de una práctica insegura", "menciona una revisión previa del equipo"],
+    "negative_signals": ["responde en abstracto sin regla concreta", "minimiza el riesgo de una maniobra insegura", "no menciona ninguna verificación del montacargas"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "WMS_ERP_SYSTEMS",
+    "job_family": "WAREHOUSE_SUPERVISOR",
+    "version": 1,
+    "name": "Sistemas WMS / ERP",
+    "type": "TECHNICAL",
+    "is_core": false,
+    "what_to_probe": [
+      "Qué sistema WMS o ERP ha usado y para qué movimientos concretos",
+      "Un ejemplo de haber corregido un error de captura en el sistema antes de que causara un problema",
+      "Qué reportes genera o consulta regularmente en el sistema"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No nombra ningún sistema WMS o ERP ni tarea realizada en uno."},
+      {"level": 1, "label": "Básico", "descriptor": "Nombra un sistema pero solo para consultas simples, sin registrar movimientos ni generar reportes."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Describe registrar movimientos de entrada/salida en el sistema, pero no menciona haber detectado o corregido un error de captura."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de haber detectado y corregido un error de captura en el sistema antes de que generara una diferencia de inventario."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además genera o interpreta reportes del sistema para tomar decisiones operativas (reordenar, reubicar, priorizar surtido) y explica un caso real."}
+    ],
+    "positive_signals": ["nombra un sistema WMS/ERP específico", "describe un error de captura corregido a tiempo", "menciona un reporte del sistema usado para decidir algo"],
+    "negative_signals": ["no nombra ningún sistema concreto", "confunde el sistema con una hoja de Excel", "no menciona ningún movimiento registrado personalmente"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "RECEIVING_DISPATCH",
+    "job_family": "WAREHOUSE_SUPERVISOR",
+    "version": 1,
+    "name": "Recepción y despacho",
+    "type": "TECHNICAL",
+    "is_core": true,
+    "what_to_probe": [
+      "Cómo verifica que la mercancía recibida coincide con el pedido antes de aceptarla",
+      "Un ejemplo de haber detectado un faltante, sobrante o daño en una recepción",
+      "Cómo organiza y documenta un despacho para que salga completo y a tiempo"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún proceso de recepción o despacho ni ejemplo concreto."},
+      {"level": 1, "label": "Básico", "descriptor": "Menciona recibir o despachar mercancía sin describir ninguna verificación contra el pedido."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Describe verificar cantidades contra el pedido, pero no da un ejemplo de haber detectado una discrepancia real."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de haber detectado un faltante, sobrante o mercancía dañada al recibir, y qué documentó o reportó al respecto."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además ha mejorado el proceso de recepción o despacho de su almacén (checklist, doble verificación, reorganización de andenes) y puede explicar el efecto en tiempos o errores."}
+    ],
+    "positive_signals": ["describe una verificación contra el pedido de forma concreta", "da un ejemplo real de faltante, sobrante o daño detectado", "menciona documentación o evidencia generada (foto, reporte, firma)"],
+    "negative_signals": ["responde en abstracto sin ejemplo", "no menciona ninguna verificación contra el pedido", "no explica qué hizo con la discrepancia detectada"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "STORAGE_ORGANIZATION",
+    "job_family": "WAREHOUSE_SUPERVISOR",
+    "version": 1,
+    "name": "Organización de almacén",
+    "type": "TECHNICAL",
+    "is_core": false,
+    "what_to_probe": [
+      "Cómo decide dónde ubicar cada tipo de mercancía dentro del almacén",
+      "Un ejemplo de haber reorganizado un área para agilizar el surtido",
+      "Cómo evita que la mercancía de alta rotación quede en un lugar difícil de alcanzar"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún criterio de organización del almacén."},
+      {"level": 1, "label": "Básico", "descriptor": "Menciona que el almacén 'está ordenado' sin explicar ningún criterio de ubicación."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Describe un criterio simple (por tipo de producto o por proveedor) pero no considera rotación ni facilidad de acceso."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un criterio de ubicación basado en rotación o frecuencia de surtido, con un ejemplo real de haber reorganizado un área para agilizar el trabajo."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además rediseñó el layout de una sección completa del almacén considerando flujo, seguridad y rotación, y puede describir la mejora en tiempos de surtido."}
+    ],
+    "positive_signals": ["describe un criterio de ubicación basado en rotación", "da un ejemplo real de reorganización con resultado medible", "menciona facilidad de acceso para mercancía de alta demanda"],
+    "negative_signals": ["dice 'todo está ordenado' sin criterio", "no menciona rotación ni frecuencia de surtido", "describe el layout sin ningún ejemplo de mejora"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "TEAM_COORDINATION",
+    "job_family": "WAREHOUSE_SUPERVISOR",
+    "version": 1,
+    "name": "Coordinación de equipo",
+    "type": "BEHAVIORAL",
+    "is_core": true,
+    "what_to_probe": [
+      "Cómo distribuye tareas entre montacarguistas y auxiliares durante un turno",
+      "Un ejemplo de un día con carga de trabajo desigual y cómo reasignó tareas",
+      "Cómo maneja a alguien del equipo que no está rindiendo al ritmo necesario"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No describe ningún ejemplo de distribución de tareas o coordinación de un equipo."},
+      {"level": 1, "label": "Básico", "descriptor": "Dice que 'reparte el trabajo' sin criterio ni ejemplo concreto."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Describe repartir tareas por turno o por persona, pero no da un ejemplo de haber reasignado ante un desbalance de carga."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de reasignar tareas durante un turno para balancear la carga de trabajo, explicando el criterio usado."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además describe cómo abordó de forma directa y respetuosa a alguien del equipo con bajo rendimiento, ayudándolo a mejorar sin afectar el ambiente de trabajo."}
+    ],
+    "positive_signals": ["describe un criterio concreto de asignación de tareas", "da un ejemplo real de reasignación ante un desbalance", "explica cómo abordó un problema de rendimiento individual"],
+    "negative_signals": ["responde en abstracto sin ejemplo", "no menciona ningún criterio de asignación", "evita mencionar cómo maneja el bajo rendimiento de alguien"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "PROBLEM_SOLVING",
+    "job_family": "WAREHOUSE_SUPERVISOR",
+    "version": 1,
+    "name": "Resolución de problemas",
+    "type": "BEHAVIORAL",
+    "is_core": false,
+    "what_to_probe": [
+      "Un ejemplo real de un faltante, retraso o mercancía dañada y cómo reaccionó",
+      "Cómo decide si resuelve algo en el momento o lo escala a su jefe",
+      "Qué cambió en su forma de trabajar después de ese problema"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No aporta ejemplos de haber resuelto un problema operativo del almacén."},
+      {"level": 1, "label": "Básico", "descriptor": "Menciona un problema pero no describe ninguna acción tomada para resolverlo."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Describe un problema y una acción tomada, pero sin explicar por qué eligió esa solución."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un problema real (faltante, retraso, daño), identifica su causa y explica la solución aplicada con un resultado verificable."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además implementó un control para que el problema no se repitiera (checklist, doble revisión, ajuste de proceso) y puede describir su efecto."}
+    ],
+    "positive_signals": ["identifica la causa raíz del problema", "explica por qué eligió esa solución sobre otras", "describe una mejora implementada para prevenir recurrencia"],
+    "negative_signals": ["repite el enunciado sin dar un caso real", "solo describe el problema sin la solución", "atribuye la solución únicamente a otra persona"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  },
+  {
+    "competency_code": "DISCREPANCY_RESOLUTION",
+    "job_family": "WAREHOUSE_SUPERVISOR",
+    "version": 1,
+    "name": "Resolución de diferencias",
+    "type": "BEHAVIORAL",
+    "is_core": false,
+    "what_to_probe": [
+      "Un ejemplo real de una diferencia entre el físico y el sistema que investigó hasta cerrarla",
+      "Qué pasos sigue para descartar causas posibles de una diferencia de inventario",
+      "Cómo documenta el cierre de una diferencia para que no quede como pendiente abierto"
+    ],
+    "levels": [
+      {"level": 0, "label": "Sin evidencia", "descriptor": "No aporta ejemplos de haber investigado una diferencia de inventario."},
+      {"level": 1, "label": "Básico", "descriptor": "Menciona que 'a veces hay diferencias' sin describir ningún proceso de investigación."},
+      {"level": 2, "label": "En desarrollo", "descriptor": "Describe revisar el sistema o recontar físicamente, pero no un caso concreto de cierre de una diferencia real."},
+      {"level": 3, "label": "Competente", "descriptor": "Describe un caso concreto de una diferencia física-sistema que investigó paso a paso (recuento, revisión de movimientos, entrevistas) hasta identificar la causa y cerrarla."},
+      {"level": 4, "label": "Avanzado", "descriptor": "Además propuso un control para reducir la recurrencia de ese tipo de diferencia (doble conteo, restricción de acceso, validación en captura) y puede describir su efecto."}
+    ],
+    "positive_signals": ["describe un proceso de investigación con pasos concretos", "da un ejemplo real de una diferencia cerrada con causa identificada", "menciona un control propuesto para prevenir recurrencia"],
+    "negative_signals": ["responde en abstracto sin caso real", "dice que las diferencias 'se ajustan y ya' sin investigar causa", "no menciona ninguna documentación del cierre"],
+    "score_mapping": {"0": 0, "1": 25, "2": 50, "3": 75, "4": 100}
+  }
+]

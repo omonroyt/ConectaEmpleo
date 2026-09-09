@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: conecta-empleo-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: conecta
+      POSTGRES_PASSWORD: conecta
+      POSTGRES_DB: conecta
+    ports:
+      # Host 5433 → contenedor 5432. Se evita el puerto 5432 del host a propósito:
+      # en máquinas con un PostgreSQL nativo ya escuchando ahí, Windows deja que
+      # ambos procesos aparezcan "LISTENING" en netstat pero las conexiones se
+      # cuelan al servicio nativo (error real observado al construir B0: "no
+      # existe el rol conecta" contra un Postgres que no era este contenedor).
+      # Mapear a un puerto distinto elimina la ambigüedad sin tocar nada del host.
+      - "5433:5432"
+    volumes:
+      - conecta_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U conecta -d conecta"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  conecta_pgdata:

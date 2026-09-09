@@ -11,9 +11,9 @@
 | Campo | Valor |
 |---|---|
 | Fase activa | **BACKEND (fase 2)** — ver `05_BACKEND_TASKS.md`. La fase frontend está cerrada. |
-| Siguiente tarea | **B0** (base: pyproject, Docker, Postgres, Alembic, config, `/health`, CORS, errores, logging) |
+| Siguiente tarea | **B3** (perfil de candidato + documentos: `candidate_profiles` CRUD, `documents`, storage, upload de CV/certificaciones) |
 | Tarea en curso | ninguna |
-| Último commit de construcción | d1c43cd |
+| Último commit de construcción | 38df003 |
 | Bloqueos | ninguno |
 
 ### Cómo verificar el frontend antes de tocar nada
@@ -49,7 +49,27 @@ Paralelismo permitido: F1 ∥ F2 · luego F3 ∥ F4 ∥ F5 ∥ F6 ∥ F7 (carpet
 
 ## Cola de tareas — backend (fase 2)
 
-Ver `05_BACKEND_TASKS.md`. Requisito cumplido: F0–F9 están `DONE`, así que **B0 puede arrancar**.
+Ver `05_BACKEND_TASKS.md` para el detalle de cada fila (dependencias, entregable verificable, modelo
+sugerido). Esta tabla es el estado vivo — un subagente solo cambia su propia fila.
+
+| ID | Tarea | Modelo | Estado | Commit |
+|---|---|---|---|---|
+| B0 | Base: pyproject, Docker, docker-compose Postgres, config, `database.py`, Alembic, `/health`, CORS, errores, logging | sonnet | DONE | 38df003 |
+| B1 | Identidad: `users`, registro/login/me, JWT, `require_candidate/require_company` | sonnet | DONE | 38df003 |
+| B2 | Catálogo y semillas: `job_families`, `competencies`, `skills`, `rubrics`, `learning_catalog` | sonnet | DONE | 38df003 |
+| B3 | Perfil de candidato + documentos | sonnet | PENDING | — |
+| B4 | `AIPort` v1.1, `invoke.py`, `DeterministicAdapter`, tabla `jobs` + runner | sonnet | PENDING | — |
+| B5 | Extracción de CV y claims, `cv-builder` sessions | sonnet | PENDING | — |
+| B6 | Entrevista: sesiones, turnos, orquestador, Guardián de Equidad | opus | PENDING | — |
+| B7 | Evaluación y perfil: A3, `competency_evaluations`, `candidate_skills`, `talent_profiles`, A4 | opus | PENDING | — |
+| B8 | Empresa y vacantes: `companies` (extendido), `vacancies`, `vacancy_requirements`, A5 RESOLVE | sonnet | PENDING | — |
+| B9 | Motor de matching determinista, `match_runs`, `match_results` | opus | PENDING | — |
+| B10 | Marketplace y anonimización, `candidate_unlocks`, compare, shortlist, A5 EXPLAIN | sonnet | PENDING | — |
+| B11 | `AgenticAdapter` real (Anthropic + OpenAI, failover, prompts A1-A5) | opus | PENDING | — |
+| B12 | Voz: `STTPort`/`TTSPort`, `ElevenLabsAdapter`, `VoiceGateway` WS | opus | PENDING | — |
+| B13 | Mocks P2, `GET /admin/ai-invocations`, seeds de demo completas, deploy Railway | sonnet | PENDING | — |
+
+Requisito cumplido: F0–F9 están `DONE` y B0-B2 ya están `DONE`, así que **B3 puede arrancar**.
 
 ### Deuda conocida que hereda el backend
 
@@ -87,6 +107,125 @@ Detectada al construir el frontend contra el contrato de `02_API_CONTRACT.md`. C
 8. **No inventes decisiones de producto.** Si la spec no cubre algo, elige la opción más simple que no contradiga la spec y anótala en la bitácora.
 
 ## Bitácora (más reciente arriba)
+
+### 2026-09-09 — B0+B1+B2 (Sonnet)
+
+**Qué se construyó** (`backend/` completo, nuevo; `frontend/` no se tocó):
+
+- **B0 — Base**: `pyproject.toml` + `requirements.txt` (versiones fijas, `pip install -r
+  requirements.txt` verificado en un venv limpio y dentro del `Dockerfile`); `docker-compose.yml`
+  con Postgres 16 (usuario/clave/db `conecta`, volumen persistente); `Dockerfile` de una sola etapa
+  (`uvicorn app.main:app`, `$PORT` de Railway); `app/config.py` (pydantic-settings, todas las
+  variables de `docs/04 §13` + `docs/05 §0.3`); `.env.example` completo y comentado;
+  `app/database.py` (engine síncrono — decisión documentada en el docstring del propio archivo);
+  `app/core/errors.py` (excepciones de dominio → `{code, message, details}`, incluye
+  `INVALID_CREDENTIALS`, `UNLOCK_REQUIRED`, `NOT_EVALUATED`, `EMAIL_ALREADY_EXISTS`, más handlers
+  de `RequestValidationError` y `HTTPException` para que **todo** error, no solo los de dominio,
+  cumpla el formato del contrato); `app/core/logging.py` (structlog + middleware de `request_id`);
+  `app/main.py` (CORS por allowlist, `/health` con verificación real de conexión a DB, todo bajo
+  `/api/v1` salvo `/health`); `alembic/` inicializado con `env.py` leyendo `DATABASE_URL` desde
+  `app.config.get_settings()` (nunca un valor fijo en `alembic.ini`).
+- **B1 — Identidad**: modelo `users` (`app/modules/identity/models.py`); hash con argon2
+  (`passlib[argon2]`) y JWT con **PyJWT** (`app/core/security.py`, `role` en el claim,
+  `JWT_EXPIRE_MINUTES` configurable); `POST /auth/register`, `POST /auth/login`, `GET /auth/me`
+  devolviendo exactamente `AuthResponse`/`User` del contrato; registro con rol `CANDIDATE` crea
+  `candidate_profiles` vacío con `anon_code` único (`CND-XXXX`, formato y unicidad verificados en
+  test); rol `COMPANY` crea `companies` vacío en `UNVERIFIED`; `require_candidate()`,
+  `require_company()`, `get_current_user()` como dependencias FastAPI; credenciales inválidas → 401
+  `INVALID_CREDENTIALS` con mensaje en español, igual que el mock.
+- **B2 — Catálogo y semillas**: modelos `job_families`, `competencies`, `skills`, `rubrics` (JSONB
+  `levels` + `evidence_guidelines`, versionado), `learning_catalog`
+  (`app/modules/catalog/models.py`); `GET /job-families`, `GET /job-families/{id}/competencies`,
+  `GET /skills`; migración única de Alembic (`alembic/versions/fe3ea41d61ec_initial_schema.py`,
+  generada con `--autogenerate` y revisada a mano) que crea las 8 tablas de B0-B2; `app/seeds/run.py`
+  (`python -m app.seeds.run`) idempotente (upsert por clave natural: código de familia/competencia/
+  skill, `(competency_id, version)` de rúbrica, `(competency_code, title)` de capacitación) que
+  carga: 3 familias y sus 24 competencias con códigos/nombres/tipo/`is_core` copiados literalmente
+  de `docs/build/02_API_CONTRACT.md` §2 y verificados contra
+  `frontend/src/api/mock/seed/catalog.ts`; el catálogo de 41 skills (mismo archivo mock); **rúbricas
+  v1 completas para las 24 competencias** (`app/seeds/rubrics/*.json`, 3 archivos por familia) con
+  `what_to_probe`, 5 niveles 0-4 con descriptores observables (no adjetivos vagos), `positive_signals`,
+  `negative_signals` y `score_mapping`, siguiendo la calidad del ejemplo `INVENTORY_CONTROL` de
+  `docs/05 §6.2` (esa entrada se copió literal; las otras 23 se escribieron nuevas siguiendo el mismo
+  patrón); y el catálogo de aprendizaje (20 filas, copiado de
+  `frontend/src/api/mock/seed/learningCatalog.ts`).
+- `backend/CLAUDE.md` con las reglas no negociables de `docs/build/05_BACKEND_TASKS.md` (dominio
+  nunca importa adaptadores, `invoke.py` obligatorio, prompts versionados, rúbricas nunca en un
+  prompt, `is_verified`/`total_score` nunca los escribe un agente, config solo por env, migración
+  Alembic obligatoria) más las decisiones de este bloque. `backend/README.md` con puesta en marcha,
+  migración, seed, verificación curl y tests.
+
+**Decisiones y desviaciones** (ninguna contradice `docs/04`; todas están también en `backend/CLAUDE.md`):
+
+1. **SQLAlchemy síncrono, no async** (docstring de `app/database.py`). FastAPI corre las
+   dependencias síncronas en threadpool; se prioriza simplicidad de depuración y compatibilidad
+   directa con Alembic/scripts de seed sobre concurrencia máxima. Documentado como decisión
+   reversible si el volumen real lo exige.
+2. **JWT con PyJWT**, no `python-jose` (ambos permitidos por la tarea). Passlib con backend argon2
+   para el hash de contraseñas.
+3. **Módulo `app/modules/catalog/`** agrupa `job_families`/`competencies`/`skills`/`rubrics`/
+   `learning_catalog`. `docs/04 §4` no lo nombra explícitamente en su lista de módulos, pero B2 lo
+   pide como bloque propio y no encajaba limpiamente en `candidates/`; queda anotado por si B3+
+   prefiere fusionarlo.
+4. **Puerto local de Postgres remapeado a 5433** (`docker-compose.yml`), no 5432. Hallazgo real al
+   construir: en esta máquina Windows había un PostgreSQL nativo ya escuchando en 5432; Docker
+   reportaba el contenedor como "healthy" y el mapeo `5432:5432` como activo, pero las conexiones a
+   `localhost:5432` llegaban al proceso nativo (`no existe el rol "conecta"`). Remapear a 5433
+   elimina la ambigüedad sin tocar nada del sistema del desarrollador. `.env.example`,
+   `app/config.py` y `README.md` quedan consistentes con 5433; documentado también como riesgo para
+   quien retome en otra máquina.
+5. **Variable de entorno `DATABASE_URL` del sistema colisionaba con `.env`**: esta máquina tenía un
+   `DATABASE_URL` exportado a nivel de shell (de otro proyecto, apuntando a Supabase) que
+   `pydantic-settings` prioriza sobre el archivo `.env` (comportamiento estándar: entorno real >
+   `.env`). Ningún comando de este bloque tocó esa base — todas las verificaciones pasaron
+   `DATABASE_URL` explícito en la línea de comando apuntando al Postgres de `docker-compose.yml`.
+   Anotado en `README.md` para que quien retome no pierda tiempo con un error "misterioso" de rol
+   inexistente si le pasa lo mismo.
+6. No se creó `app/modules/candidates/router.py` ni `GET/PATCH /candidates/me` — eso es alcance
+   explícito de B3 en `docs/build/05_BACKEND_TASKS.md`. `app/modules/candidates/service.py` sí
+   existe ya (con `generate_unique_anon_code`, `create_empty_profile`, `completion_percent`) porque
+   B1 lo necesita para el registro.
+
+**Cómo levantar todo (tres comandos, después de `docker compose up -d` y crear `.env` desde
+`.env.example`)**:
+```bash
+alembic upgrade head
+python -m app.seeds.run
+uvicorn app.main:app --reload
+```
+
+**Verificación de cierre — salida real** (resumida; ver reporte del subagente para el detalle
+completo de cada comando):
+- `docker compose up -d` → contenedor `healthy` en el puerto 5433 tras el remapeo.
+- `alembic upgrade head` → `Running upgrade -> fe3ea41d61ec, initial schema` sin error.
+- `python -m app.seeds.run` corrido dos veces → mismo conteo ambas veces (3 familias, 24
+  competencias, 41 skills, 24 rúbricas, 20 filas de aprendizaje); segunda corrida sin líneas
+  `*_created` (todo upsert-sin-cambio).
+- `GET /health` → `{"status":"ok","database":"up","environment":"local"}`.
+- Registro candidato y empresa → `201` con `AuthResponse` válido; perfil de candidato creado con
+  `anon_code` formato `CND-XXXX`; empresa creada en `UNVERIFIED`.
+- Login de ambos → `200` con token; `GET /auth/me` con ese token → `200` con el `User` correcto.
+- Login con contraseña incorrecta → `401 {"code":"INVALID_CREDENTIALS", ...}`.
+- `GET /job-families` → 3 familias con los códigos exactos del contrato.
+- `GET /job-families/{id}/competencies` (WAREHOUSE_SUPERVISOR) → 8 competencias con los códigos
+  exactos.
+- `GET /skills` → 41 skills.
+- `pytest` → **12/12 passed** (registro+login+me, 401 con credenciales inválidas y con email
+  desconocido, `/auth/me` sin token → 401, email duplicado → 409 `EMAIL_ALREADY_EXISTS`, contraseña
+  corta → 422 `VALIDATION_ERROR`, `anon_code` único y con formato correcto entre dos candidatos,
+  empresa creada `UNVERIFIED`, 3 familias con códigos exactos, cada familia con sus 8 competencias
+  y `is_core` correcto, catálogo de skills sembrado, familia inexistente → 404 `NOT_FOUND`).
+- `docker build` de la imagen del `Dockerfile` → exitosa; contenedor corrido contra la red de
+  `docker-compose` → `/health` en verde con `database: up` y log estructurado con `request_id`.
+- `ruff check app tests` → sin hallazgos.
+
+**Qué queda pendiente para B3**: `GET/PATCH /candidates/me`, `POST /candidates/me/job-family`,
+`GET /candidates/me/status`, módulo `documents` (modelo, storage, upload de CV/certificaciones),
+invariante I-05 (snapshot para IA sin atributos protegidos — todavía no hay snapshot porque no hay
+IA conectada). El modelo `CandidateProfile` de B0-B2 ya tiene todos los campos del contrato
+(incluida `bio`, que `docs/04 §5.1` no lista explícitamente pero sí exige `CandidateProfilePatch`
+del contrato — ver nota en `app/modules/candidates/models.py`), así que B3 solo necesita
+service/router, no tocar el modelo salvo que surja un campo nuevo.
 
 ### 2026-09-09 — F9 (Sonnet)
 

@@ -10,6 +10,7 @@ sea completo desde el inicio y las tareas futuras no tengan que tocar este archi
 from functools import lru_cache
 from typing import Literal
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,6 +23,34 @@ class Settings(BaseSettings):
 
     # --- Base de datos ---
     database_url: str = "postgresql+psycopg://conecta:conecta@localhost:5433/conecta"
+
+    @field_validator("database_url")
+    @classmethod
+    def _reject_foreign_database_url(cls, value: str) -> str:
+        """Falla temprano y con un mensaje claro ante un `DATABASE_URL` heredado.
+
+        `pydantic-settings` da prioridad a las variables del entorno sobre `.env`,
+        así que un `DATABASE_URL` exportado por otro proyecto en la misma máquina
+        secuestra la configuración de forma silenciosa. En este equipo ya ocurrió:
+        había uno en formato JDBC apuntando a un Supabase ajeno. Sin esta
+        validación el síntoma aparece mucho después y es difícil de diagnosticar.
+        """
+        url = value.strip()
+        if url.startswith("jdbc:"):
+            raise ValueError(
+                "DATABASE_URL está en formato JDBC (empieza con 'jdbc:'), que "
+                "SQLAlchemy no entiende. Casi siempre viene de una variable de "
+                "entorno de otro proyecto que tiene prioridad sobre backend/.env. "
+                "Revisa el valor con 'echo $DATABASE_URL' y expórtalo como "
+                "'postgresql+psycopg://usuario:clave@host:puerto/base'."
+            )
+        if not url.startswith("postgresql"):
+            raise ValueError(
+                "DATABASE_URL debe apuntar a PostgreSQL "
+                "('postgresql+psycopg://...'). El modelo de datos usa columnas "
+                f"JSONB, así que otros motores no sirven. Valor recibido: {url!r}"
+            )
+        return url
 
     # --- Identidad / JWT ---
     jwt_secret: str = "change-me-in-every-environment"

@@ -220,7 +220,7 @@ async function startDevServer() {
 }
 
 async function login(page, { email, password, role }) {
-  await page.getByRole("button", { name: "Ya tengo cuenta" }).click();
+  await page.getByRole("button", { name: "Iniciar sesión" }).first().click();
   await page.waitForURL(/\/login/);
   if (role === "COMPANY") {
     await page.getByRole("radio", { name: "Empresa" }).click();
@@ -238,7 +238,7 @@ async function login(page, { email, password, role }) {
  * vuelve a DRAFT con `resetMock()`). */
 async function registerFreshCandidate(page) {
   const email = `qa-e2e-${Date.now()}@demo.mx`;
-  await page.getByRole("button", { name: "Soy candidato" }).click();
+  await page.getByRole("button", { name: "Busco empleo" }).first().click();
   await page.waitForURL(/\/register/);
   await page.getByLabel("Correo").fill(email);
   await page.getByLabel("Contraseña", { exact: true }).fill(CANDIDATE_PASSWORD);
@@ -255,7 +255,7 @@ async function runCandidateJourney(browser, baseURL) {
 
   await step("candidato: landing", async () => {
     await page.goto("/");
-    await page.waitForSelector("text=Marketplace de talento verificado");
+    await page.waitForSelector("text=Para empresas que construyen el mañana");
   });
   await snap(page, "c-landing");
 
@@ -271,7 +271,7 @@ async function runCandidateJourney(browser, baseURL) {
         w.__ce?.resetMock();
       });
       await page.reload();
-      await page.waitForSelector("text=Marketplace de talento verificado");
+      await page.waitForSelector("text=Para empresas que construyen el mañana");
     });
 
     await step("candidato: login", async () => {

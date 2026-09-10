@@ -86,6 +86,11 @@ class InterviewTurn(Base):
     )
     answer_text: Mapped[str | None] = mapped_column(Text, nullable=True)
     answer_received_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    #: Lectura interpretada de `answer_text` (`AnswerInterpretation` serializada,
+    #: ver `app/ai/contracts/base.py`). `answer_text` conserva SIEMPRE el
+    #: transcript crudo: esto es una lectura derivada y auditable, nunca un
+    #: reemplazo de la evidencia original.
+    answer_interpretation: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     ai_invocation_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("ai_invocations.id"), nullable=True
     )

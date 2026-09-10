@@ -44,7 +44,7 @@ from app.ai.contracts.assessment import (
     TalentProfileRequest,
     TalentProfileResult,
 )
-from app.ai.contracts.base import RubricSpec, TurnDTO
+from app.ai.contracts.base import AnswerInterpretation, RubricSpec, TurnDTO
 from app.ai.contracts.interview import InterviewTurnRequest, InterviewTurnResult
 from app.ai.contracts.matching import (
     MatchExplanationRequest,
@@ -203,6 +203,217 @@ def _word_limit(text: str, max_words: int = 120) -> str:
     return " ".join(words[:max_words]) + "…"
 
 
+# ---------------------------------------------------------------------------
+# Capa de comprensión (B14): traducir la respuesta cruda a contexto utilizable
+# ---------------------------------------------------------------------------
+# El transcript de voz llega con disfluencias ("Sí, te puedo compartir lo que
+# hice. Eh, ..."). Repreguntar citándolo literalmente produce preguntas
+# incoherentes, así que aquí se limpia, se extraen los temas y se clasifica la
+# calidad de la evidencia ANTES de decidir qué preguntar. Todo determinista:
+# regex y conjuntos, misma entrada -> misma salida, sin LLM.
+
+#: Tokens que en español hablado nunca son palabras de contenido. Se eliminan
+#: en cualquier posición.
+_NOISE_TOKEN_RE = re.compile(r"(?i)\b(?:eh+|ehm+|em+|mm+h?|aj[áa]|hmm+)\b")
+
+#: Muletillas que **sí** son palabras reales ("este proceso", "pues bien"), así
+#: que solo se eliminan cuando el fragmento entre comas es exactamente eso.
+_STANDALONE_FILLERS = frozenset(
+    {
+        "o sea",
+        "este",
+        "esto",
+        "pues",
+        "bueno",
+        "digamos",
+        "a ver",
+        "verdad",
+        "sí",
+        "si",
+        "ya sabes",
+        "como te digo",
+        "no sé cómo decirlo",
+    }
+)
+
+_STOPWORDS = frozenset(
+    {
+        "para", "pero", "porque", "cuando", "donde", "como", "esta", "este", "esto", "esos", "esas",
+        "todo", "toda", "todos", "todas", "desde", "hasta", "sobre", "entre", "cada", "muy", "más",
+        "mas", "también", "tambien", "algo", "alguna", "alguno", "otro", "otra", "otros", "otras",
+        "que", "los", "las", "una", "unos", "unas", "del", "con", "por", "sus", "les", "nos",
+        "ellos", "ellas", "usted", "ustedes", "siempre", "nunca", "entonces", "luego", "después",
+        "despues", "antes", "mismo", "misma", "hacer", "hago", "tener", "tengo", "estar", "estoy",
+        "poder", "puedo", "decir", "cosa", "cosas", "veces", "forma", "manera",
+    }
+)
+
+#: Marcadores de acción concreta y de resultado. Una respuesta con ambos ya es
+#: evidencia utilizable; con acción pero sin resultado, todavía falta algo que
+#: preguntar (y ahí es donde una repregunta aporta valor real).
+_ACTION_MARKERS = (
+    "hice", "hacía", "hacia", "hago", "revis", "report", "organiz", "captur", "verific",
+    "compar", "coordin", "apliqu", "registr", "elabor", "arm", "carg", "atend", "oper",
+    "supervis", "concili", "clasific", "orden",
+)
+_OUTCOME_MARKERS = (
+    "resultado", "logr", "al final", "termin", "evit", "mejor", "reduj", "redujo",
+    "gracias a eso", "consegu", "solucion", "resolv", "se corrigi", "quedó", "quedo",
+)
+_NO_EXPERIENCE_MARKERS = (
+    "no sé", "no se", "no me acuerdo", "no recuerdo", "nunca he", "no he usado",
+    "no he trabajado", "no tengo experiencia", "no conozco", "no lo he",
+)
+
+
+def _normalize_fragment(fragment: str) -> str:
+    return re.sub(r"[^0-9a-záéíóúüñ ]", "", fragment.lower()).strip()
+
+
+def _collapse_repeats(text: str) -> str:
+    """"que que hacía" -> "que hacía" (tartamudeo típico de transcripción)."""
+
+    return re.sub(r"(?i)\b(\w+)(\s+\1\b)+", r"\1", text)
+
+
+def strip_fillers(text: str) -> str:
+    """Quita muletillas y repeticiones **sin** cambiar el léxico ni el registro.
+
+    Nunca agrega información y nunca "sube" el registro de la persona: eso
+    rompería la prueba de equidad de `docs/build/06_INTERVIEW_SYSTEM.md` §8.4
+    (registro formal vs. coloquial dentro de ±10 puntos) y contradice la
+    Constitución ("La forma de hablar no es la competencia").
+    """
+
+    raw = (text or "").strip()
+    if not raw:
+        return ""
+
+    step = _NOISE_TOKEN_RE.sub(" ", raw)
+    sentences: list[str] = []
+    for sentence in re.split(r"(?<=[.!?…])\s+", step):
+        fragments = [f.strip() for f in sentence.split(",")]
+        useful = [f for f in fragments if _normalize_fragment(f) and _normalize_fragment(f) not in _STANDALONE_FILLERS]
+        if useful:
+            sentences.append(", ".join(useful))
+
+    cleaned = " ".join(sentences)
+    # Quitar una muletilla puede dejar la conjunción huérfana entre comas
+    # ("en Excel, y, comparaba"): se vuelve a pegar a la frase.
+    cleaned = re.sub(r"(?i),\s*(y|e|o|u|pero|entonces)\s*,", r" \1", cleaned)
+    cleaned = _collapse_repeats(cleaned)
+    cleaned = re.sub(r"\s+([.,;:!?…])", r"\1", cleaned)
+    cleaned = re.sub(r"[.,;:]\s*([.,;:…])", r"\1", cleaned)
+    cleaned = re.sub(r"\s+", " ", cleaned).strip(" ,;.…")
+    if not cleaned:
+        # Una respuesta que era solo muletillas se devuelve tal cual: la
+        # evidencia cruda nunca se pierde por limpiarla.
+        return re.sub(r"\s+", " ", raw)
+
+    cleaned = cleaned[0].upper() + cleaned[1:]
+    # Quitar una muletilla puede dejar minúscula al inicio de una oración.
+    cleaned = re.sub(
+        r"([.!?…]\s+)([a-záéíóúüñ])",
+        lambda m: m.group(1) + m.group(2).upper(),
+        cleaned,
+    )
+    if not cleaned.endswith((".", "!", "?", "…")):
+        cleaned += "."
+    return cleaned
+
+
+def _content_words(text: str) -> set[str]:
+    words = re.findall(r"[0-9a-záéíóúüñ]+", (text or "").lower())
+    return {w for w in words if len(w) >= 4 and w not in _STOPWORDS}
+
+
+def _detect_topics(answer: str, rubric: RubricSpec | None) -> list[str]:
+    """Herramientas y temas que la persona mencionó, en sus propias palabras."""
+
+    topics: list[str] = []
+
+    # 1. Nombres propios y acrónimos (Excel, SAP, WMS): mayúscula que no es
+    #    inicio de oración, así que sí significa algo.
+    for match in re.finditer(r"\b(?:[A-ZÁÉÍÓÚÑ]{2,6}|[A-ZÁÉÍÓÚÑ][a-záéíóúñ]{2,})\b", answer or ""):
+        prefix = (answer or "")[: match.start()].rstrip()
+        if not prefix or prefix.endswith((".", "!", "?", "…", "¿", "¡", '"')):
+            continue
+        token = match.group(0)
+        if token.lower() in _STOPWORDS or token in topics:
+            continue
+        topics.append(token)
+
+    # 2. Ítems de `what_to_probe` que la respuesta efectivamente toca. Es la
+    #    rúbrica la que define qué es un tema relevante, nunca este archivo.
+    if rubric is not None:
+        answer_words = _content_words(answer)
+        for item in rubric.what_to_probe:
+            if _content_words(item) & answer_words and item not in topics:
+                topics.append(item)
+
+    return topics[:5]
+
+
+def _classify_evidence(clean_answer: str, topics: list[str]) -> tuple[str, list[str]]:
+    lowered = clean_answer.lower()
+    words = _word_count(clean_answer)
+
+    if any(marker in lowered for marker in _NO_EXPERIENCE_MARKERS) and words < 15:
+        return "NO_EXPERIENCE", ["experiencia con el tema preguntado"]
+    if words <= 2:
+        return "VAGUE", ["contenido"]
+
+    has_action = any(marker in lowered for marker in _ACTION_MARKERS)
+    has_outcome = any(marker in lowered for marker in _OUTCOME_MARKERS)
+
+    if words < 12:
+        return "VAGUE", ["ejemplo concreto"]
+    if has_action and has_outcome:
+        return "SUFFICIENT", []
+    if has_action:
+        return "PARTIAL", ["resultado de lo que hizo"]
+    if topics:
+        return "PARTIAL", ["acción concreta de la persona"]
+    return "VAGUE", ["acción concreta de la persona", "resultado"]
+    # OFF_TOPIC existe en el contrato pero no se emite aquí: decidir que una
+    # respuesta "no viene al caso" sin comprender el idioma produce falsos
+    # positivos, y un falso OFF_TOPIC castiga a quien se expresa distinto.
+
+
+def interpret_answer(turn: TurnDTO, rubric: RubricSpec | None = None) -> AnswerInterpretation:
+    """`AnswerInterpretation` determinista de la respuesta de `turn`.
+
+    Es la etapa intermedia entre "lo que la persona dijo" y "qué le pregunto
+    ahora": limpia el transcript, saca los temas, dice qué le falta a la
+    respuesta y, si procede, sobre qué conviene profundizar. La siguiente
+    pregunta se construye sobre `probe_focus`, **nunca** sobre `answer_text`.
+    """
+
+    raw = turn.answer_text or ""
+    clean = strip_fillers(raw)
+    topics = _detect_topics(clean, rubric)
+    quality, missing = _classify_evidence(clean, topics)
+
+    focus: str | None = None
+    if quality in ("PARTIAL", "VAGUE"):
+        if topics:
+            focus = topics[0]
+        elif rubric is not None and rubric.what_to_probe:
+            focus = rubric.what_to_probe[0].lower()
+        elif rubric is not None:
+            focus = rubric.competency_name.lower()
+
+    return AnswerInterpretation(
+        clean_answer=clean,
+        summary=_excerpt(clean, 20),
+        topics=topics,
+        evidence_quality=quality,
+        missing_elements=missing,
+        contradicts_claims=[],
+        probe_focus=focus,
+    )
+
+
 @dataclass
 class _LevelBand:
     level: int
@@ -316,36 +527,71 @@ class DeterministicAdapter:
     # 3. next_interview_question (A2)
     # ------------------------------------------------------------------
     def next_interview_question(self, req: InterviewTurnRequest) -> InterviewTurnResult:
+        # Etapa 1 — comprensión: se interpreta la última respuesta ANTES de
+        # decidir nada. Viaja en el resultado aunque la acción no sea PROBE,
+        # para que el orquestador la persista y A3 evalúe sobre texto limpio.
+        last_answered = next((t for t in reversed(req.history) if t.answer_text), None)
+        rubrics_by_code = {r.competency_code: r for r in req.rubrics}
+        interpretation: AnswerInterpretation | None = None
+        if last_answered is not None:
+            interpretation = interpret_answer(
+                last_answered, rubrics_by_code.get(last_answered.target_competency_code)
+            )
+
         if req.remaining_questions <= 0:
             return InterviewTurnResult(
-                action="FINISH", rationale="Presupuesto de preguntas agotado.", coverage_update={}
+                action="FINISH",
+                answer_interpretation=interpretation,
+                rationale="Presupuesto de preguntas agotado.",
+                coverage_update={},
             )
 
         touched_codes = set(req.coverage_state.keys())
         untouched_core = [r for r in req.rubrics if r.is_core and r.competency_code not in touched_codes]
         if untouched_core:
-            rubric = untouched_core[0]
-            return self._ask(rubric)
+            return self._ask(untouched_core[0], interpretation)
 
-        # PROBE: la respuesta más larga sin haber sido ya profundizada con una cita.
+        # Etapa 2 — decisión: se repregunta solo si la interpretación dice que
+        # falta algo. Antes se profundizaba en cualquier respuesta larga, lo
+        # que convertía la entrevista en un interrogatorio mecánico.
+        # Se prefiere la última respuesta (es de lo que se está hablando); si
+        # esa no da pie, se puede volver sobre una anterior que quedó a medias.
         already_referenced = {t.references_turn_id for t in req.history if t.references_turn_id}
-        answered = [t for t in req.history if t.answer_text]
-        probe_candidates = [t for t in answered if t.turn_id not in already_referenced and _word_count(t.answer_text) >= 12]
-        if probe_candidates:
-            target = max(probe_candidates, key=lambda t: _word_count(t.answer_text))
-            return self._probe(target)
+        for candidate in reversed(req.history):
+            if not candidate.answer_text or candidate.turn_id in already_referenced:
+                continue
+            if _word_count(candidate.answer_text) < 12:
+                continue
+            candidate_rubric = rubrics_by_code.get(candidate.target_competency_code)
+            candidate_reading = (
+                interpretation
+                if candidate is last_answered and interpretation is not None
+                else interpret_answer(candidate, candidate_rubric)
+            )
+            if candidate_reading.evidence_quality not in ("PARTIAL", "VAGUE"):
+                continue
+            return self._probe(
+                candidate,
+                candidate_reading,
+                candidate_rubric,
+                # `answer_interpretation` siempre describe la ÚLTIMA respuesta:
+                # es la que el orquestador persiste en su turno.
+                answer_interpretation=interpretation,
+            )
 
         untouched_rest = [r for r in req.rubrics if r.competency_code not in touched_codes]
         if untouched_rest:
-            return self._ask(untouched_rest[0])
+            return self._ask(untouched_rest[0], interpretation)
 
         # Claims de alto valor sin evidencia todavía (ej. certificación declarada, nunca preguntada).
         uncovered_claims = [c for c in req.claims if c.skill_code and c.skill_code not in touched_codes]
         if uncovered_claims:
             claim = uncovered_claims[0]
+            topic = _excerpt(strip_fillers(claim.statement), 8).rstrip("…").rstrip(".")
             return InterviewTurnResult(
                 action="ASK",
-                question_text=f'Mencionó "{claim.statement}". ¿Me puede platicar un ejemplo concreto de eso?',
+                answer_interpretation=interpretation,
+                question_text=f"En tu experiencia con {topic.lower()}, ¿me platicas un ejemplo concreto?",
                 target_competency_code=claim.skill_code,
                 question_intent="CLARIFY",
                 rationale="Claim declarado sin evidencia de entrevista todavía.",
@@ -353,14 +599,18 @@ class DeterministicAdapter:
             )
 
         return InterviewTurnResult(
-            action="FINISH", rationale="Cobertura suficiente en todas las competencias.", coverage_update={}
+            action="FINISH",
+            answer_interpretation=interpretation,
+            rationale="Cobertura suficiente en todas las competencias.",
+            coverage_update={},
         )
 
-    def _ask(self, rubric: RubricSpec) -> InterviewTurnResult:
+    def _ask(self, rubric: RubricSpec, interpretation: AnswerInterpretation | None = None) -> InterviewTurnResult:
         topic = rubric.what_to_probe[0] if rubric.what_to_probe else rubric.competency_name
-        question = f"Cuénteme de una vez en el trabajo relacionada con {topic.lower()}. ¿Qué hizo?"
+        question = f"Cuéntame de una vez en el trabajo relacionada con {topic.lower()}. ¿Qué hiciste?"
         return InterviewTurnResult(
             action="ASK",
+            answer_interpretation=interpretation,
             question_text=question,
             target_competency_code=rubric.competency_code,
             question_intent="SCENARIO",
@@ -372,16 +622,45 @@ class DeterministicAdapter:
             coverage_update={rubric.competency_code: "PARTIAL"},
         )
 
-    def _probe(self, turn: TurnDTO) -> InterviewTurnResult:
-        excerpt = _excerpt(turn.answer_text or "", 8)
-        question = f'Mencionó que "{excerpt}"; cuénteme más a detalle, ¿qué hizo exactamente en ese momento?'
+    def _probe(
+        self,
+        turn: TurnDTO,
+        interpretation: AnswerInterpretation,
+        rubric: RubricSpec | None = None,
+        *,
+        answer_interpretation: AnswerInterpretation | None = None,
+    ) -> InterviewTurnResult:
+        """Repregunta construida sobre el TEMA interpretado, jamás sobre el transcript.
+
+        Citar literalmente la respuesta produce preguntas incoherentes cuando
+        el transcript trae muletillas ("Mencionó que 'Sí, eh,...'"). El
+        Guardián de Equidad bloquea esa forma (`VERBATIM_QUOTE` /
+        `TRANSCRIPT_ARTIFACT`), así que este texto se arma desde
+        `probe_focus`, que ya es lenguaje legible.
+        """
+
+        focus = interpretation.probe_focus or (
+            rubric.competency_name.lower() if rubric is not None else "lo que acabas de contarme"
+        )
+        missing = interpretation.missing_elements[0] if interpretation.missing_elements else ""
+        if missing.startswith("resultado"):
+            question = f"Sobre {focus}, ¿cómo terminó ese caso?"
+        elif interpretation.evidence_quality == "VAGUE":
+            question = f"Sobre {focus}, ¿me das un ejemplo concreto de algo que hayas hecho tú?"
+        else:
+            question = f"Sobre {focus}, ¿qué hiciste tú exactamente en ese caso?"
+
         return InterviewTurnResult(
             action="PROBE",
+            answer_interpretation=answer_interpretation or interpretation,
             question_text=question,
             target_competency_code=turn.target_competency_code,
             question_intent="PROBE",
             references_turn_id=turn.turn_id,
-            rationale="Respuesta anterior con evidencia extensa: se profundiza citándola (HU-I02).",
+            rationale=(
+                f"Evidencia {interpretation.evidence_quality}: se profundiza sobre "
+                f"'{focus}' sin citar el transcript (HU-I02)."
+            ),
             coverage_update={turn.target_competency_code: "SUFFICIENT"},
         )
 

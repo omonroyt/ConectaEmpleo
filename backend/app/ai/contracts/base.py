@@ -24,6 +24,9 @@ ContractVersion = Literal["1.0", "1.1"]
 CoverageStatus = Literal["UNTOUCHED", "PARTIAL", "SUFFICIENT"]
 RubricSource = Literal["SPECIFIC", "PROVISIONAL", "BASELINE"]
 QuestionIntent = Literal["PROBE", "SCENARIO", "CLARIFY", "SWITCH"]
+#: Calidad de la evidencia que aporta **una** respuesta, no de la persona.
+#: Gobierna si vale la pena repreguntar; nunca es un juicio ni una nota.
+EvidenceQuality = Literal["SUFFICIENT", "PARTIAL", "VAGUE", "OFF_TOPIC", "NO_EXPERIENCE"]
 
 
 class AIBaseModel(BaseModel):
@@ -108,6 +111,44 @@ class ClaimDTO(AIBaseModel):
     source_ref: dict | None = None
 
 
+class AnswerInterpretation(AIBaseModel):
+    """Capa de comprensión entre la respuesta cruda y la siguiente pregunta.
+
+    El transcript de voz llega con muletillas, repeticiones y frases cortadas
+    ("Sí, te puedo compartir lo que hice. Eh,..."). Citarlo literalmente
+    produce repreguntas incoherentes, así que **antes** de decidir qué
+    preguntar se traduce a contexto utilizable: qué dijo la persona, sobre qué
+    temas, qué le falta a esa respuesta para ser evidencia y, si procede, sobre
+    qué conviene profundizar (`probe_focus`).
+
+    Dos reglas duras, ambas verificadas por tests:
+
+    1. `clean_answer` **no agrega** información que la persona no dijo. Es
+       limpieza de disfluencias, no reescritura ni interpretación creativa.
+    2. `clean_answer` **conserva el registro y el vocabulario** de la persona.
+       Subir el registro de una respuesta coloquial rompería la prueba de
+       equidad de `docs/build/06_INTERVIEW_SYSTEM.md` §8.4 y contradice la
+       Constitución ("La forma de hablar no es la competencia").
+
+    `answer_text` crudo se conserva siempre en `interview_turns` — esto es una
+    lectura derivada, nunca un reemplazo de la evidencia original.
+    """
+
+    #: Respuesta sin muletillas ni repeticiones, en primera persona, mismo léxico.
+    clean_answer: str = ""
+    #: 1-2 frases: qué dijo realmente la persona.
+    summary: str = ""
+    #: Herramientas, sistemas, tareas o cifras mencionadas ("Excel", "conciliación semanal").
+    topics: list[str] = Field(default_factory=list)
+    evidence_quality: EvidenceQuality = "PARTIAL"
+    #: Qué le falta a la respuesta para ser evidencia ("acción concreta", "resultado").
+    missing_elements: list[str] = Field(default_factory=list)
+    #: Claims del CV con los que esta respuesta choca (texto del claim, no un veredicto).
+    contradicts_claims: list[str] = Field(default_factory=list)
+    #: Tema ya traducido sobre el que profundizar, o `None` si no hace falta.
+    probe_focus: str | None = None
+
+
 class TurnDTO(AIBaseModel):
     turn_id: str
     sequence: int
@@ -116,3 +157,6 @@ class TurnDTO(AIBaseModel):
     question_intent: QuestionIntent
     references_turn_id: str | None = None
     answer_text: str | None = None
+    #: Lectura interpretada de `answer_text` (aditivo, `None` en turnos sin
+    #: respuesta o anteriores a la capa de comprensión).
+    interpretation: AnswerInterpretation | None = None

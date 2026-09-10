@@ -91,6 +91,30 @@ En modo demo, el `talent_profile` resultante se marca con `coverage: "PARTIAL"` 
 
 El orquestador (código Python) decide el flujo; el agente decide únicamente el contenido. Regla que ya existe y no cambia: si el agente pide terminar antes de cubrir el mínimo, se ignora.
 
+## 6.1 Capa de comprensión antes de repreguntar (B14)
+
+Entre "lo que la persona dijo" y "qué le pregunto ahora" hay una **etapa intermedia obligatoria**. El transcript de voz llega con muletillas y frases cortadas; repreguntar citándolo produce preguntas incoherentes y humilla a quien titubeó.
+
+El agente llena `answer_interpretation` (`AnswerInterpretation`, `app/ai/contracts/base.py`) **antes** de decidir la acción — el campo va primero en el esquema de `InterviewTurnResult` a propósito, para que el orden en que se llena fuerce el orden del razonamiento:
+
+| Campo | Qué es |
+|---|---|
+| `clean_answer` | La respuesta sin muletillas ni repeticiones |
+| `summary` | 1–2 frases: qué dijo realmente |
+| `topics` | Herramientas, sistemas, tareas o cifras mencionadas |
+| `evidence_quality` | `SUFFICIENT \| PARTIAL \| VAGUE \| OFF_TOPIC \| NO_EXPERIENCE` |
+| `missing_elements` | Qué le falta para ser evidencia |
+| `contradicts_claims` | Claims del CV con los que choca |
+| `probe_focus` | El tema a profundizar, ya redactado de forma legible |
+
+**La siguiente pregunta se construye sobre `probe_focus`, nunca sobre `answer_text`.**
+
+Dos reglas duras sobre `clean_answer`, ambas con test: no agrega información que la persona no dijo, y **no cambia su registro ni su vocabulario** — "traducir" a lenguaje corporativo rompería §8.4 y contradiría la Constitución ("La forma de hablar no es la competencia").
+
+Se persiste en `interview_turns.answer_interpretation` (JSONB). `answer_text` conserva siempre el transcript crudo: la interpretación es lectura derivada y auditable, nunca un reemplazo de la evidencia.
+
+Que la etapa ocurrió **no depende del modelo**: el Guardián de Equidad bloquea por código toda pregunta que devuelva el transcript a la persona (`VERBATIM_QUOTE`, `TRANSCRIPT_ARTIFACT` — ver §8).
+
 ## 7. Extensiones aditivas al contrato
 
 No rompen nada de lo ya construido en el frontend.
@@ -100,6 +124,8 @@ No rompen nada de lo ya construido en el frontend.
 | `InterviewTurn` | `question_id: string \| null` | ID estable del banco (`HA-01`). Null en follow-ups libres |
 | `InterviewTurn` | `is_follow_up: boolean` | Para no contarlo como pregunta base |
 | `InterviewTurn` | `block: "HARD" \| "SOFT" \| null` | Permite mostrar la transición entre bloques |
+| `InterviewTurnResult` | `answer_interpretation: AnswerInterpretation \| null` | B14, §6.1. Va primero en el esquema: interpretar antes de preguntar |
+| `TurnDTO` | `interpretation: AnswerInterpretation \| null` | La lectura limpia viaja junto al transcript crudo hacia A2 y A3 |
 | `CompetencyEvaluation` | `question_id: string \| null` | Trazabilidad pregunta ↔ evaluación |
 | `TalentProfile` | `hard_skills_score: number` | §11 del master prompt |
 | `TalentProfile` | `soft_skills_score: number` | §11 |
@@ -124,6 +150,7 @@ De §31 del master prompt, obligatorias:
 3. Administrativo: divulgar información confidencial sin autorización, o alterar datos para "hacerlos coincidir", produce bandera.
 4. Registro formal contra registro coloquial: dos transcripciones equivalentes en contenido obtienen scores dentro de ±10 puntos. **Es la prueba de sesgo más importante del sistema** y no es negociable.
 5. Ninguna pregunta emitida toca los temas prohibidos de §22 (edad, género, estado civil, embarazo, religión, orientación, afiliación política, origen étnico, salud, situación familiar).
+6. **B14** — Ninguna pregunta emitida devuelve el transcript crudo a la persona: ni un tramo de ≥5 palabras copiado de su respuesta anterior (`VERBATIM_QUOTE`), ni muletillas o citas cortadas con puntos suspensivos (`TRANSCRIPT_ARTIFACT`). Se verifica sobre el adaptador determinista, sobre el agente real y de punta a punta por la API (`tests/test_answer_interpretation.py`).
 
 ## 9. Proveedores confirmados
 

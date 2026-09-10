@@ -32,7 +32,7 @@ export function QuestionPanel({ turn, asked, budget, placeholder }: QuestionPane
         />
       </div>
 
-      <div className="mt-6 min-h-[132px] sm:min-h-[148px]">
+      <div className="mt-6 min-h-[96px] sm:min-h-[112px]">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={turn?.id ?? "placeholder"}
@@ -42,13 +42,16 @@ export function QuestionPanel({ turn, asked, budget, placeholder }: QuestionPane
             exit={{ opacity: 0 }}
           >
             {isProbe && (
-              <span className="mb-3 inline-flex items-center gap-1.5 rounded-pill bg-accent/20 px-3 py-1.5 text-xs font-semibold text-accent-soft">
-                <CornerDownRight className="size-3.5" aria-hidden="true" />
+              <span className="mb-2.5 inline-flex items-center gap-1.5 rounded-pill bg-accent/20 px-2.5 py-1 text-[11px] font-semibold text-accent-soft">
+                <CornerDownRight className="size-3" aria-hidden="true" />
                 Profundiza en tu respuesta anterior
               </span>
             )}
+            {/* La entrevista se escucha; el texto es apoyo, no el protagonista.
+                Una pregunta en display size compite con el orbe y obliga a
+                elegir entre leer y escuchar. */}
             <h2
-              className="text-balance text-2xl font-semibold leading-tight text-text-on-dark sm:text-3xl md:text-[2.1rem]"
+              className="max-w-[46ch] text-balance text-lg font-medium leading-snug text-text-on-dark sm:text-xl md:text-[1.45rem]"
               aria-live="polite"
             >
               {turn?.question_text ?? placeholder ?? "Preparando tu entrevista…"}

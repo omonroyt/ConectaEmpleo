@@ -12,6 +12,13 @@ Bloquea:
 2. Preguntas con más de una interrogante (`question_text.count("?") > 1`).
 3. Preguntas que revelan el criterio de calificación (mencionan rúbrica,
    puntaje, score, nivel 0-4, etc.).
+4. B14 — preguntas que devuelven el transcript crudo a la persona: una cita
+   literal de su respuesta anterior (`VERBATIM_QUOTE`) o restos de
+   transcripción como muletillas y frases cortadas (`TRANSCRIPT_ARTIFACT`).
+   Es la garantía por código de que la capa de comprensión ocurrió: si el
+   agente (o el adaptador determinista) se saltó la interpretación y copió
+   palabras, la pregunta no se emite. Ver `app/ai/contracts/base.py`
+   (`AnswerInterpretation`).
 
 Al bloquear, pide **una** reformulación (parámetro `retry`); si vuelve a
 fallar, usa la pregunta de respaldo del banco (`fallback_text`). Todo bloqueo
@@ -23,6 +30,8 @@ discriminación").
 from __future__ import annotations
 
 import hashlib
+import re
+import unicodedata
 from collections.abc import Callable
 
 from sqlalchemy.orm import Session
@@ -79,6 +88,54 @@ SCORING_REVEAL_TERMS: tuple[str, ...] = (
 )
 
 
+#: B14 — restos de transcripción que nunca deben aparecer en una pregunta
+#: emitida. Solo tokens que en español escrito no son palabras de contenido
+#: (`este`, `pues` o `bueno` sí lo son y no se listan: bloquearlos produciría
+#: falsos positivos sobre preguntas perfectamente correctas).
+TRANSCRIPT_ARTIFACT_PATTERNS: tuple[str, ...] = (
+    r"\beh+\b",
+    r"\behm+\b",
+    r"\bem+\b",
+    r"\bmm+h?\b",
+    r"\bhmm+\b",
+    r"\baj[áa]\b",
+    r"\bo sea\b",
+    #: Cita cortada con puntos suspensivos: la firma exacta de "pegué un
+    #: fragmento del transcript" ("Mencionó que \"Sí, te puedo... \"").
+    r"[\"“”][^\"“”]*(?:…|\.\.\.)\s*[\"“”]",
+)
+
+#: Palabras seguidas idénticas a la respuesta anterior a partir de las cuales
+#: se considera cita literal y no paráfrasis.
+VERBATIM_SPAN_WORDS = 5
+
+
+def _normalized_words(text: str) -> list[str]:
+    """Palabras en minúsculas, sin acentos ni puntuación — para comparar contenido."""
+
+    decomposed = unicodedata.normalize("NFD", text or "")
+    stripped = "".join(ch for ch in decomposed if unicodedata.category(ch) != "Mn")
+    return re.findall(r"[0-9a-z]+", stripped.lower())
+
+
+def _shares_verbatim_span(question_text: str, previous_answer: str, span: int = VERBATIM_SPAN_WORDS) -> str | None:
+    """Devuelve el tramo copiado de `previous_answer`, o `None` si no hay ninguno."""
+
+    question_words = _normalized_words(question_text)
+    answer_words = _normalized_words(previous_answer)
+    if len(question_words) < span or len(answer_words) < span:
+        return None
+
+    answer_spans = {
+        " ".join(answer_words[i : i + span]) for i in range(len(answer_words) - span + 1)
+    }
+    for i in range(len(question_words) - span + 1):
+        candidate = " ".join(question_words[i : i + span])
+        if candidate in answer_spans:
+            return candidate
+    return None
+
+
 class GuardianViolation:
     __slots__ = ("kind", "detail")
 
@@ -90,8 +147,13 @@ class GuardianViolation:
         return f"{self.kind}:{self.detail}"
 
 
-def find_violations(question_text: str | None) -> list[GuardianViolation]:
-    """Reglas duras deterministas. `None`/vacío no viola nada (no hay pregunta que emitir)."""
+def find_violations(question_text: str | None, previous_answer: str | None = None) -> list[GuardianViolation]:
+    """Reglas duras deterministas. `None`/vacío no viola nada (no hay pregunta que emitir).
+
+    `previous_answer` es el transcript crudo de la respuesta que la pregunta
+    profundiza, cuando lo hay: habilita la detección de cita literal
+    (`VERBATIM_QUOTE`). Sin él siguen aplicando todas las demás reglas.
+    """
 
     if not question_text or not question_text.strip():
         return []
@@ -109,6 +171,16 @@ def find_violations(question_text: str | None) -> list[GuardianViolation]:
     for term in SCORING_REVEAL_TERMS:
         if term in lowered:
             violations.append(GuardianViolation("SCORING_REVEALED", term))
+
+    for pattern in TRANSCRIPT_ARTIFACT_PATTERNS:
+        match = re.search(pattern, question_text, flags=re.IGNORECASE)
+        if match:
+            violations.append(GuardianViolation("TRANSCRIPT_ARTIFACT", match.group(0).strip()))
+
+    if previous_answer:
+        span = _shares_verbatim_span(question_text, previous_answer)
+        if span is not None:
+            violations.append(GuardianViolation("VERBATIM_QUOTE", span))
 
     return violations
 
@@ -155,6 +227,7 @@ def review_question(
     fallback_text: str,
     fallback_intent: str = "SCENARIO",
     retry: Callable[[str], InterviewTurnResult | None] | None = None,
+    previous_answer: str | None = None,
 ) -> tuple[InterviewTurnResult, bool]:
     """Revisa `proposal` y devuelve `(resultado_final, fue_bloqueado_alguna_vez)`.
 
@@ -163,9 +236,15 @@ def review_question(
       través de `retry` (si se da). Si la reformulación también viola reglas
       (o `retry` es `None` / lanza / no trae texto), cae al banco
       (`fallback_text`), también registrado.
+
+    `previous_answer` (B14) es el transcript de la respuesta que se profundiza:
+    con él, una repregunta que copie palabras de la persona se bloquea como
+    `VERBATIM_QUOTE`. La `AnswerInterpretation` de la propuesta se conserva en
+    el resultado final incluso cuando se cae al banco — la comprensión de la
+    respuesta es válida aunque la redacción de la pregunta no lo fuera.
     """
 
-    violations = find_violations(proposal.question_text)
+    violations = find_violations(proposal.question_text, previous_answer)
     if not violations:
         return proposal, False
 
@@ -179,7 +258,7 @@ def review_question(
             reformulated = None
 
         if reformulated is not None and reformulated.question_text:
-            violations_2 = find_violations(reformulated.question_text)
+            violations_2 = find_violations(reformulated.question_text, previous_answer)
             if not violations_2:
                 return reformulated, True
             _log_block(
@@ -192,6 +271,7 @@ def review_question(
 
     fallback = InterviewTurnResult(
         action=proposal.action if proposal.action in ("ASK", "PROBE") else "ASK",
+        answer_interpretation=proposal.answer_interpretation,
         question_text=fallback_text,
         target_competency_code=proposal.target_competency_code,
         question_intent=fallback_intent,

@@ -41,6 +41,7 @@ from app.ai.contracts.assessment import (
 )
 from app.ai.contracts.base import ClaimDTO, TurnDTO
 from app.ai.invoke import invoke
+from app.ai.orchestration.interview_flow import parse_interpretation
 from app.ai.prompts.loader import prompt_version_for
 from app.core.errors import DomainError, NotFoundError
 from app.modules.candidates.models import CandidateProfile
@@ -113,6 +114,10 @@ def _turn_dto(turn: InterviewTurn, competency_code: str) -> TurnDTO:
         question_intent=turn.question_intent,
         references_turn_id=str(turn.references_turn_id) if turn.references_turn_id else None,
         answer_text=turn.answer_text,
+        # B14: la lectura limpia del transcript viaja junto al crudo. A3 evalúa
+        # contenido, no disfluencias; el crudo sigue presente para citar
+        # evidencia y para auditar.
+        interpretation=parse_interpretation(turn.answer_interpretation),
     )
 
 

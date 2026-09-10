@@ -12,6 +12,18 @@ literales del banco semilla (`app/seeds/interview_bank/*.json`, tabla
 `interview_questions`) para garantizar la comparabilidad entre candidatos que
 exige el master prompt §3.2 — el agente nunca reescribe una pregunta base.
 Sí decide si conviene un follow-up y, de ser así, su redacción exacta.
+
+**Capa de comprensión (B14)**: entre "lo que la persona dijo" y "qué le
+pregunto ahora" hay una etapa intermedia obligatoria. El transcript de voz
+llega con muletillas y frases cortadas, y repreguntar citándolo produce
+preguntas incoherentes ("Mencionó que 'Sí, te puedo compartir lo que hice.
+Eh,...'"). Así que antes de decidir la acción se interpreta la respuesta
+(`AnswerInterpretation`: qué dijo, sobre qué temas, qué le falta, sobre qué
+profundizar), esa lectura se persiste en `interview_turns.answer_interpretation`
+y la repregunta se construye sobre el tema interpretado. Que la etapa ocurrió
+no depende de la buena voluntad del modelo: el Guardián de Equidad bloquea por
+código cualquier pregunta que devuelva el transcript crudo a la persona
+(`VERBATIM_QUOTE`, `TRANSCRIPT_ARTIFACT`).
 """
 
 from __future__ import annotations
@@ -22,7 +34,9 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.ai.contracts.base import ClaimDTO, TurnDTO
+from pydantic import ValidationError
+
+from app.ai.contracts.base import AnswerInterpretation, ClaimDTO, TurnDTO
 from app.ai.contracts.interview import InterviewTurnRequest, InterviewTurnResult
 from app.ai.guardrails import equity_guardian
 from app.ai.invoke import invoke
@@ -58,6 +72,13 @@ STAGNATION_WORD_THRESHOLD = 2
 FULL_QUESTIONS_PER_BLOCK = 7
 DEMO_QUESTIONS_PER_BLOCK = 3
 
+#: B14 — turnos ya respondidos que viajan en `InterviewTurnRequest.history`.
+#: Antes viajaba **uno solo**, y con una sola foto el agente no podía razonar
+#: sobre la conversación: repreguntaba pegando un fragmento del transcript. Se
+#: acota a los últimos N para no crecer el prompt sin límite en un recorrido
+#: de 14 preguntas más follow-ups.
+HISTORY_TURNS_FOR_AGENT = 6
+
 NextQuestionOutcome = tuple[InterviewTurn | None, bool, str | None, dict[str, int]]
 
 
@@ -85,6 +106,22 @@ def select_question_bank(
     return hard[:n] + soft[:n]
 
 
+def parse_interpretation(raw: dict | None) -> AnswerInterpretation | None:
+    """`interview_turns.answer_interpretation` -> DTO, tolerando filas viejas.
+
+    Una fila escrita antes de B14 (o por una versión anterior del contrato) no
+    debe romper una entrevista en curso: si no valida, se ignora y el agente
+    trabaja sin interpretación previa, como antes.
+    """
+
+    if not raw:
+        return None
+    try:
+        return AnswerInterpretation.model_validate(raw)
+    except ValidationError:
+        return None
+
+
 def _turn_to_dto(turn: InterviewTurn, competency_code: str) -> TurnDTO:
     return TurnDTO(
         turn_id=str(turn.id),
@@ -94,6 +131,7 @@ def _turn_to_dto(turn: InterviewTurn, competency_code: str) -> TurnDTO:
         question_intent=turn.question_intent,
         references_turn_id=str(turn.references_turn_id) if turn.references_turn_id else None,
         answer_text=turn.answer_text,
+        interpretation=parse_interpretation(turn.answer_interpretation),
     )
 
 
@@ -159,6 +197,52 @@ class InterviewOrchestrator:
             .limit(1)
         )
         return self.db.execute(stmt).scalars().first()
+
+    def _competency_code(self, competency_id: uuid.UUID | None, cache: dict[uuid.UUID, str]) -> str:
+        if competency_id is None:
+            return ""
+        if competency_id not in cache:
+            competency = self.db.get(Competency, competency_id)
+            cache[competency_id] = competency.code if competency else ""
+        return cache[competency_id]
+
+    def _history_for_agent(self, session: InterviewSession) -> list[TurnDTO]:
+        """Últimos turnos ya respondidos, con su interpretación (B14).
+
+        El agente necesita la conversación, no un turno suelto: sin contexto no
+        puede saber si ya profundizó sobre un tema, si la persona ya dijo que
+        no tiene experiencia, o de qué está hablando la respuesta que acaba de
+        recibir.
+        """
+
+        answered = [t for t in self._turns(session) if t.answer_text]
+        cache: dict[uuid.UUID, str] = {}
+        return [
+            _turn_to_dto(turn, self._competency_code(turn.target_competency_id, cache))
+            for turn in answered[-HISTORY_TURNS_FOR_AGENT:]
+        ]
+
+    def _coverage_for_agent(self, session: InterviewSession, current_code: str) -> dict[str, str]:
+        """Cobertura por competencia, **solo de lo ya tocado**.
+
+        Deliberadamente no se listan las competencias `UNTOUCHED`: el contrato
+        de `AIPort` trata las claves de `coverage_state` como "lo que ya se
+        exploró" (ver `DeterministicAdapter.next_interview_question`), así que
+        agregar las intactas invertiría el significado.
+        """
+
+        questions = self.selected_questions(session.job_family_id)
+        answered_ids = set((session.coverage_state or {}).get("answered_question_ids", []))
+        cache: dict[uuid.UUID, str] = {}
+        coverage: dict[str, str] = {}
+        for question in questions:
+            if question.question_id not in answered_ids:
+                continue
+            code = self._competency_code(question.competency_id, cache)
+            if code:
+                coverage[code] = "SUFFICIENT"
+        coverage[current_code] = "PARTIAL"
+        return coverage
 
     def _next_sequence(self, session: InterviewSession) -> int:
         current = self.db.execute(
@@ -384,6 +468,21 @@ class InterviewOrchestrator:
         self.db.refresh(turn)
         return turn
 
+    def _store_interpretation(
+        self, turn: InterviewTurn, interpretation: AnswerInterpretation | None
+    ) -> None:
+        """Guarda la lectura interpretada de la respuesta de `turn` (B14).
+
+        `turn.answer_text` no se toca nunca: el transcript crudo es la
+        evidencia auditable y esto es una lectura derivada.
+        """
+
+        if interpretation is None:
+            return
+        turn.answer_interpretation = interpretation.model_dump(mode="json")
+        self.db.add(turn)
+        self.db.commit()
+
     def _maybe_create_followup(
         self,
         session: InterviewSession,
@@ -437,8 +536,8 @@ class InterviewOrchestrator:
             candidate_snapshot=snapshot,
             rubrics=[rubric_spec],
             claims=claim_dtos,
-            history=[_turn_to_dto(last_answered_turn, competency.code)],
-            coverage_state={competency.code: "PARTIAL"},
+            history=self._history_for_agent(session),
+            coverage_state=self._coverage_for_agent(session, competency.code),
             remaining_questions=remaining_questions,
         )
         result = invoke(
@@ -448,6 +547,12 @@ class InterviewOrchestrator:
             InterviewTurnResult,
             prompt_version=prompt_version_for("next_interview_question"),
         )
+
+        # La interpretación de la respuesta se persiste SIEMPRE, se repregunte
+        # o no: es la lectura limpia que A3 usa para evaluar y la que evita que
+        # la siguiente pregunta se arme sobre el transcript crudo (B14).
+        self._store_interpretation(last_answered_turn, result.answer_interpretation)
+
         if result.action != "PROBE" or not result.question_text:
             # El agente decide contenido, no flujo: si no propone un follow-up
             # (o pide FINISH/ASK otra cosa), el orquestador simplemente avanza
@@ -478,6 +583,9 @@ class InterviewOrchestrator:
             fallback_text=fallback_text,
             fallback_intent="PROBE",
             retry=_retry,
+            # Con esto, una repregunta que copie palabras del transcript se
+            # bloquea como `VERBATIM_QUOTE` y nunca llega a la persona (B14).
+            previous_answer=last_answered_turn.answer_text,
         )
 
         turn = InterviewTurn(

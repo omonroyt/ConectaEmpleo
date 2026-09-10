@@ -9,6 +9,7 @@ ya corrió (igual que exige el criterio de cierre de B0-B2).
 
 from __future__ import annotations
 
+import os
 import uuid
 from collections.abc import Generator
 
@@ -16,8 +17,25 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.database import engine, get_db
-from app.main import app
+# La suite se ejecuta SIEMPRE contra el `DeterministicAdapter`, pase lo que
+# pase en `backend/.env`. Es lo que su documentación ya asumía (ver el
+# docstring de `tests/test_interviews.py`) y lo que las hace deterministas:
+# con `AI_ADAPTER=agentic` en el entorno del desarrollador, `pytest` empezaría
+# a gastar tokens reales y a depender de la red. Las pruebas que sí llaman al
+# proveedor real (`test_llm_smoke.py`, `test_*_live_agentic.py`) construyen su
+# propio `AgenticAdapter` y están detrás de `RUN_LIVE_LLM_SMOKE`, así que esto
+# no las afecta. Debe ir antes de importar `app.database` (que ya construye el
+# `Settings`); `os.environ` tiene prioridad sobre el archivo `.env`.
+os.environ["AI_MODE"] = "demo"
+os.environ["AI_ADAPTER"] = "deterministic"
+for _group in ("CV", "INTERVIEW", "ASSESSMENT", "ADVISORY", "MATCHING"):
+    # `AI_MODE=demo` ya fuerza determinista en las 9 operaciones; esto neutraliza
+    # además cualquier override por grupo que viva en `.env` (donde un `pop` de
+    # `os.environ` no llegaría).
+    os.environ[f"AI_ADAPTER_{_group}"] = "deterministic"
+
+from app.database import engine, get_db  # noqa: E402
+from app.main import app  # noqa: E402
 
 
 @pytest.fixture()

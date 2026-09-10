@@ -12,6 +12,7 @@ from pydantic import Field
 
 from app.ai.contracts.base import (
     AIBaseModel,
+    AnswerInterpretation,
     CandidateSnapshotForAI,
     ClaimDTO,
     ContractVersion,
@@ -45,6 +46,14 @@ class InterviewTurnRequest(AIBaseModel):
 
 class InterviewTurnResult(AIBaseModel):
     contract_version: ContractVersion = "1.1"
+    # --- Capa de comprensión (B14) ---
+    # Va **antes** de `action` y `question_text` a propósito: el esquema se
+    # llena en orden, así que el agente está obligado a interpretar la
+    # respuesta anterior antes de decidir qué preguntar. Es la etapa intermedia
+    # que evita citar el transcript crudo ("Mencionó que 'Sí, eh,...'").
+    # Aditivo y opcional: `None` cuando no hay respuesta previa que interpretar
+    # (primera pregunta del recorrido) o cuando el adaptador no la produjo.
+    answer_interpretation: AnswerInterpretation | None = None
     action: InterviewAction
     question_text: str | None = None
     target_competency_code: str | None = None

@@ -51,14 +51,22 @@ pytestmark = pytest.mark.skipif(
     ),
 )
 
+#: Transcripción de voz realista: muletillas, arranque en falso y el dato útil
+#: al final. Es el caso que hacía fallar al agente antes de B14 (repreguntaba
+#: pegando un fragmento crudo). Con la capa de comprensión, el agente debe
+#: entenderla y preguntar sobre el TEMA, sin devolverle sus titubeos.
 LONG_ANSWER = (
-    "Primero reviso la orden de compra completa, comparo cada artículo con el inventario físico "
-    "y reporto cualquier diferencia al supervisor de inmediato antes de continuar."
+    "Sí, te puedo compartir lo que hice. Eh, pues, o sea, primero reviso la orden de compra "
+    "completa, este, y comparo cada artículo con el inventario físico, eh, y reporto cualquier "
+    "diferencia al supervisor de inmediato antes de continuar."
 )
 
 
 def test_three_agentic_followup_turns_pass_the_equity_guardian(db_session: Session) -> None:
-    settings = get_settings().model_copy(update={"llm_max_tokens": 300, "llm_temperature": 0.3})
+    # 900 (antes 300): desde B14 la salida incluye `answer_interpretation`
+    # además de la pregunta, y un tope corto truncaría la tool call y forzaría
+    # el fallback determinista sin que eso signifique nada sobre el agente.
+    settings = get_settings().model_copy(update={"llm_max_tokens": 900, "llm_temperature": 0.3})
     adapter = AgenticAdapter(settings=settings)
 
     family_id = db_session.query(JobFamily.id).filter(JobFamily.code == "WAREHOUSE_SUPERVISOR").scalar()
@@ -102,7 +110,10 @@ def test_three_agentic_followup_turns_pass_the_equity_guardian(db_session: Sessi
         # validación agotada en el proveedor) del fallback determinista.
         assert result.action in ("ASK", "PROBE", "SWITCH_COMPETENCY", "FINISH")
         if result.question_text:
-            violations = equity_guardian.find_violations(result.question_text)
+            # `previous_answer` habilita la detección de cita literal (B14): la
+            # pregunta no puede devolverle a la persona sus propias palabras ni
+            # sus muletillas.
+            violations = equity_guardian.find_violations(result.question_text, LONG_ANSWER)
             assert violations == [], f"El agente real produjo una pregunta bloqueable: {violations}"
 
         response = adapter.last_response
@@ -117,6 +128,13 @@ def test_three_agentic_followup_turns_pass_the_equity_guardian(db_session: Sessi
             continue
 
         assert response.provider == "anthropic"
+        # B14: el turno real trae la comprensión de la respuesta, no solo la
+        # pregunta. Sin esto, la repregunta se armaría sobre el transcript.
+        assert result.answer_interpretation is not None, (
+            "El agente real no llenó `answer_interpretation`: la capa de comprensión "
+            "no ocurrió (revisa `app/ai/prompts/interviewer/v2.md`)."
+        )
+        assert result.answer_interpretation.clean_answer
         total_input_tokens += response.input_tokens
         total_output_tokens += response.output_tokens
         live_results.append(result)
@@ -134,4 +152,6 @@ def test_three_agentic_followup_turns_pass_the_equity_guardian(db_session: Sessi
         f"tokens_in={total_input_tokens} tokens_out={total_output_tokens} "
         f"costo_estimado=${input_cost + output_cost:.4f} USD\n"
         f"preguntas propuestas={[r.question_text for r in live_results]}\n"
+        f"lectura del transcript={[r.answer_interpretation.clean_answer for r in live_results if r.answer_interpretation]}\n"
+        f"foco de profundización={[r.answer_interpretation.probe_focus for r in live_results if r.answer_interpretation]}\n"
     )

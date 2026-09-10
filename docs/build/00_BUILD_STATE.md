@@ -4,7 +4,7 @@
 > Lo actualiza cada subagente al cerrar su tarea. No releer `docs/0*.md` ni la guía UX: todo lo necesario está condensado en `docs/build/`.
 
 - Orquestador: Fable 5.1 / Opus 5 · Constructores: Sonnet 5 (Opus 5 en F4 y F7)
-- Última actualización: 2026-09-09 (cierre de B13 — integración final)
+- Última actualización: 2026-09-09 (B14 — capa de comprensión del entrevistador)
 
 ## Estado actual
 
@@ -122,6 +122,86 @@ Detectada al construir el frontend contra el contrato de `02_API_CONTRACT.md`. C
 8. **No inventes decisiones de producto.** Si la spec no cubre algo, elige la opción más simple que no contradiga la spec y anótala en la bitácora.
 
 ## Bitácora (más reciente arriba)
+
+### 2026-09-09 — B14 (Opus) — capa de comprensión del entrevistador
+
+**El bug.** En la entrevista por voz, la repregunta salía así:
+`Mencionó que "Sí, te puedo compartir lo que hice. Eh,..."; cuénteme más a detalle, ¿qué hizo
+exactamente en ese momento?`. El agente no estaba entendiendo la respuesta: pegaba un fragmento
+del transcript. Tres causas encadenadas:
+
+1. `backend/.env` tenía `AI_MODE=demo` + `AI_ADAPTER=deterministic`, así que **el LLM nunca se
+   llamaba**: el texto salía literal de una f-string (`deterministic.py::_probe`).
+2. Aun con el agente real, `_maybe_create_followup` le pasaba `history=[un solo turno]` y
+   `coverage_state={competencia: PARTIAL}`. Con una foto en vez de la conversación, no hay nada
+   que razonar.
+3. El determinista repreguntaba ante **cualquier** respuesta de ≥12 palabras, sin preguntarse si
+   aportaba algo: interrogatorio mecánico.
+
+**La solución: una etapa intermedia obligatoria entre "lo que dijo" y "qué le pregunto".**
+
+- **Contrato `AnswerInterpretation`** (`app/ai/contracts/base.py`): `clean_answer`, `summary`,
+  `topics`, `evidence_quality` (`SUFFICIENT|PARTIAL|VAGUE|OFF_TOPIC|NO_EXPERIENCE`),
+  `missing_elements`, `contradicts_claims`, `probe_focus`. Dos reglas duras: no agrega nada que la
+  persona no dijo, y **no cambia su registro ni su vocabulario** (si "tradujera" a lenguaje
+  corporativo rompería la prueba de equidad de `06` §8.4 y contradiría la Constitución).
+- **Vive dentro de la misma llamada, no en una operación aparte.** `InterviewTurnResult` declara
+  `answer_interpretation` **antes** de `action` y `question_text`: como el esquema se llena en
+  orden, el agente está obligado a interpretar antes de preguntar. Se evaluó una décima operación
+  `interpret_answer` y se descartó por latencia: en voz, +1 llamada por turno son 1–2 s de
+  silencio muerto. El contrato es idéntico en ambos diseños, así que promoverla después es mover
+  código, no rediseñar.
+- **`interviewer/v2.md`** (v1 intacto, la bitácora de `ai_invocations` debe seguir siendo
+  reproducible): sección "Primero comprender, después preguntar" + regla dura *"nunca cites
+  textualmente la transcripción"* con ejemplo de mal/bien. Se eliminó el ejemplo de v1 que
+  **inducía a citar**.
+- **Guardián de Equidad, dos reglas nuevas** (garantía por código, no por buena voluntad del
+  modelo): `VERBATIM_QUOTE` (un tramo de ≥5 palabras compartido con la respuesta anterior,
+  comparado sin acentos ni puntuación) y `TRANSCRIPT_ARTIFACT` (muletillas o una cita cortada con
+  puntos suspensivos). Solo se listan tokens que en español escrito nunca son palabras de
+  contenido: `este`, `pues` y `bueno` **no** están, bloquearlos daría falsos positivos.
+- **Fallback determinista digno**: `strip_fillers` (limpieza por fragmentos entre comas, no por
+  lista de palabras, para no comerse "este proceso"), extracción de temas cruzando la respuesta
+  contra `what_to_probe` de la rúbrica + acrónimos/nombres propios, clasificación de evidencia por
+  marcadores de acción/resultado, y repregunta armada sobre el tema: `Sobre Excel, ¿cómo terminó
+  ese caso?`. Ya no repregunta ante evidencia `SUFFICIENT`.
+- **Contexto real al agente**: `history` pasa de 1 turno a los últimos 6 respondidos (con su
+  interpretación), y `coverage_state` refleja las competencias ya cubiertas. Se listan solo las
+  **tocadas**: el contrato trata las claves de `coverage_state` como "lo ya explorado", agregar las
+  `UNTOUCHED` invertiría el significado.
+- **Persistencia**: `interview_turns.answer_interpretation` (JSONB, migración `c4a71b9d5e02`).
+  `answer_text` conserva **siempre** el transcript crudo — la interpretación es lectura derivada,
+  nunca reemplazo de la evidencia. A3 la recibe en `TurnDTO.interpretation`, así que evalúa
+  contenido y no disfluencias.
+- **Frontend**: la pregunta bajó de `text-2xl→3xl→2.1rem semibold` a `text-lg→xl→1.45rem medium`,
+  con `max-w-[46ch]`. La entrevista se **escucha**; el texto es apoyo. Antes competía con el orbe y
+  obligaba a elegir entre leer y escuchar.
+- **`.env`**: `AI_MODE=live` + `AI_ADAPTER=agentic`. Como efecto secundario, `pytest` empezó a
+  gastar tokens reales (la suite lee `.env`), así que **`tests/conftest.py` ahora fija
+  `AI_MODE=demo`/`AI_ADAPTER=deterministic`** antes de construir `Settings` — es lo que la suite ya
+  asumía (ver el docstring de `test_interviews.py`); los tests en vivo construyen su propio
+  `AgenticAdapter` y no se ven afectados.
+
+**Verificación:** `pytest` = **190 pasan**, 4 skipped. Los 8 fallos de `test_voice.py` son
+**previos a esta tarea** (verificado corriendo la suite en `HEAD` limpio: mismos 8): la cuota de
+TTS quedó acumulada en la BD de desarrollo y los tests la esperan en cero. `npm run typecheck`
+limpio. **Corrida real contra `claude-sonnet-5`**: 3/3 turnos del proveedor real, 0 fallbacks,
+Guardián sin violaciones, `answer_interpretation` llena en los 3. Ejemplo real: con el transcript
+`"Sí, te puedo compartir lo que hice. Eh, pues, o sea, primero reviso la orden de compra..."` el
+agente entendió `topics=['orden de compra', 'inventario físico', 'reporte a supervisor']` y
+preguntó *"Cuando reportas la diferencia al supervisor, ¿cómo determinan juntos la causa y quién
+autoriza el ajuste en el sistema?"*.
+
+**Costo medido:** ~$0.12 USD por 3 turnos (≈13k tokens de entrada por llamada: constitución +
+rol + rúbrica + historial). Un recorrido completo de 14 preguntas con follow-ups ronda **$0.50–0.70
+USD por entrevista**. Si el presupuesto aprieta, el primer ahorro es prompt caching de las capas
+1–3, no recortar el historial.
+
+**Nota para quien siga:** `tests/test_interview_live_agentic.py` subió su tope a 900 tokens de
+salida (antes 300) porque la salida ahora incluye la interpretación; con 300 se truncaba la tool
+call y caía al fallback sin que eso dijera nada del agente. Un turno de cada varios sigue
+proponiendo dos interrogantes en la misma pregunta: el Guardián lo bloquea y pide reformulación,
+que es exactamente lo que debe pasar en producción.
 
 ### 2026-09-09 — B13 (Sonnet) — integración final, cierre del build
 

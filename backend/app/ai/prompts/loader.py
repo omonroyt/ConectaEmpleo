@@ -24,7 +24,7 @@ _CONSTITUTION_FILE = _PROMPTS_DIR / "constitution" / "v1.md"
 #: operación" tal como exige `backend/CLAUDE.md`.
 OPERATION_PROMPT_PATH: dict[str, tuple[str, str]] = {
     "parse_cv": ("profiler", "extract_v1"),
-    "build_cv_conversationally": ("profiler", "build_v1"),
+    "build_cv_conversationally": ("profiler", "build_v2"),
     # v2 (B14): v1 + capa de comprensión obligatoria antes de preguntar. v1 se
     # conserva sin editar porque `ai_invocations.prompt_version` de entrevistas
     # ya corridas apunta a él y esa bitácora debe seguir siendo reproducible.

@@ -28,7 +28,7 @@ from app.modules.candidates.models import CandidateProfile
 from app.modules.catalog.models import JobFamily
 from app.modules.cv_builder.models import CVBuilderMessage as CVBuilderMessageModel
 from app.modules.cv_builder.models import CVBuilderSession as CVBuilderSessionModel
-from app.modules.cv_builder.normalize import normalize_cv
+from app.modules.cv_builder.normalize import is_negative, normalize_cv
 from app.modules.cv_builder.schemas import (
     CVBuilderMessage,
     CVBuilderReply,
@@ -67,6 +67,50 @@ MAX_TURNS = len(_FIELD_ORDER)
 
 #: Menos de esto se considera "respuesta muy breve" -> repregunta una sola vez (docs/05 §7).
 MIN_WORDS_BEFORE_FOLLOWUP = 4
+
+#: Repregunta corta y propia de cada tema. **Nunca** se repite la pregunta
+#: anterior: antes la repregunta era
+#: `"Está bien, aunque sea una idea general me ayuda. " + current_question_text`,
+#: y como `current_question_text` es el mensaje completo del agente (acuse de la
+#: respuesta anterior + pregunta), la persona veía el mismo párrafo dos veces
+#: seguidas. Mismos textos que `frontend/src/api/mock/seed/cvBuilderScript.ts`
+#: (`followUp`), para que mock y backend se comporten igual.
+_FOLLOW_UP_HINTS: dict[str, str] = {
+    "last_job": "¿En qué empresa fue y cuánto tiempo estuviste ahí?",
+    "activities": "¿Me das un ejemplo concreto de una tarea que hacías seguido?",
+    "tools": "¿Alguna otra herramienta o sistema que también usaras?",
+    "previous_jobs": "¿Recuerdas cuánto tiempo trabajaste ahí?",
+    "education": "¿En qué año lo terminaste, más o menos?",
+    "certifications": "¿Quién te lo dio o dónde lo tomaste?",
+    "logistics": "¿Podrías decirme la ciudad, el estado y desde cuándo estás disponible?",
+    "salary": "Dame un rango aproximado, ¿entre cuánto y cuánto al mes?",
+}
+
+_FOLLOW_UP_LEAD = "Está bien, aunque sea una idea general me ayuda."
+
+
+def _current_field(session: CVBuilderSessionModel) -> str | None:
+    """Campo del guion que la persona está respondiendo en este turno."""
+
+    if 0 <= session.turn_index < len(_FIELD_ORDER):
+        return _FIELD_ORDER[session.turn_index]
+    return None
+
+
+def _should_follow_up(text: str, session: CVBuilderSessionModel) -> bool:
+    """`True` si conviene pedir un poco más de detalle antes de avanzar.
+
+    Una respuesta breve **completa** no se repregunta: "no", "en ningún otro
+    lugar" o "ninguna" son respuestas cerradas, y volver a preguntar sobre algo
+    que la persona ya cerró se lee como que no se le escuchó (docs/05 §7:
+    "acepta 'no sé' sin insistir una segunda vez").
+    """
+
+    if session.follow_up_asked:
+        return False
+    if is_negative(text):
+        return False
+    return _word_count(text) < MIN_WORDS_BEFORE_FOLLOWUP
 
 
 def _word_count(text: str | None) -> int:
@@ -216,7 +260,7 @@ def create_session(db: Session, *, profile: CandidateProfile) -> CVBuilderReply:
     request = CVConversationRequest(
         job_family_code=job_family_code, turn_index=0, max_turns=MAX_TURNS, last_answer=None, answers_so_far={}
     )
-    result = invoke(db, "build_cv_conversationally", request, CVConversationResult, prompt_version="v1")
+    result = invoke(db, "build_cv_conversationally", request, CVConversationResult, prompt_version="v2")
 
     session = CVBuilderSessionModel(
         candidate_id=profile.id,
@@ -256,11 +300,17 @@ def send_message(
 
     # Regla docs/05 §7: respuesta muy breve -> repregunta con un ejemplo, pero
     # solo una vez por turno; "no sé"/"no me acuerdo" se acepta sin insistir más.
-    if _word_count(text) < MIN_WORDS_BEFORE_FOLLOWUP and not session.follow_up_asked:
+    pending_field = _current_field(session)
+    if _should_follow_up(text, session):
         session.follow_up_asked = True
-        followup_text = (
-            f"Está bien, aunque sea una idea general me ayuda. {session.current_question_text or ''}"
-        ).strip()
+        # El fragmento breve se guarda: al llegar la segunda parte se envían las
+        # dos juntas al adaptador. Antes se descartaba, así que de "sólo escobas,
+        # trapeadores" + "no utilizaba más herramientas" solo sobrevivía la
+        # segunda mitad. Mismo comportamiento que el mock (`advanceCvBuilder`).
+        if pending_field:
+            session.answers = {**(session.answers or {}), pending_field: text}
+        hint = _FOLLOW_UP_HINTS.get(pending_field or "", "¿Me cuentas un poco más?")
+        followup_text = f"{_FOLLOW_UP_LEAD} {hint}"
         db.add(session)
         agent_message = CVBuilderMessageModel(
             session_id=session.id, role="agent", text=followup_text, sequence=next_seq + 1
@@ -275,19 +325,28 @@ def send_message(
             done=False,
         )
 
+    # Si hubo repregunta, la respuesta real de este turno son las dos partes
+    # juntas; el adaptador debe verlas completas para capturar bien el campo.
+    pending_partial = (session.answers or {}).get(pending_field or "") if session.follow_up_asked else None
+    effective_answer = f"{pending_partial} {text}".strip() if pending_partial else text
+
     job_family_code = _resolve_job_family_code(db, profile)
     request = CVConversationRequest(
         job_family_code=job_family_code,
         turn_index=session.turn_index + 1,
         max_turns=session.max_turns,
-        last_answer=text,
+        last_answer=effective_answer,
         answers_so_far=dict(session.answers or {}),
     )
-    result = invoke(db, "build_cv_conversationally", request, CVConversationResult, prompt_version="v1")
+    result = invoke(db, "build_cv_conversationally", request, CVConversationResult, prompt_version="v2")
 
     answers = dict(session.answers or {})
     if result.field_captured:
-        answers[result.field_captured] = result.captured_value
+        # `or effective_answer`: si el adaptador no devuelve valor capturado, se
+        # guarda lo que la persona dijo en vez de perder el turno completo.
+        answers[result.field_captured] = result.captured_value or effective_answer
+    elif pending_field and effective_answer:
+        answers[pending_field] = effective_answer
     session.answers = answers
     session.turn_index += 1
     session.follow_up_asked = False

@@ -1,7 +1,7 @@
 import type { Claim, CVExtraction, EducationItem, ExperienceItem } from "@/api/types";
 import { genId, nowIso, wordCount } from "../util";
 import { CV_BUILDER_SCRIPT, type CvBuilderField } from "../seed/cvBuilderScript";
-import { normalizeCv } from "./cvNormalize";
+import { isNegative, normalizeCv } from "./cvNormalize";
 import type { StoredCvBuilderSession } from "../state";
 
 const FAMILY_SKILL_HINTS: Record<string, string[]> = {
@@ -154,7 +154,10 @@ export function advanceCvBuilder(session: StoredCvBuilderSession, answerText: st
   const spec = CV_BUILDER_SCRIPT[session.turnIndex];
   if (!spec) return { agentMessage: "Ya terminamos esta conversación.", done: true };
 
-  if (wordCount(answerText) < 6 && !session.followUpAsked) {
+  // `!isNegative`: una respuesta breve pero cerrada ("no", "en ningún otro
+  // lugar") ya respondió del todo. Repreguntar ahí se lee como no haber
+  // escuchado. Misma regla que `cv_builder/service.py::_should_follow_up`.
+  if (wordCount(answerText) < 6 && !isNegative(answerText) && !session.followUpAsked) {
     session.followUpAsked = true;
     session.answers[spec.field] = answerText; // fragmento breve, se completa con la repregunta
     return { agentMessage: spec.followUp, done: false };

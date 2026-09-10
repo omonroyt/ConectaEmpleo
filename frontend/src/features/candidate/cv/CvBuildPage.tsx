@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { useNavigate } from "react-router";
 import { Mic, MicOff, Send } from "lucide-react";
 import { ImmersiveLayout } from "@/components/layout";
-import { Avatar, Button, Card, ProgressSteps, Textarea } from "@/components/ui";
+import { BrandBackground } from "@/components/brand/BrandBackground";
+import { Avatar, Button, ProgressSteps, Textarea } from "@/components/ui";
 import { useCvBuilder } from "@/api/hooks";
 import { useMotionSafe } from "@/lib/motion";
 import { cn } from "@/lib/cn";
@@ -95,93 +96,96 @@ export function Component() {
     });
   };
 
-  const draft = session?.draft;
   const isTyping = createSession.isPending || sendMessage.isPending;
 
-  const draftPanel = (
-    <Card padding="lg" className="sticky top-6">
-      <p className="text-xs font-semibold uppercase tracking-[.18em] text-primary">Tu perfil se va armando</p>
-      <div className="mt-4 flex flex-col gap-5">
-        <AnimatePresence mode="popLayout">
-          {draft?.experience && draft.experience.length > 0 && (
-            <motion.div key="experience" initial="hidden" animate="visible" variants={fadeUp}>
-              <p className="text-sm font-medium text-text-primary">Experiencia</p>
-              <ul className="mt-1 space-y-1 text-sm text-text-secondary">
-                {draft.experience.map((item) => (
-                  <li key={item.id}>{item.position}{item.company ? ` · ${item.company}` : ""}</li>
-                ))}
-              </ul>
-            </motion.div>
-          )}
-          {draft?.education && draft.education.length > 0 && (
-            <motion.div key="education" initial="hidden" animate="visible" variants={fadeUp}>
-              <p className="text-sm font-medium text-text-primary">Estudios</p>
-              <ul className="mt-1 space-y-1 text-sm text-text-secondary">
-                {draft.education.map((item) => (
-                  <li key={item.id}>{item.degree}</li>
-                ))}
-              </ul>
-            </motion.div>
-          )}
-          {draft?.skills && draft.skills.length > 0 && (
-            <motion.div key="skills" initial="hidden" animate="visible" variants={fadeUp}>
-              <p className="text-sm font-medium text-text-primary">Habilidades</p>
-              <div className="mt-1 flex flex-wrap gap-1.5">
-                {draft.skills.map((skill) => (
-                  <span key={skill.code} className="rounded-pill bg-surface-soft px-2.5 py-1 text-xs text-text-secondary">
-                    {skill.name}
-                  </span>
-                ))}
-              </div>
-            </motion.div>
-          )}
-          {(!draft || (!draft.experience?.length && !draft.education?.length && !draft.skills?.length)) && (
-            <p className="text-sm text-text-tertiary">A medida que conversas, aquí verás tu perfil tomar forma.</p>
-          )}
-        </AnimatePresence>
-      </div>
-    </Card>
-  );
-
   return (
-    <ImmersiveLayout onClose={() => navigate("/candidate")} aside={draftPanel}>
-      <motion.div initial="hidden" animate="visible" variants={pageSequence} className="flex h-full flex-col gap-5">
-        <motion.div variants={fadeUp} className="flex flex-col gap-2">
-          <h1 className="text-xl font-semibold text-text-on-dark">Conversemos sobre tu experiencia</h1>
-          {session && <ProgressSteps total={session.max_turns} current={session.turn} label={`Turno ${session.turn} de ${session.max_turns}`} />}
+    <ImmersiveLayout onClose={() => navigate("/candidate")}>
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={pageSequence}
+        className="mx-auto flex w-full min-h-0 max-w-[680px] flex-1 flex-col gap-5"
+      >
+        <motion.div variants={fadeUp} className="flex flex-col gap-3">
+          <h1 className="text-xl font-semibold tracking-[-0.01em] text-text-on-dark sm:text-2xl">
+            Conversemos sobre tu experiencia
+          </h1>
+          {session && (
+            <ProgressSteps
+              total={session.max_turns}
+              current={session.turn}
+              label={`Turno ${session.turn} de ${session.max_turns}`}
+            />
+          )}
         </motion.div>
 
+        {/*
+          El fondo de marca vive DETRÁS del hilo, no sobre las burbujas: sobre
+          ellas competía con el texto y bajaba el contraste justo donde más se
+          lee. Aquí la imagen queda muy atenuada bajo un velo oscuro, así que
+          aporta profundidad y las burbujas conservan su superficie neutra.
+        */}
+        {/*
+          Altura acotada en vez de `flex-1`: un hijo flex conserva
+          `min-height: auto`, así que el hilo no encogía por debajo de su
+          contenido y era la **página** la que hacía scroll — en móvil eso
+          dejaba fuera de pantalla el encabezado y el campo de respuesta. Con
+          altura definida el scroll ocurre dentro del hilo, como debe.
+        */}
         <motion.div
           variants={fadeUp}
-          ref={listRef}
-          className="flex max-h-[50vh] min-h-[280px] flex-1 flex-col gap-3 overflow-y-auto rounded-lg bg-bg-dark-soft p-4"
+          className="relative flex h-[58dvh] max-h-[640px] min-h-[320px] flex-col overflow-hidden rounded-2xl border border-border-dark"
         >
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={cn("flex items-end gap-2", message.role === "candidate" && "flex-row-reverse")}
-            >
-              {message.role === "agent" && <Avatar name="Sofía" size="sm" />}
+          <BrandBackground asset="onboarding" presence="support" overlay="none" position="70% 35%" />
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 bg-[linear-gradient(180deg,rgba(7,10,18,.42)_0%,rgba(7,10,18,.66)_50%,rgba(7,10,18,.84)_100%)]"
+          />
+
+          <div
+            ref={listRef}
+            className="relative z-10 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4 sm:p-5"
+          >
+            {messages.map((message) => (
               <div
-                className={cn(
-                  "max-w-[80%] rounded-lg px-4 py-2.5 text-sm",
-                  message.role === "agent"
-                    ? "bg-surface text-text-primary"
-                    : "bg-gradient-cta text-white",
-                )}
+                key={message.id}
+                className={cn("flex items-end gap-2", message.role === "candidate" && "flex-row-reverse")}
               >
-                {message.text}
+                {message.role === "agent" && <Avatar name="Sofía" size="sm" />}
+                <div
+                  className={cn(
+                    "max-w-[82%] rounded-lg px-4 py-2.5 text-sm leading-relaxed text-pretty shadow-sm",
+                    message.role === "agent"
+                      ? "rounded-bl-sm bg-surface text-text-primary"
+                      : "rounded-br-sm bg-gradient-cta text-white",
+                  )}
+                >
+                  {message.text}
+                </div>
               </div>
-            </div>
-          ))}
-          {isTyping && (
-            <div className="flex items-center gap-2">
-              <Avatar name="Sofía" size="sm" />
-              <div className="rounded-lg bg-surface px-4 py-2.5 text-sm text-text-tertiary">
-                Sofía está escribiendo…
+            ))}
+            {isTyping && (
+              <div className="flex items-end gap-2">
+                <Avatar name="Sofía" size="sm" />
+                <div className="flex items-center gap-1.5 rounded-lg rounded-bl-sm bg-surface px-4 py-3">
+                  {[0, 1, 2].map((dot) => (
+                    <motion.span
+                      key={dot}
+                      className="size-1.5 rounded-full bg-text-tertiary"
+                      animate={{ opacity: [0.3, 1, 0.3] }}
+                      transition={{
+                        duration: 1.1,
+                        repeat: Infinity,
+                        delay: dot * 0.16,
+                        ease: "easeInOut",
+                      }}
+                    />
+                  ))}
+                  <span className="sr-only">Sofía está escribiendo</span>
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </motion.div>
 
         {done ? (
@@ -213,7 +217,9 @@ export function Component() {
                 aria-label={isListening ? "Detener dictado" : "Dictar por voz"}
                 onClick={() => void toggleMic()}
                 className={cn(
-                  "flex size-14 shrink-0 items-center justify-center rounded-pill border transition-colors duration-fast ease-standard",
+                  // A 390px, el micrófono y el botón de enviar dejaban al campo
+                  // de texto ~200px y el placeholder se partía en dos líneas.
+                  "flex size-12 shrink-0 items-center justify-center rounded-pill border transition-colors duration-fast ease-standard sm:size-14",
                   isListening
                     ? "border-danger bg-danger/10 text-danger"
                     : "border-border-dark text-text-on-dark-secondary hover:text-text-on-dark",
@@ -228,6 +234,9 @@ export function Component() {
               disabled={!draftText.trim() || !session}
               loading={sendMessage.isPending}
               onClick={handleSend}
+              // Cuadrado: con solo un icono, `px-7` de `size="lg"` lo hacía
+              // innecesariamente ancho y comía el campo de respuesta.
+              className="size-12 shrink-0 px-0 sm:size-14"
             >
               <Send className="size-4" aria-hidden="true" />
             </Button>

@@ -6,6 +6,15 @@ import { fileURLToPath, URL } from "node:url";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  server: {
+    watch: {
+      // `output/` guarda capturas y artefactos de QA que se reescriben en lote
+      // mientras el dev server corre. Vigilarlos no aporta nada y sí rompe: un
+      // archivo bloqueado por otro proceso tumba el watcher con EBUSY y se cae
+      // el servidor entero.
+      ignored: ["**/output/**"],
+    },
+  },
   resolve: {
     alias: {
       "@": fileURLToPath(new URL("./src", import.meta.url)),

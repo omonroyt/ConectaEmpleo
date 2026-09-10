@@ -18,11 +18,15 @@ import { BrandBackground } from "@/components/brand/BrandBackground";
 import {
   Badge,
   Button,
+  Card,
   EmptyState,
   EvidenceBadge,
+  Eyebrow,
   FormField,
   Input,
   Modal,
+  Reveal,
+  RevealGroup,
   Skeleton,
   Switch,
   Textarea,
@@ -32,6 +36,7 @@ import { useConfirmExtraction, useExtraction } from "@/api/hooks";
 import { FIRST_JOB_STATEMENT } from "@/api/mock/engine/cvNormalize";
 import { useMotionSafe } from "@/lib/motion";
 import { cn } from "@/lib/cn";
+import { skillDisplayName } from "@/features/candidate/cv/skillLabels";
 import type {
   Claim,
   CVExtraction,
@@ -127,6 +132,7 @@ function ReviewSection({
   description,
   count,
   action,
+  tone = "plain",
   children,
 }: {
   index: number;
@@ -135,10 +141,13 @@ function ReviewSection({
   description?: string;
   count?: number;
   action?: { label: string; onClick: () => void };
+  /** `soft` tinta la sección para romper la monotonía del panel blanco largo
+   * — se alterna entre secciones en vez de aplicarse a todas. */
+  tone?: "plain" | "soft";
   children: ReactNode;
 }) {
-  return (
-    <section className="flex flex-col gap-4">
+  const body = (
+    <>
       <div className="flex items-start justify-between gap-4">
         <div className="flex min-w-0 items-start gap-3">
           <span
@@ -173,8 +182,20 @@ function ReviewSection({
         )}
       </div>
       {children}
-    </section>
+    </>
   );
+
+  if (tone === "soft") {
+    return (
+      <section>
+        <Card variant="soft" padding="lg" className="flex flex-col gap-4">
+          {body}
+        </Card>
+      </section>
+    );
+  }
+
+  return <section className="flex flex-col gap-4">{body}</section>;
 }
 
 /**
@@ -264,13 +285,13 @@ function ReviewSkeleton() {
   return (
     <div className="w-full">
       <div className="relative overflow-hidden rounded-2xl bg-bg-dark-soft px-6 pb-14 pt-10 sm:px-8">
-        <Skeleton className="h-3 w-40" />
-        <Skeleton className="mt-4 h-10 w-3/4" />
-        <Skeleton className="mt-3 h-4 w-2/3" />
+        <Skeleton className="h-3 w-40 skeleton-shimmer--dark" />
+        <Skeleton className="mt-4 h-10 w-3/4 skeleton-shimmer--dark" />
+        <Skeleton className="mt-3 h-4 w-2/3 skeleton-shimmer--dark" />
         <div className="mt-7 flex gap-2">
-          <Skeleton className="h-7 w-28 rounded-pill" />
-          <Skeleton className="h-7 w-24 rounded-pill" />
-          <Skeleton className="h-7 w-32 rounded-pill" />
+          <Skeleton className="h-7 w-28 rounded-pill skeleton-shimmer--dark" />
+          <Skeleton className="h-7 w-24 rounded-pill skeleton-shimmer--dark" />
+          <Skeleton className="h-7 w-32 rounded-pill skeleton-shimmer--dark" />
         </div>
       </div>
       <div className="-mt-8 rounded-2xl bg-surface px-6 pb-10 pt-8 sm:px-8">
@@ -293,7 +314,7 @@ function ReviewSkeleton() {
 export function Component() {
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { fadeUp, pageSequence, staggerContainer, cardEntrance } = useMotionSafe();
+  const { fadeUp, pageSequence } = useMotionSafe();
 
   const { data: extraction, isLoading, isError, refetch } = useExtraction();
   const confirmExtraction = useConfirmExtraction();
@@ -390,7 +411,7 @@ export function Component() {
 
   return (
     <ImmersiveLayout onClose={() => navigate("/candidate")}>
-      <main className="w-full pb-32">
+      <main className="w-full">
         {isLoading ? (
           <ReviewSkeleton />
         ) : isError || !extraction ? (
@@ -411,12 +432,9 @@ export function Component() {
             <section className="relative overflow-hidden rounded-2xl px-6 pb-16 pt-10 sm:px-8">
               <BrandBackground asset="onboarding" presence="support" overlay="bottom" position="70% 30%" />
               <div className="relative z-10 flex flex-col items-start">
-                <motion.p
-                  variants={fadeUp}
-                  className="text-[11px] font-semibold uppercase tracking-[.2em] text-accent-soft"
-                >
-                  Revisa tu información
-                </motion.p>
+                <motion.div variants={fadeUp}>
+                  <Eyebrow tone="dark">Revisa tu información</Eyebrow>
+                </motion.div>
                 <motion.h1
                   variants={fadeUp}
                   className="mt-3 max-w-[18ch] text-balance text-3xl font-semibold leading-[1.08] tracking-[-0.025em] text-text-on-dark sm:text-[2.75rem]"
@@ -468,12 +486,13 @@ export function Component() {
 
             {/* Panel claro: el borrador editable, superpuesto al hero */}
             <LightSurface className="rounded-2xl px-6 pb-12 pt-10 sm:px-8">
-              <motion.div variants={staggerContainer(0.08, 0.05)} className="flex flex-col gap-12">
-                <motion.div variants={cardEntrance}>
+              <RevealGroup className="flex flex-col gap-12">
+                <Reveal>
                   <ReviewSection
                     index={1}
                     icon={Briefcase}
                     title="Experiencia"
+                    tone="soft"
                     count={experience.length}
                     action={{ label: "Agregar", onClick: () => setExperienceModal(emptyExperience()) }}
                   >
@@ -524,9 +543,9 @@ export function Component() {
                       </div>
                     )}
                   </ReviewSection>
-                </motion.div>
+                </Reveal>
 
-                <motion.div variants={cardEntrance}>
+                <Reveal>
                   <ReviewSection
                     index={2}
                     icon={GraduationCap}
@@ -567,14 +586,15 @@ export function Component() {
                       </div>
                     )}
                   </ReviewSection>
-                </motion.div>
+                </Reveal>
 
-                <motion.div variants={cardEntrance}>
+                <Reveal>
                   <ReviewSection
                     index={3}
                     icon={Wrench}
                     title="Habilidades"
                     description="Marca qué tanto dominas cada una: 1 es que apenas la conoces y 4 que puedes enseñarla."
+                    tone="soft"
                     count={skills.length}
                   >
                     {skills.length === 0 ? (
@@ -592,13 +612,19 @@ export function Component() {
                           >
                             {/* En móvil el nombre ocupa su propia línea: truncarlo a
                                 "OFFIC..." para dejar sitio a los niveles era ilegible. */}
-                            <span className="min-w-0 basis-full truncate text-sm font-medium text-text-primary sm:flex-1 sm:basis-auto">
-                              {skill.name}
+                            {/* Sin `truncate` en móvil: el nombre ya tiene su
+                                propia línea (`basis-full`) y las etiquetas
+                                legibles ("Herramientas de oficina...") son
+                                más largas que el código crudo que mostraban
+                                antes — cortarlas ahí escondía justo lo que se
+                                acababa de corregir. */}
+                            <span className="min-w-0 basis-full text-pretty text-sm font-medium text-text-primary sm:flex-1 sm:basis-auto sm:truncate">
+                              {skillDisplayName(skill)}
                             </span>
                             <div
                               className="flex gap-1"
                               role="radiogroup"
-                              aria-label={`Nivel de ${skill.name}`}
+                              aria-label={`Nivel de ${skillDisplayName(skill)}`}
                             >
                               {([1, 2, 3, 4] as const).map((level) => (
                                 <button
@@ -622,7 +648,7 @@ export function Component() {
                             </div>
                             <button
                               type="button"
-                              aria-label={`Eliminar ${skill.name}`}
+                              aria-label={`Eliminar ${skillDisplayName(skill)}`}
                               onClick={() => removeSkill(skill.code)}
                               className="flex size-8 items-center justify-center rounded-full text-text-tertiary transition-[background-color,color,opacity] duration-fast ease-standard hover:bg-danger-soft hover:text-danger focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-danger sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                             >
@@ -633,9 +659,9 @@ export function Component() {
                       </ul>
                     )}
                   </ReviewSection>
-                </motion.div>
+                </Reveal>
 
-                <motion.div variants={cardEntrance}>
+                <Reveal>
                   <ReviewSection
                     index={4}
                     icon={Award}
@@ -699,15 +725,16 @@ export function Component() {
                       </div>
                     </div>
                   </ReviewSection>
-                </motion.div>
+                </Reveal>
 
                 {pendingClaims.length > 0 && (
-                  <motion.div variants={cardEntrance}>
+                  <Reveal>
                     <ReviewSection
                       index={5}
                       icon={Sparkles}
                       title="Por confirmar en tu entrevista"
                       description="No lo damos por hecho: son cosas que mencionaste y que exploraremos contigo en la conversación."
+                      tone="soft"
                       count={pendingClaims.length}
                     >
                       <ul className="flex flex-col gap-2">
@@ -726,32 +753,48 @@ export function Component() {
                         ))}
                       </ul>
                     </ReviewSection>
-                  </motion.div>
+                  </Reveal>
                 )}
-              </motion.div>
+              </RevealGroup>
+
+              {/*
+                Pie anclado dentro del panel: antes era una banda oscura a
+                sangre (`fixed inset-x-0 bottom-0`) que quedaba flotando sobre
+                el contenido y lo cortaba a la mitad. Ahora es el pie del
+                propio panel, en flujo normal — mismos elementos, esquinas
+                coherentes y separador — así que se lee como parte de la hoja
+                y no como una banda que estorba. Sigue "accesible al hacer
+                scroll" en el sentido correcto: es lo último del panel, así
+                que llegar al final del borrador te lleva directo a él, sin
+                superponerse a las secciones de arriba mientras scrolleas
+                (a diferencia de `position: sticky`, que si no tiene un
+                contenedor acotado a la altura del viewport se queda flotando
+                sobre el resto del contenido todo el recorrido).
+                `-mx-*`/`-mb-*` cancelan el padding del panel para que llegue
+                a sus bordes.
+              */}
+              {extraction && (
+                <div className="-mx-6 -mb-12 mt-10 rounded-b-2xl border-t border-border bg-surface/90 px-6 pb-6 pt-4 backdrop-blur-md sm:-mx-8 sm:px-8">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="hidden max-w-[38ch] text-sm text-text-secondary sm:block">
+                      Podrás editar tu perfil cuando quieras, también después de la entrevista.
+                    </p>
+                    <Button
+                      size="lg"
+                      arrow
+                      loading={confirmExtraction.isPending}
+                      onClick={handleConfirm}
+                      className="max-sm:w-full"
+                    >
+                      Confirmar y continuar
+                    </Button>
+                  </div>
+                </div>
+              )}
             </LightSurface>
           </motion.div>
         )}
       </main>
-
-      {extraction && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border-dark bg-bg-dark/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-md">
-          <div className="mx-auto flex max-w-[760px] flex-wrap items-center justify-between gap-3 px-6 py-4">
-            <p className="hidden max-w-[38ch] text-sm text-text-on-dark-secondary sm:block">
-              Podrás editar tu perfil cuando quieras, también después de la entrevista.
-            </p>
-            <Button
-              size="lg"
-              arrow
-              loading={confirmExtraction.isPending}
-              onClick={handleConfirm}
-              className="max-sm:w-full"
-            >
-              Confirmar y continuar
-            </Button>
-          </div>
-        </div>
-      )}
 
       <Modal
         open={experienceModal != null}

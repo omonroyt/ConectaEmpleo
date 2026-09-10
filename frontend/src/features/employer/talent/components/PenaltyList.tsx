@@ -5,7 +5,7 @@ import { cn } from "@/lib/cn";
 
 export interface PenaltyListProps {
   penalties: Penalty[];
-  /** `true` cuando la lista vive dentro de una `Card variant="dark"`. */
+  /** `true` cuando la lista vive sobre vidrio o lienzo oscuro. */
   onDark?: boolean;
   className?: string;
 }
@@ -19,12 +19,18 @@ export function PenaltyList({ penalties, onDark = false, className }: PenaltyLis
     return (
       <p
         className={cn(
-          "flex items-center gap-2 text-sm",
+          "flex items-start gap-2 text-pretty text-sm",
           onDark ? "text-text-on-dark-secondary" : "text-text-secondary",
           className,
         )}
       >
-        <ShieldCheck className="size-4 shrink-0 text-success" aria-hidden="true" />
+        <ShieldCheck
+          className={cn(
+            "mt-0.5 size-4 shrink-0",
+            onDark ? "text-success-on-dark" : "text-success",
+          )}
+          aria-hidden="true"
+        />
         Sin penalizaciones: cumple los requisitos esenciales, el rango salarial y la zona.
       </p>
     );
@@ -40,27 +46,30 @@ export function PenaltyList({ penalties, onDark = false, className }: PenaltyLis
           onDark ? "text-text-on-dark" : "text-text-primary",
         )}
       >
-        <AlertTriangle className="size-4 shrink-0 text-warning" aria-hidden="true" />
-        Penalizaciones aplicadas: −{total} puntos
+        <AlertTriangle
+          className={cn("size-4 shrink-0", onDark ? "text-warning-on-dark" : "text-warning")}
+          aria-hidden="true"
+        />
+        Penalizaciones aplicadas: <span className="tabular-nums">−{total} puntos</span>
       </p>
       <ul className="flex flex-col gap-2">
         {penalties.map((penalty) => (
           <li
             key={`${penalty.reason}-${penalty.requirement}`}
             className={cn(
-              "flex items-start justify-between gap-3 rounded-md border px-3 py-2.5 text-sm",
+              "flex items-start justify-between gap-3 rounded-md border px-3.5 py-3 text-sm",
               onDark
-                ? "border-border-dark bg-white/5 text-text-on-dark-secondary"
+                ? "border-white/10 bg-white/[0.04] text-text-on-dark-secondary"
                 : "border-warning/30 bg-warning-soft text-text-secondary",
             )}
           >
-            <span>
+            <span className="min-w-0 text-pretty">
               <span className={cn("font-medium", onDark ? "text-text-on-dark" : "text-text-primary")}>
                 {penaltyReasonLabels[penalty.reason]}
               </span>
               <span className="block">{penalty.requirement}</span>
             </span>
-            <span className="shrink-0 tabular-nums font-medium">−{penalty.points} pts</span>
+            <span className="shrink-0 font-medium tabular-nums">−{penalty.points} pts</span>
           </li>
         ))}
       </ul>

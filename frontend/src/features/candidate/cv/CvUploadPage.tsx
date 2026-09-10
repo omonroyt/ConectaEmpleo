@@ -2,7 +2,7 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import { useNavigate } from "react-router";
 import { ImmersiveLayout } from "@/components/layout";
-import { Button, Card, FileUploader, ProcessingStatus } from "@/components/ui";
+import { Button, Card, Eyebrow, FileUploader, ProcessingStatus } from "@/components/ui";
 import { useJob, useUploadCV } from "@/api/hooks";
 import { useMotionSafe } from "@/lib/motion";
 
@@ -48,18 +48,21 @@ export function Component() {
   return (
     <ImmersiveLayout onClose={() => navigate("/candidate")}>
       <motion.div initial="hidden" animate="visible" variants={pageSequence} className="flex flex-col gap-6">
-        <motion.div variants={fadeUp}>
-          <h1 className="text-2xl font-semibold text-text-on-dark sm:text-3xl">Sube tu CV</h1>
-          <p className="mt-2 text-sm text-text-on-dark-secondary">
+        <motion.div variants={fadeUp} className="max-w-[46ch]">
+          <Eyebrow tone="dark">Tu perfil</Eyebrow>
+          <h1 className="mt-3 text-balance text-3xl font-semibold leading-[1.08] tracking-[-0.03em] text-text-on-dark sm:text-4xl">
+            Sube tu CV
+          </h1>
+          <p className="mt-3 text-pretty text-sm leading-relaxed text-text-on-dark-secondary sm:text-base">
             Extraemos tu experiencia, estudios y habilidades para armar tu perfil.
           </p>
         </motion.div>
 
         <motion.div variants={fadeUp}>
-          <Card padding="lg">
+          <Card variant="glass" padding="lg">
             {failed ? (
               <div className="flex flex-col items-start gap-4 text-center sm:text-left">
-                <p className="text-sm text-danger">
+                <p className="text-sm text-danger-on-dark">
                   No pudimos procesar este archivo. Prueba con un PDF o DOCX de hasta 10 MB.
                 </p>
                 <div className="flex flex-wrap gap-3">

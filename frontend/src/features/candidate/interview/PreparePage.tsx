@@ -19,7 +19,7 @@ import {
 import type { InterviewMode } from "@/api/types";
 import { ImmersiveLayout } from "@/components/layout";
 import { BrandBackground } from "@/components/brand/BrandBackground";
-import { Badge, Button, Skeleton, useToast } from "@/components/ui";
+import { Badge, Button, Eyebrow, Skeleton, useToast } from "@/components/ui";
 import { useMicrophone } from "@/voice";
 import { useMotionSafe } from "@/lib/motion";
 import { cn } from "@/lib/cn";
@@ -120,13 +120,11 @@ export function Component() {
         className="relative z-10 flex w-full flex-col gap-8 py-4"
       >
         <motion.header variants={safe.fadeUp} className="flex flex-col gap-3">
-          <span className="text-[11px] font-semibold uppercase tracking-[.18em] text-accent-soft">
-            Antes de empezar
-          </span>
-          <h1 className="text-3xl font-semibold leading-tight text-text-on-dark sm:text-4xl md:text-5xl">
+          <Eyebrow tone="accent">Antes de empezar</Eyebrow>
+          <h1 className="text-balance text-3xl font-semibold leading-tight tracking-[-0.03em] text-text-on-dark sm:text-4xl md:text-5xl">
             Tu entrevista con IA
           </h1>
-          <p className="max-w-[56ch] text-base text-text-on-dark-secondary">
+          <p className="max-w-[56ch] text-pretty text-base text-text-on-dark-secondary">
             Una conversación para conocer mejor tu experiencia y cómo resuelves situaciones reales.
           </p>
         </motion.header>
@@ -134,10 +132,10 @@ export function Component() {
         {/* Panel destacado: duración, formato, micrófono, conexión */}
         <motion.section
           variants={safe.fadeUp}
-          className="grid gap-4 rounded-xl border border-border-dark bg-white/[0.04] p-6 sm:grid-cols-2"
+          className="glass grid gap-4 rounded-xl p-6 sm:grid-cols-2"
         >
           <div className="flex items-start gap-3">
-            <Clock className="mt-0.5 size-5 shrink-0 text-primary-2" aria-hidden="true" />
+            <Clock className="mt-0.5 size-5 shrink-0 text-primary-on-dark" aria-hidden="true" />
             <div>
               <p className="text-sm font-medium text-text-on-dark">Duración estimada</p>
               <p className="text-sm text-text-on-dark-secondary">Alrededor de 8 minutos, 6 preguntas.</p>
@@ -146,9 +144,9 @@ export function Component() {
 
           <div className="flex items-start gap-3">
             {mode === "VOICE" ? (
-              <Mic className="mt-0.5 size-5 shrink-0 text-primary-2" aria-hidden="true" />
+              <Mic className="mt-0.5 size-5 shrink-0 text-primary-on-dark" aria-hidden="true" />
             ) : (
-              <Keyboard className="mt-0.5 size-5 shrink-0 text-primary-2" aria-hidden="true" />
+              <Keyboard className="mt-0.5 size-5 shrink-0 text-primary-on-dark" aria-hidden="true" />
             )}
             <div>
               <p className="text-sm font-medium text-text-on-dark">Formato</p>
@@ -159,7 +157,7 @@ export function Component() {
           </div>
 
           <div className="flex items-start gap-3">
-            <Mic className="mt-0.5 size-5 shrink-0 text-primary-2" aria-hidden="true" />
+            <Mic className="mt-0.5 size-5 shrink-0 text-primary-on-dark" aria-hidden="true" />
             <div className="w-full">
               <p className="text-sm font-medium text-text-on-dark">Micrófono</p>
               {!supported ? (
@@ -167,7 +165,7 @@ export function Component() {
                   Este navegador no permite audio: la entrevista será por texto.
                 </p>
               ) : micDenied ? (
-                <p className="text-sm text-warning">
+                <p className="text-sm text-warning-on-dark">
                   Sin acceso al micrófono. Puedes continuar por texto sin problema.
                 </p>
               ) : (
@@ -199,9 +197,9 @@ export function Component() {
 
           <div className="flex items-start gap-3">
             {online ? (
-              <Wifi className="mt-0.5 size-5 shrink-0 text-success" aria-hidden="true" />
+              <Wifi className="mt-0.5 size-5 shrink-0 text-success-on-dark" aria-hidden="true" />
             ) : (
-              <WifiOff className="mt-0.5 size-5 shrink-0 text-warning" aria-hidden="true" />
+              <WifiOff className="mt-0.5 size-5 shrink-0 text-warning-on-dark" aria-hidden="true" />
             )}
             <div>
               <p className="text-sm font-medium text-text-on-dark">Conexión</p>
@@ -246,7 +244,7 @@ export function Component() {
                 variants={safe.scaleIn}
                 className="flex items-start gap-3 text-sm text-text-on-dark-secondary"
               >
-                <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/20 text-primary-2">
+                <span className="mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary-on-dark/15 text-primary-on-dark">
                   <Check className="size-3.5" aria-hidden="true" />
                 </span>
                 {item}
@@ -274,7 +272,7 @@ export function Component() {
                   className={cn(
                     "flex flex-col gap-2 rounded-lg border p-4 text-left transition-colors duration-fast ease-standard focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-2",
                     selected
-                      ? "border-primary-2 bg-primary/15"
+                      ? "border-primary-on-dark/70 bg-primary-on-dark/10"
                       : "border-border-dark bg-white/[0.03] hover:border-white/25",
                     disabled && "cursor-not-allowed opacity-40",
                   )}
@@ -290,7 +288,7 @@ export function Component() {
           </div>
           {!supported && (
             <p className="flex items-start gap-2 text-sm text-text-on-dark-secondary">
-              <AlertCircle className="mt-0.5 size-4 shrink-0 text-warning" aria-hidden="true" />
+              <AlertCircle className="mt-0.5 size-4 shrink-0 text-warning-on-dark" aria-hidden="true" />
               Tu navegador no permite la entrevista por voz. La haremos por texto: el contenido y la
               evaluación son exactamente los mismos.
             </p>

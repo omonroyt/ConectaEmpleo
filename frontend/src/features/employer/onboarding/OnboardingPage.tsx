@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { motion } from "motion/react";
+import { BrandBackground } from "@/components/brand/BrandBackground";
 import { ImmersiveLayout } from "@/components/layout";
-import { Button, FormField, Input, ProgressSteps, Select, Textarea, useToast } from "@/components/ui";
+import { Button, Card, Eyebrow, FormField, Input, ProgressSteps, Select, Textarea, useToast } from "@/components/ui";
 import { useUpdateCompany } from "@/api/hooks";
 import type { Company, WorkMode } from "@/api/types";
 import { useMotionSafe } from "@/lib/motion";
@@ -33,6 +34,13 @@ const INITIAL_STATE: FormState = {
   work_mode: null,
   description: "",
 };
+
+const STEP_NAMES = ["Identidad", "Ubicación y modalidad", "Equipo y cultura"];
+
+/** Botón `ghost`/`secondary` pensado para paneles claros: sobre el `Card
+ * variant="glass"` de esta pantalla necesita su propia paleta oscura. */
+const GHOST_ON_DARK =
+  "!border-white/20 !bg-white/[0.06] !text-text-on-dark hover:!border-white/35 hover:!bg-white/[0.1]";
 
 /** E1 — Onboarding empresa `/employer/onboarding`. Tres pasos, `ImmersiveLayout`. */
 export function OnboardingPage() {
@@ -94,20 +102,29 @@ export function OnboardingPage() {
 
   return (
     <ImmersiveLayout>
-      <motion.div initial="hidden" animate="visible" variants={fadeUp} className="flex flex-col gap-8">
-        <div>
-          <h1 className="text-3xl font-semibold sm:text-4xl">Conozcamos tu empresa</h1>
-          <p className="mt-2 text-text-on-dark-secondary">
-            Estos datos ayudan a candidatos y al matching a entender quién eres.
-          </p>
+      <div className="relative w-full">
+        <div className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-48 overflow-hidden rounded-b-[28px]">
+          <BrandBackground asset="employer" presence="support" overlay="bottom" />
         </div>
 
-        <ProgressSteps total={3} current={step} className="[&_p]:text-text-on-dark-secondary" />
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} className="flex flex-col gap-6 pt-6">
+          <div>
+            <Eyebrow>Cuenta de empresa</Eyebrow>
+            <h1 className="mt-2 text-balance text-3xl font-semibold tracking-[-0.03em] text-text-on-dark sm:text-4xl">
+              Conozcamos tu empresa
+            </h1>
+            <p className="mt-2 max-w-[52ch] text-pretty text-text-on-dark-secondary">
+              Estos datos ayudan a candidatos y al matching a entender quién eres.
+            </p>
+          </div>
 
-        <div className="rounded-lg bg-surface p-6 text-text-primary sm:p-8">
+          <ProgressSteps total={3} current={step} stepName={STEP_NAMES[step - 1]} />
+        </motion.div>
+
+        <Card variant="glass" padding="lg" className="mt-8">
           {step === 1 && (
             <div className="flex flex-col gap-5">
-              <h2 className="text-lg font-semibold">Identidad</h2>
+              <h2 className="text-lg font-semibold text-text-on-dark">Identidad</h2>
               <FormField label="Nombre comercial" htmlFor="trade_name" required error={errors.trade_name}>
                 <Input
                   value={form.trade_name}
@@ -154,7 +171,7 @@ export function OnboardingPage() {
 
           {step === 2 && (
             <div className="flex flex-col gap-5">
-              <h2 className="text-lg font-semibold">Ubicación y modalidad</h2>
+              <h2 className="text-lg font-semibold text-text-on-dark">Ubicación y modalidad</h2>
               <div className="grid gap-4 sm:grid-cols-2">
                 <FormField label="Ciudad" htmlFor="city" required error={errors.city}>
                   <Input value={form.city} onChange={(e) => set("city", e.target.value)} placeholder="Ej. León" />
@@ -171,7 +188,7 @@ export function OnboardingPage() {
                 error={errors.work_mode}
               />
               <div className="flex justify-between pt-2">
-                <Button variant="secondary" size="lg" onClick={() => setStep(1)}>
+                <Button variant="secondary" size="lg" className={GHOST_ON_DARK} onClick={() => setStep(1)}>
                   Atrás
                 </Button>
                 <Button variant="primary" size="lg" arrow onClick={goToStep3}>
@@ -183,7 +200,7 @@ export function OnboardingPage() {
 
           {step === 3 && (
             <div className="flex flex-col gap-5">
-              <h2 className="text-lg font-semibold">Equipo y cultura</h2>
+              <h2 className="text-lg font-semibold text-text-on-dark">Equipo y cultura</h2>
               <FormField
                 label="Descripción corta (opcional)"
                 htmlFor="description"
@@ -198,7 +215,7 @@ export function OnboardingPage() {
                 />
               </FormField>
               <div className="flex justify-between pt-2">
-                <Button variant="secondary" size="lg" onClick={() => setStep(2)}>
+                <Button variant="secondary" size="lg" className={GHOST_ON_DARK} onClick={() => setStep(2)}>
                   Atrás
                 </Button>
                 <Button variant="primary" size="lg" arrow loading={updateCompany.isPending} onClick={handleFinish}>
@@ -207,8 +224,8 @@ export function OnboardingPage() {
               </div>
             </div>
           )}
-        </div>
-      </motion.div>
+        </Card>
+      </div>
     </ImmersiveLayout>
   );
 }

@@ -1,14 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { AlertTriangle, Plus, Trash2 } from "lucide-react";
 import { ImmersiveLayout } from "@/components/layout";
 import {
   Badge,
   Button,
+  Card,
   Chip,
-  FormField,
+  Eyebrow,
   Input,
   ProcessingStatus,
+  ProgressSteps,
   SegmentedControl,
   Select,
   Slider,
@@ -21,6 +23,7 @@ import {
   useRunMatch,
   useSetRequirements,
   useSetWeights,
+  useSkillsCatalog,
   useUpdateVacancy,
   useVacancy,
 } from "@/api/hooks";
@@ -33,6 +36,7 @@ import {
   priorityForWeight,
   sumWeights,
 } from "@/features/employer/vacancies/vacancies.shared";
+import { cn } from "@/lib/cn";
 
 interface RequirementRow {
   _key: string;
@@ -49,6 +53,20 @@ function makeKey(): string {
     : `k_${Math.random().toString(36).slice(2)}`;
 }
 
+/** Botón `ghost`/`secondary` sobre el panel `glass` de esta pantalla. */
+const GHOST_ON_DARK =
+  "!border-white/20 !bg-white/[0.06] !text-text-on-dark hover:!border-white/35 hover:!bg-white/[0.1]";
+
+/** Espacio reservado (nbsp) para que las filas no salten cuando no hay texto de ayuda. */
+const HINT_PLACEHOLDER = " ";
+
+/**
+ * Alto fijo del hint de "Competencia" (2 líneas de texto-xs/leading-tight):
+ * así las tres filas miden lo mismo, tenga o no tenga texto de ayuda esa
+ * fila en particular — la reserva no puede depender del contenido real.
+ */
+const HINT_SLOT_CLASS = "h-9 overflow-hidden text-xs leading-tight text-text-on-dark-tertiary [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:2]";
+
 /** E5 — Perfil ideal `/employer/vacancies/:id/ideal-profile`. Requisitos (A) + pesos (B). */
 export function IdealProfilePage() {
   const { id } = useParams<{ id: string }>();
@@ -57,6 +75,7 @@ export function IdealProfilePage() {
 
   const vacancyQuery = useVacancy(id);
   const competenciesQuery = useCompetencies(vacancyQuery.data?.job_family_id);
+  const skillsQuery = useSkillsCatalog();
   const resolveRequirements = useResolveRequirements();
   const setRequirements = useSetRequirements();
   const setWeights = useSetWeights();
@@ -204,20 +223,30 @@ export function IdealProfilePage() {
   }
 
   const competencyOptions = (competenciesQuery.data ?? []).map((c) => ({ value: c.code, label: c.name }));
+  const skillNameByCode = useMemo(
+    () => Object.fromEntries((skillsQuery.data ?? []).map((s) => [s.code, s.name])),
+    [skillsQuery.data],
+  );
   const sum = weights ? sumWeights(weights) : 0;
   const isBusy = saving !== null;
+  const showForm = !(vacancyQuery.isLoading || (resolving && !initialized)) && !(vacancyQuery.isError || !vacancyQuery.data);
 
   return (
     <ImmersiveLayout onClose={() => navigate("/employer/vacancies")}>
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-6">
         <div>
-          <h1 className="text-3xl font-semibold sm:text-4xl">Define el perfil ideal</h1>
-          <p className="mt-2 text-text-on-dark-secondary">
+          <Eyebrow>Nueva vacante</Eyebrow>
+          <h1 className="mt-1 text-balance text-2xl font-semibold tracking-[-0.03em] text-text-on-dark sm:text-3xl">
+            Define el perfil ideal
+          </h1>
+          <p className="mt-2 max-w-[56ch] text-pretty text-text-on-dark-secondary">
             Ajusta los requisitos y las prioridades que usará el matching para esta vacante.
           </p>
         </div>
 
-        <div className="rounded-lg bg-surface p-6 text-text-primary sm:p-8">
+        <ProgressSteps total={2} current={2} stepName="Perfil ideal" />
+
+        <Card variant={showForm ? "glass" : "light"} padding="lg">
           {vacancyQuery.isLoading || (resolving && !initialized) ? (
             <ProcessingStatus messages={["Interpretando tus requisitos…"]} />
           ) : vacancyQuery.isError || !vacancyQuery.data ? (
@@ -226,17 +255,17 @@ export function IdealProfilePage() {
             <div className="flex flex-col gap-10">
               <section className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold">Requisitos</h2>
-                  <Button variant="secondary" size="md" onClick={addRow}>
+                  <h2 className="text-lg font-semibold text-text-on-dark">Requisitos</h2>
+                  <Button variant="secondary" size="md" className={GHOST_ON_DARK} onClick={addRow}>
                     <Plus className="size-4" aria-hidden="true" />
                     Agregar requisito
                   </Button>
                 </div>
 
                 {warnings.length > 0 && (
-                  <div className="flex flex-col gap-2 rounded-md border border-warning/30 bg-warning-soft p-4">
+                  <div className="flex flex-col gap-2 rounded-md border border-warning-on-dark/30 bg-warning/10 p-4">
                     {warnings.map((warning, index) => (
-                      <p key={`${warning.text}-${index}`} className="flex items-start gap-2 text-sm text-warning">
+                      <p key={`${warning.text}-${index}`} className="flex items-start gap-2 text-sm text-warning-on-dark">
                         <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
                         <span>
                           Este requisito podría ser discriminatorio y no se usará en el matching: «{warning.text}»
@@ -246,65 +275,104 @@ export function IdealProfilePage() {
                   </div>
                 )}
 
-                <div className="flex flex-col gap-3">
-                  {rows.map((row) => (
-                    <div
-                      key={row._key}
-                      className="flex flex-col gap-3 rounded-md border border-border p-4 sm:flex-row sm:flex-wrap sm:items-end"
-                    >
-                      <FormField label="Requisito" htmlFor={`label-${row._key}`} className="sm:flex-1 sm:min-w-[200px]">
-                        <Input value={row.label} onChange={(e) => updateRow(row._key, { label: e.target.value })} />
-                      </FormField>
-                      <div className="sm:w-56">
-                        <label className="mb-1.5 block text-sm font-medium text-text-primary" htmlFor={`comp-${row._key}`}>
-                          Competencia
-                        </label>
-                        <Select
-                          id={`comp-${row._key}`}
-                          options={competencyOptions}
-                          placeholder="Elige una competencia"
-                          value={row.competency_code ?? ""}
-                          onChange={(e) => updateRow(row._key, { competency_code: e.target.value, skill_code: null })}
-                        />
-                        {row.skill_code && !row.competency_code && (
-                          <p className="mt-1 text-xs text-text-tertiary">Basado en la habilidad {row.skill_code}.</p>
+                <div className="flex flex-col">
+                  {rows.map((row, index) => {
+                    const hint =
+                      row.skill_code && !row.competency_code
+                        ? `Basado en la habilidad ${skillNameByCode[row.skill_code] ?? row.skill_code}.`
+                        : null;
+                    return (
+                      <div
+                        key={row._key}
+                        className={cn(
+                          "flex flex-col gap-4 border-b border-white/10 py-5",
+                          index === 0 && "pt-0",
+                          index === rows.length - 1 && "border-b-0 pb-0",
                         )}
-                      </div>
-                      <SegmentedControl
-                        aria-label={`Tipo de requisito: ${row.label || "sin nombre"}`}
-                        options={REQUIREMENT_KIND_OPTIONS}
-                        value={row.kind}
-                        onChange={(value) => updateRow(row._key, { kind: value as RequirementKind })}
-                      />
-                      <Stepper
-                        label="Nivel"
-                        value={row.min_level}
-                        onChange={(value) => updateRow(row._key, { min_level: value as 1 | 2 | 3 | 4 })}
-                        min={1}
-                        max={4}
-                      />
-                      <button
-                        type="button"
-                        aria-label="Eliminar requisito"
-                        onClick={() => removeRow(row._key)}
-                        className="flex size-11 shrink-0 items-center justify-center rounded-full text-text-tertiary transition-colors duration-fast ease-standard hover:bg-danger/10 hover:text-danger focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-2"
                       >
-                        <Trash2 className="size-4" aria-hidden="true" />
-                      </button>
-                    </div>
-                  ))}
+                        {/* Fila superior: Requisito y Competencia son las columnas anchas —
+                            un valor típico debe leerse completo, nunca truncado. */}
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-medium text-text-on-dark" htmlFor={`label-${row._key}`}>
+                              Requisito
+                            </label>
+                            <Input
+                              id={`label-${row._key}`}
+                              value={row.label}
+                              onChange={(e) => updateRow(row._key, { label: e.target.value })}
+                            />
+                            {/* Mismo alto fijo que el hint de Competencia: las dos columnas
+                                de la fila superior terminan a la misma altura. */}
+                            <p className={HINT_SLOT_CLASS} aria-hidden="true">
+                              {HINT_PLACEHOLDER}
+                            </p>
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-sm font-medium text-text-on-dark" htmlFor={`comp-${row._key}`}>
+                              Competencia
+                            </label>
+                            <Select
+                              id={`comp-${row._key}`}
+                              options={competencyOptions}
+                              placeholder="Elige una competencia"
+                              value={row.competency_code ?? ""}
+                              onChange={(e) => updateRow(row._key, { competency_code: e.target.value, skill_code: null })}
+                            />
+                            {/* Alto fijo (2 líneas): con o sin hint real, esta fila mide
+                                siempre lo mismo que sus hermanas. */}
+                            <p className={HINT_SLOT_CLASS}>{hint ?? HINT_PLACEHOLDER}</p>
+                          </div>
+                        </div>
+
+                        {/* Fila inferior: Tipo, Nivel y borrar ocupan solo lo que necesitan. */}
+                        <div className="flex flex-wrap items-end gap-4">
+                          <div className="flex flex-col gap-1.5">
+                            <span className="text-sm font-medium text-text-on-dark">Tipo</span>
+                            <SegmentedControl
+                              aria-label={`Tipo de requisito: ${row.label || "sin nombre"}`}
+                              tone="dark"
+                              options={REQUIREMENT_KIND_OPTIONS}
+                              value={row.kind}
+                              onChange={(value) => updateRow(row._key, { kind: value as RequirementKind })}
+                            />
+                          </div>
+
+                          <div className="flex flex-col gap-1.5">
+                            <span className="text-sm font-medium text-text-on-dark">Nivel</span>
+                            <Stepper
+                              value={row.min_level}
+                              onChange={(value) => updateRow(row._key, { min_level: value as 1 | 2 | 3 | 4 })}
+                              min={1}
+                              max={4}
+                            />
+                          </div>
+
+                          <button
+                            type="button"
+                            aria-label="Eliminar requisito"
+                            onClick={() => removeRow(row._key)}
+                            className="ml-auto flex size-11 shrink-0 items-center justify-center rounded-full text-text-on-dark-tertiary transition-colors duration-fast ease-standard hover:bg-danger/15 hover:text-danger-on-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-2"
+                          >
+                            <Trash2 className="size-4" aria-hidden="true" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
                   {rows.length === 0 && (
-                    <p className="text-sm text-text-secondary">Aún no hay requisitos. Agrega el primero.</p>
+                    <p className="text-sm text-text-on-dark-secondary">Aún no hay requisitos. Agrega el primero.</p>
                   )}
                 </div>
 
                 {unmapped.length > 0 && (
                   <div className="flex flex-col gap-2">
-                    <p className="text-sm font-medium text-text-primary">Frases que no pudimos mapear</p>
+                    <p className="text-sm font-medium text-text-on-dark">Frases que no pudimos mapear</p>
                     {unmapped.map((text, index) => (
                       <div
                         key={`${text}-${index}`}
-                        className="flex flex-wrap items-center gap-3 rounded-md bg-surface-soft p-3"
+                        className="flex flex-wrap items-center gap-3 rounded-md bg-white/[0.04] p-3"
                       >
                         <Chip onRemove={() => removeUnmapped(index)}>{text}</Chip>
                         <Select
@@ -322,7 +390,7 @@ export function IdealProfilePage() {
 
               {weights && (
                 <section className="flex flex-col gap-5">
-                  <h2 className="text-lg font-semibold">Prioridades</h2>
+                  <h2 className="text-lg font-semibold text-text-on-dark">Prioridades</h2>
                   {WEIGHT_COMPONENT_ORDER.map((component) => (
                     <div key={component} className="flex flex-col gap-1.5">
                       <Slider
@@ -336,21 +404,34 @@ export function IdealProfilePage() {
                       </Badge>
                     </div>
                   ))}
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-surface-soft p-3">
-                    <p className="text-sm font-medium text-text-primary">
+                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-white/10 bg-white/[0.04] p-3">
+                    <p className="text-sm font-medium text-text-on-dark">
                       Suma actual:{" "}
-                      <span className={sum === 100 ? "text-success" : "text-warning"}>{sum}%</span>
+                      <span className={sum === 100 ? "text-success-on-dark" : "text-warning-on-dark"}>{sum}%</span>
                     </p>
-                    <Button variant="secondary" size="md" onClick={handleNormalize} disabled={sum === 100}>
+                    <Button
+                      variant="secondary"
+                      size="md"
+                      className={GHOST_ON_DARK}
+                      onClick={handleNormalize}
+                      disabled={sum === 100}
+                    >
                       Normalizar a 100
                     </Button>
                   </div>
-                  <p className="text-sm text-text-secondary">La IA apoya tu decisión; no la reemplaza.</p>
+                  <p className="text-sm text-text-on-dark-secondary">La IA apoya tu decisión; no la reemplaza.</p>
                 </section>
               )}
 
-              <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:justify-between">
-                <Button variant="ghost" size="lg" onClick={handleSaveDraft} loading={saving === "draft"} disabled={isBusy}>
+              <div className="flex flex-col-reverse gap-3 border-t border-white/10 pt-6 sm:flex-row sm:justify-between">
+                <Button
+                  variant="ghost"
+                  size="lg"
+                  className="!text-text-on-dark hover:!bg-white/[0.08]"
+                  onClick={handleSaveDraft}
+                  loading={saving === "draft"}
+                  disabled={isBusy}
+                >
                   Guardar borrador
                 </Button>
                 <Button
@@ -366,7 +447,7 @@ export function IdealProfilePage() {
               </div>
             </div>
           )}
-        </div>
+        </Card>
       </div>
     </ImmersiveLayout>
   );

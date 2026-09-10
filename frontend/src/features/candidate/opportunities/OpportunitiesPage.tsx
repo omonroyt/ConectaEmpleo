@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { motion } from "motion/react";
 import { useNavigate } from "react-router";
 import { AlertCircle, BadgeCheck, Briefcase, MapPin } from "lucide-react";
 import {
@@ -7,8 +6,11 @@ import {
   Button,
   Card,
   EmptyState,
+  Eyebrow,
   FilterPills,
   JobCard,
+  Reveal,
+  RevealGroup,
   ScoreBadge,
   SkeletonCard,
   type FilterPillOption,
@@ -17,7 +19,6 @@ import { LightSurface, PageContainer } from "@/components/layout";
 import { BrandBackground } from "@/components/brand/BrandBackground";
 import { useOpportunities } from "@/api/hooks";
 import type { Opportunity } from "@/api/types";
-import { useMotionSafe } from "@/lib/motion";
 import {
   familyCodeLabels,
   locationText,
@@ -64,7 +65,6 @@ function filterOpportunities(items: Opportunity[], mode: FilterMode, secondaryVa
 export function Component() {
   const opportunities = useOpportunities();
   const navigate = useNavigate();
-  const { staggerContainer, cardEntrance } = useMotionSafe();
 
   const [mode, setMode] = useState<FilterMode>("for-you");
   const [secondaryValue, setSecondaryValue] = useState("all");
@@ -99,11 +99,11 @@ export function Component() {
       <div className="relative overflow-hidden bg-bg-dark px-6 pb-14 pt-10 md:px-8 md:pt-14">
         <BrandBackground asset="brand-main" presence="accent" overlay="left" />
         <PageContainer className="relative z-10">
-          <p className="text-xs font-semibold uppercase tracking-[.18em] text-accent-soft">
-            Marketplace de talento
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold text-text-on-dark sm:text-4xl">Oportunidades para ti</h1>
-          <p className="mt-2 max-w-2xl text-base text-text-on-dark-secondary">
+          <Eyebrow tone="accent">Marketplace de talento</Eyebrow>
+          <h1 className="mt-2 text-balance text-3xl font-semibold text-text-on-dark sm:text-4xl">
+            Oportunidades para ti
+          </h1>
+          <p className="mt-2 max-w-2xl text-pretty text-base text-text-on-dark-secondary">
             Vacantes abiertas de empresas verificadas, priorizadas según tu evidencia.
           </p>
         </PageContainer>
@@ -153,29 +153,20 @@ export function Component() {
                   cta={{ label: "Ver todas", onClick: () => setMode("for-you") }}
                 />
               ) : (
-                <motion.div
-                  initial="hidden"
-                  animate="visible"
-                  variants={staggerContainer(0.06, 0.05)}
-                  className="flex flex-col gap-6"
-                >
+                <RevealGroup className="flex flex-col gap-6" stagger={0.08}>
                   {featured && (
-                    <motion.div variants={cardEntrance}>
+                    <Reveal>
                       <FeaturedOpportunity
                         opportunity={featured}
                         onOpen={() => navigate(`/candidate/opportunities/${featured.vacancy_id}`)}
                       />
-                    </motion.div>
+                    </Reveal>
                   )}
 
                   {rest.length > 0 && (
-                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                    <RevealGroup className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" stagger={0.06}>
                       {rest.map((opportunity) => (
-                        <motion.div
-                          key={opportunity.vacancy_id}
-                          variants={cardEntrance}
-                          className="flex flex-col gap-1.5"
-                        >
+                        <Reveal key={opportunity.vacancy_id} className="flex flex-col gap-1.5">
                           <JobCard
                             title={opportunity.title}
                             company={opportunity.company_trade_name}
@@ -198,11 +189,11 @@ export function Component() {
                               Completa tu entrevista para ver tu compatibilidad.
                             </p>
                           )}
-                        </motion.div>
+                        </Reveal>
                       ))}
-                    </div>
+                    </RevealGroup>
                   )}
-                </motion.div>
+                </RevealGroup>
               )}
             </>
           )}

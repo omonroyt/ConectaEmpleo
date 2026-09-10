@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from "react";
 import { GraduationCap } from "lucide-react";
-import { Button, EvidenceBadge, FileUploader, FormField, Select, useToast } from "@/components/ui";
+import { Button, EvidenceBadge, FileUploader, FormField, Reveal, RevealGroup, Select, useToast } from "@/components/ui";
 import { useSkillsCatalog, useUploadCertification } from "@/api/hooks";
 import { ApiClientError } from "@/api/client";
 import type { DocumentRef } from "@/api/types";
@@ -89,23 +89,22 @@ export function CertificationUploader() {
       </Button>
 
       {items.length > 0 && (
-        <ul className="flex flex-col gap-3">
+        <RevealGroup as="ul" className="flex flex-col gap-3" stagger={0.06}>
           {items.map((doc) => (
-            <li
-              key={doc.id}
-              className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4"
-            >
-              <div className="flex min-w-0 items-center gap-3">
-                <GraduationCap className="size-5 shrink-0 text-primary" aria-hidden="true" />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-text-primary">{doc.original_filename}</p>
-                  {doc.skillName && <p className="text-xs text-text-secondary">{doc.skillName}</p>}
+            <Reveal as="li" key={doc.id}>
+              <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-surface p-4">
+                <div className="flex min-w-0 items-center gap-3">
+                  <GraduationCap className="size-5 shrink-0 text-primary" aria-hidden="true" />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-text-primary">{doc.original_filename}</p>
+                    {doc.skillName && <p className="text-xs text-text-secondary">{doc.skillName}</p>}
+                  </div>
                 </div>
+                <EvidenceBadge level="pending" size="sm" />
               </div>
-              <EvidenceBadge level="pending" size="sm" />
-            </li>
+            </Reveal>
           ))}
-        </ul>
+        </RevealGroup>
       )}
       <p className="text-xs text-text-tertiary">Se revisará para marcarla como verificada.</p>
     </div>

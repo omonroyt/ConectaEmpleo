@@ -109,7 +109,7 @@ def compute_verification(company: Company) -> VerificationView:
             label="Descripción de la empresa", done=bool(company.description and company.description.strip())
         ),
         VerificationCheck(
-            label="Verificación de dominio (demo)", done=company.verification_status == "VERIFIED"
+            label="Verificación de dominio", done=company.verification_status == "VERIFIED"
         ),
     ]
     return VerificationView(status=company.verification_status, checks=checks)

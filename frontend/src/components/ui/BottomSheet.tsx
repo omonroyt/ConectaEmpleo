@@ -1,6 +1,8 @@
 import { useEffect, type ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { useReducedMotion } from "@/lib/a11y";
+import { easings } from "@/lib/motion";
+import { Surface, useSurfaceTone, type SurfaceTone } from "@/components/ui/Surface";
 import { cn } from "@/lib/cn";
 
 export interface BottomSheetProps {
@@ -8,12 +10,30 @@ export interface BottomSheetProps {
   onClose: () => void;
   title?: string;
   children: ReactNode;
+  /** Vidrio oscuro (default, sobre el lienzo) o panel claro. */
+  tone?: SurfaceTone;
   className?: string;
 }
 
+const PANEL_CLASS: Record<SurfaceTone, string> = {
+  dark: "glass text-text-on-dark",
+  light: "border border-border bg-surface text-text-primary shadow-lg",
+};
+
+const HANDLE_CLASS: Record<SurfaceTone, string> = {
+  dark: "bg-white/20",
+  light: "bg-border",
+};
+
+const TITLE_CLASS: Record<SurfaceTone, string> = {
+  dark: "text-text-on-dark",
+  light: "text-text-primary",
+};
+
 /** Hoja inferior mobile: handle, radio superior 28px, Esc y backdrop cierran. */
-export function BottomSheet({ open, onClose, title, children, className }: BottomSheetProps) {
+export function BottomSheet({ open, onClose, title, children, tone, className }: BottomSheetProps) {
   const reduced = useReducedMotion();
+  const resolvedTone = useSurfaceTone(tone);
 
   useEffect(() => {
     if (!open) return;
@@ -33,7 +53,7 @@ export function BottomSheet({ open, onClose, title, children, className }: Botto
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: reduced ? 0 : 0.2 }}
-            className="absolute inset-0 bg-bg-dark/50 backdrop-blur-sm"
+            className="absolute inset-0 bg-bg-dark/70 backdrop-blur-md"
             onClick={onClose}
             aria-hidden="true"
           />
@@ -44,15 +64,23 @@ export function BottomSheet({ open, onClose, title, children, className }: Botto
             initial={{ y: reduced ? 0 : "100%", opacity: reduced ? 0 : 1 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: reduced ? 0 : "100%", opacity: reduced ? 0 : 1 }}
-            transition={{ duration: reduced ? 0 : 0.28, ease: [0.16, 1, 0.3, 1] }}
+            transition={{ duration: reduced ? 0 : 0.3, ease: easings.outSmooth }}
             className={cn(
-              "relative z-10 max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-xl bg-surface p-6 pt-3 shadow-lg",
+              "relative z-10 max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-t-xl p-6 pt-3",
+              PANEL_CLASS[resolvedTone],
               className,
             )}
           >
-            <div className="mx-auto mb-3 h-1.5 w-10 rounded-pill bg-border" aria-hidden="true" />
-            {title && <h2 className="mb-4 text-lg font-semibold text-text-primary">{title}</h2>}
-            {children}
+            <div
+              className={cn("mx-auto mb-3 h-1.5 w-10 rounded-pill", HANDLE_CLASS[resolvedTone])}
+              aria-hidden="true"
+            />
+            <Surface tone={resolvedTone}>
+              {title && (
+                <h2 className={cn("mb-4 text-lg font-semibold", TITLE_CLASS[resolvedTone])}>{title}</h2>
+              )}
+              {children}
+            </Surface>
           </motion.div>
         </div>
       )}

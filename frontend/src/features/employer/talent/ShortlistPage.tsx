@@ -1,13 +1,22 @@
 import { useCallback, useMemo, useState } from "react";
-import { useNavigate, useParams } from "react-router";
 import { LayoutGroup } from "motion/react";
+import { useNavigate, useParams } from "react-router";
 import { AlertCircle, ArrowLeft, Users } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ShortlistEntry, ShortlistStage } from "@/api/types";
 import { useFullProfile, useSetShortlistStage, useShortlist, useUnlock, useVacancy } from "@/api/hooks";
-import { BrandBackground } from "@/components/brand/BrandBackground";
-import { LightSurface, PageContainer } from "@/components/layout";
-import { Button, EmptyState, SkeletonCard, Tabs, useToast } from "@/components/ui";
+import { PageContainer } from "@/components/layout";
+import {
+  Button,
+  Card,
+  EmptyState,
+  Eyebrow,
+  FilterPills,
+  Skeleton,
+  SkeletonCard,
+  useToast,
+} from "@/components/ui";
+import { useAnimatedNumber } from "@/lib/motion";
 import { ShortlistBoard, ShortlistColumn } from "./components/ShortlistBoard";
 import { UnlockModal } from "./components/UnlockModal";
 import {
@@ -16,6 +25,16 @@ import {
   shortlistStageLabels,
   shortlistStageOrder,
 } from "./talentLabels";
+
+/** Cifra que cuenta de 0 a su valor al entrar en pantalla (06 §4). */
+function CountUp({ value }: { value: number }) {
+  const { ref, display } = useAnimatedNumber<HTMLSpanElement>(value);
+  return (
+    <span ref={ref} className="tabular-nums">
+      {Math.round(display)}
+    </span>
+  );
+}
 
 /**
  * Nombre de una entrada YA desbloqueada. Es el único punto de E8–E11 donde se
@@ -103,9 +122,13 @@ export function Component() {
 
   if (vacancyQuery.isLoading || shortlistQuery.isLoading) {
     return (
-      <PageContainer className="flex flex-col gap-4 py-10">
-        <SkeletonCard />
-        <SkeletonCard />
+      <PageContainer className="flex flex-col gap-6 py-10">
+        <Skeleton className="h-9 w-72" />
+        <div className="grid gap-6 md:grid-cols-3">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       </PageContainer>
     );
   }
@@ -123,71 +146,82 @@ export function Component() {
     );
   }
 
+  const stageCounts: { label: string; value: number }[] = [
+    { label: "En el proceso", value: totalEntries },
+    { label: shortlistStageLabels.REVIEW, value: entriesByStage.REVIEW.length },
+    { label: shortlistStageLabels.INTERVIEW, value: entriesByStage.INTERVIEW.length },
+    { label: shortlistStageLabels.FINALIST, value: entriesByStage.FINALIST.length },
+  ];
+
   return (
-    <div className="min-h-full bg-bg-light">
-      <header className="relative overflow-hidden bg-bg-dark pb-16 pt-10">
-        <BrandBackground asset="matching" presence="accent" overlay="left" />
-        <PageContainer className="relative z-10">
-          <Button variant="ghost" size="md" onClick={backToTalent} className="-ml-4 text-text-on-dark">
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            Volver al ranking
-          </Button>
-          <p className="mt-4 text-xs font-semibold uppercase tracking-[.18em] text-accent-soft">
-            Proceso de selección
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold text-text-on-dark sm:text-4xl">
+    <PageContainer className="flex flex-col gap-10 py-8 pb-16 md:py-10">
+      <div>
+        <Button variant="ghost" size="md" onClick={backToTalent} className="-ml-4">
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          Volver al ranking
+        </Button>
+
+        <header className="mt-4">
+          <Eyebrow tone="accent">Proceso de selección</Eyebrow>
+          <h1 className="mt-3 max-w-[20ch] text-balance text-3xl font-semibold leading-[1.08] tracking-[-0.03em] text-text-on-dark sm:text-[2.5rem]">
             {vacancyQuery.data?.title ?? "Selección"}
           </h1>
-          <p className="mt-3 text-sm text-text-on-dark-secondary">
-            {totalEntries} {totalEntries === 1 ? "candidato" : "candidatos"} en tu proceso ·{" "}
-            {entriesByStage.REVIEW.length} por revisar · {entriesByStage.INTERVIEW.length} por
-            entrevistar · {entriesByStage.FINALIST.length}{" "}
-            {entriesByStage.FINALIST.length === 1 ? "finalista" : "finalistas"}
+          <p className="mt-4 max-w-[62ch] text-pretty text-base text-text-on-dark-secondary">
+            {PRIVACY_NOTICE}
           </p>
-          <p className="mt-1 text-sm text-text-on-dark-secondary">{PRIVACY_NOTICE}</p>
-        </PageContainer>
-      </header>
+        </header>
+      </div>
 
-      <LightSurface>
-        <PageContainer>
-          {totalEntries === 0 ? (
-            <EmptyState
-              icon={Users}
-              title="Todavía no tienes candidatos en selección"
-              description="Agrega perfiles desde el ranking anónimo para moverlos por tu proceso."
-              cta={{ label: "Ir al ranking", onClick: backToTalent }}
+      <Card variant="glass" padding="lg">
+        <dl className="grid grid-cols-2 gap-x-8 gap-y-5 sm:grid-cols-4">
+          {stageCounts.map((item) => (
+            <div key={item.label}>
+              <dt>
+                <Eyebrow>{item.label}</Eyebrow>
+              </dt>
+              <dd className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-text-on-dark">
+                <CountUp value={item.value} />
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </Card>
+
+      {totalEntries === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="Todavía no tienes candidatos en selección"
+          description="Agrega perfiles desde el ranking anónimo para moverlos por tu proceso."
+          cta={{ label: "Ir al ranking", onClick: backToTalent }}
+        />
+      ) : (
+        <LayoutGroup>
+          {/* Desktop: funnel de tres columnas. */}
+          <div className="hidden md:block">
+            <ShortlistBoard entriesByStage={entriesByStage} {...columnProps} />
+          </div>
+
+          {/* Mobile: mismas etapas, una a la vez. */}
+          <div className="flex flex-col gap-6 md:hidden">
+            <FilterPills
+              aria-label="Etapas del proceso de selección"
+              value={activeTab}
+              onChange={setActiveTab}
+              options={shortlistStageOrder.map((stage) => ({
+                value: stage,
+                label: `${shortlistStageLabels[stage]} (${entriesByStage[stage].length})`,
+              }))}
             />
-          ) : (
-            <LayoutGroup>
-              {/* Desktop: funnel de tres columnas. */}
-              <div className="hidden md:block">
-                <ShortlistBoard entriesByStage={entriesByStage} {...columnProps} />
-              </div>
-
-              {/* Mobile: mismas etapas como pestañas. */}
-              <div className="md:hidden">
-                <Tabs
-                  aria-label="Etapas del proceso de selección"
-                  value={activeTab}
-                  onChange={setActiveTab}
-                  items={shortlistStageOrder.map((stage) => ({
-                    value: stage,
-                    label: `${shortlistStageLabels[stage]} (${entriesByStage[stage].length})`,
-                    content: (
-                      <ShortlistColumn
-                        stage={stage}
-                        entries={entriesByStage[stage]}
-                        {...columnProps}
-                        variantKey="tabs"
-                      />
-                    ),
-                  }))}
-                />
-              </div>
-            </LayoutGroup>
-          )}
-        </PageContainer>
-      </LightSurface>
+            <ShortlistColumn
+              stage={activeTab as ShortlistStage}
+              entries={entriesByStage[activeTab as ShortlistStage]}
+              {...columnProps}
+              variantKey="tabs"
+              hideHeader
+            />
+          </div>
+        </LayoutGroup>
+      )}
 
       <UnlockModal
         open={pendingUnlock != null}
@@ -212,6 +246,6 @@ export function Component() {
           });
         }}
       />
-    </div>
+    </PageContainer>
   );
 }

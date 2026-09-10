@@ -1,5 +1,4 @@
 import { useState, type FormEvent, type ReactNode } from "react";
-import { motion } from "motion/react";
 import { useNavigate } from "react-router";
 import { AlertCircle, ArrowLeft, ImagePlus } from "lucide-react";
 import {
@@ -8,87 +7,96 @@ import {
   Card,
   Chip,
   EmptyState,
+  Eyebrow,
   FormField,
   Input,
-  PageHeader,
+  Reveal,
+  RevealGroup,
   Select,
-  SkeletonCard,
+  Skeleton,
   Textarea,
   useToast,
 } from "@/components/ui";
-import { PageContainer } from "@/components/layout";
+import { LightSurface, PageContainer } from "@/components/layout";
+import { BrandBackground } from "@/components/brand/BrandBackground";
 import { useCandidateMe, useUpdateCandidate } from "@/api/hooks";
 import { ApiClientError } from "@/api/client";
 import type { Availability, CandidateProfile, CandidateProfilePatch } from "@/api/types";
-import { useMotionSafe } from "@/lib/motion";
 import { availabilityOptions, MEXICO_STATES } from "./profile.utils";
 
 /** C12 — Editar perfil `/candidate/profile/edit`. Formulario por secciones, guardado independiente. */
 export function Component() {
   const me = useCandidateMe();
   const navigate = useNavigate();
-  // Los hooks deben llamarse siempre en el mismo orden: `useMotionSafe` no
-  // puede quedar después de los `return` condicionales de abajo (causaba
-  // "Rendered more hooks than during the previous render" en cuanto
-  // `me.isLoading` pasaba de true a false).
-  const { fadeUp, staggerContainer } = useMotionSafe();
 
   if (me.isLoading) return <EditSkeleton />;
   if (me.isError || !me.data) {
     return (
-      <div className="flex min-h-[70vh] items-center justify-center p-6">
+      <PageContainer className="flex min-h-[70vh] items-center justify-center py-10">
         <EmptyState
           icon={AlertCircle}
           title="No pudimos cargar tu perfil"
           description="Revisa tu conexión e inténtalo de nuevo."
           cta={{ label: "Reintentar", onClick: () => void me.refetch() }}
         />
-      </div>
+      </PageContainer>
     );
   }
 
   const profile = me.data;
 
   return (
-    <PageContainer className="flex flex-col gap-8 py-8 md:py-10">
-      <div className="flex flex-col gap-4">
-        <Button variant="ghost" size="md" onClick={() => navigate("/candidate/profile")} className="w-fit -ml-4">
-          <ArrowLeft className="size-4" aria-hidden="true" />
-          Volver a mi perfil
-        </Button>
-        <PageHeader
-          eyebrow="TU PERFIL"
-          title="Editar perfil"
-          subtitle="Cada sección se guarda por separado. Los cambios se reflejan de inmediato en tu Perfil de Talento Verificado."
-        />
+    <div>
+      <div className="relative overflow-hidden bg-bg-dark px-6 pb-20 pt-10 md:px-8 md:pt-14">
+        <BrandBackground asset="profile" presence="support" overlay="left" />
+        <PageContainer className="relative z-10 flex flex-col gap-4">
+          <Button
+            variant="secondary"
+            size="md"
+            onClick={() => navigate("/candidate/profile")}
+            className="w-fit"
+          >
+            <ArrowLeft className="size-4" aria-hidden="true" />
+            Volver a mi perfil
+          </Button>
+          <div>
+            <Eyebrow tone="accent">Tu perfil</Eyebrow>
+            <h1 className="mt-1 text-balance text-3xl font-semibold text-text-on-dark sm:text-4xl">
+              Editar perfil
+            </h1>
+            <p className="mt-2 max-w-2xl text-pretty text-base text-text-on-dark-secondary">
+              Cada sección se guarda por separado. Los cambios se reflejan de inmediato en tu Perfil de
+              Talento Verificado.
+            </p>
+          </div>
+        </PageContainer>
       </div>
 
-      <motion.div
-        initial="hidden"
-        animate="visible"
-        variants={staggerContainer(0.06, 0.05)}
-        className="flex flex-col gap-8"
-      >
-        <motion.div variants={fadeUp}>
-          <BasicInfoSection profile={profile} />
-        </motion.div>
-        <motion.div variants={fadeUp}>
-          <PhotoSection profile={profile} />
-        </motion.div>
-        <motion.div variants={fadeUp}>
-          <LocationSection profile={profile} />
-        </motion.div>
-        <motion.div variants={fadeUp}>
-          <AvailabilitySection profile={profile} />
-        </motion.div>
-        <motion.div variants={fadeUp}>
-          <SalarySection profile={profile} />
-        </motion.div>
-        <motion.div variants={fadeUp}>
-          <BioSection profile={profile} />
-        </motion.div>
-      </motion.div>
-    </PageContainer>
+      <LightSurface>
+        <PageContainer>
+          <RevealGroup className="flex flex-col gap-6" stagger={0.06}>
+            <Reveal>
+              <BasicInfoSection profile={profile} variant="light" />
+            </Reveal>
+            <Reveal>
+              <PhotoSection profile={profile} variant="soft" />
+            </Reveal>
+            <Reveal>
+              <LocationSection profile={profile} variant="light" />
+            </Reveal>
+            <Reveal>
+              <AvailabilitySection profile={profile} variant="soft" />
+            </Reveal>
+            <Reveal>
+              <SalarySection profile={profile} variant="light" />
+            </Reveal>
+            <Reveal>
+              <BioSection profile={profile} variant="soft" />
+            </Reveal>
+          </RevealGroup>
+        </PageContainer>
+      </LightSurface>
+    </div>
   );
 }
 
@@ -124,18 +132,20 @@ function FormSectionCard({
   onSubmit,
   isPending,
   children,
+  variant = "light",
 }: {
   title: string;
   description?: string;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
   isPending: boolean;
   children: ReactNode;
+  variant?: "light" | "soft";
 }) {
   return (
-    <Card padding="lg" className="flex flex-col gap-4">
+    <Card variant={variant} padding="lg" className="flex flex-col gap-4">
       <div>
         <h2 className="text-lg font-semibold text-text-primary">{title}</h2>
-        {description && <p className="mt-1 text-sm text-text-secondary">{description}</p>}
+        {description && <p className="mt-1 text-pretty text-sm text-text-secondary">{description}</p>}
       </div>
       <form onSubmit={onSubmit} className="flex flex-col gap-4">
         {children}
@@ -151,7 +161,13 @@ function FormSectionCard({
 // Secciones
 // ---------------------------------------------------------------------------
 
-function BasicInfoSection({ profile }: { profile: CandidateProfile }) {
+function BasicInfoSection({
+  profile,
+  variant,
+}: {
+  profile: CandidateProfile;
+  variant?: "light" | "soft";
+}) {
   const [fullName, setFullName] = useState(profile.full_name);
   const [phone, setPhone] = useState(profile.phone ?? "");
   const { save, isPending } = useSectionSave();
@@ -162,7 +178,7 @@ function BasicInfoSection({ profile }: { profile: CandidateProfile }) {
   };
 
   return (
-    <FormSectionCard title="Datos básicos" onSubmit={handleSubmit} isPending={isPending}>
+    <FormSectionCard title="Datos básicos" onSubmit={handleSubmit} isPending={isPending} variant={variant}>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="Nombre completo" htmlFor="edit-full-name" required>
           <Input
@@ -188,7 +204,13 @@ function BasicInfoSection({ profile }: { profile: CandidateProfile }) {
   );
 }
 
-function PhotoSection({ profile }: { profile: CandidateProfile }) {
+function PhotoSection({
+  profile,
+  variant,
+}: {
+  profile: CandidateProfile;
+  variant?: "light" | "soft";
+}) {
   const [photoUrl, setPhotoUrl] = useState(profile.photo_url ?? "");
   const { save, isPending } = useSectionSave();
 
@@ -211,6 +233,7 @@ function PhotoSection({ profile }: { profile: CandidateProfile }) {
       description="Puedes pegar una URL o subir una imagen desde tu equipo."
       onSubmit={handleSubmit}
       isPending={isPending}
+      variant={variant}
     >
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
         <Avatar name={profile.full_name} src={photoUrl || undefined} size="lg" />
@@ -245,7 +268,13 @@ function PhotoSection({ profile }: { profile: CandidateProfile }) {
   );
 }
 
-function LocationSection({ profile }: { profile: CandidateProfile }) {
+function LocationSection({
+  profile,
+  variant,
+}: {
+  profile: CandidateProfile;
+  variant?: "light" | "soft";
+}) {
   const [city, setCity] = useState(profile.location?.city ?? "");
   const [state, setState] = useState(profile.location?.state ?? "");
   const { save, isPending } = useSectionSave();
@@ -260,7 +289,7 @@ function LocationSection({ profile }: { profile: CandidateProfile }) {
   };
 
   return (
-    <FormSectionCard title="Ubicación" onSubmit={handleSubmit} isPending={isPending}>
+    <FormSectionCard title="Ubicación" onSubmit={handleSubmit} isPending={isPending} variant={variant}>
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="Ciudad" htmlFor="edit-city">
           <Input id="edit-city" value={city} onChange={(event) => setCity(event.target.value)} />
@@ -279,7 +308,13 @@ function LocationSection({ profile }: { profile: CandidateProfile }) {
   );
 }
 
-function AvailabilitySection({ profile }: { profile: CandidateProfile }) {
+function AvailabilitySection({
+  profile,
+  variant,
+}: {
+  profile: CandidateProfile;
+  variant?: "light" | "soft";
+}) {
   const [availability, setAvailability] = useState<Availability | null>(profile.availability);
   const { save, isPending } = useSectionSave();
 
@@ -289,7 +324,7 @@ function AvailabilitySection({ profile }: { profile: CandidateProfile }) {
   };
 
   return (
-    <FormSectionCard title="Disponibilidad" onSubmit={handleSubmit} isPending={isPending}>
+    <FormSectionCard title="Disponibilidad" onSubmit={handleSubmit} isPending={isPending} variant={variant}>
       <div className="flex flex-wrap gap-2">
         {availabilityOptions.map((option) => (
           <Chip
@@ -305,7 +340,13 @@ function AvailabilitySection({ profile }: { profile: CandidateProfile }) {
   );
 }
 
-function SalarySection({ profile }: { profile: CandidateProfile }) {
+function SalarySection({
+  profile,
+  variant,
+}: {
+  profile: CandidateProfile;
+  variant?: "light" | "soft";
+}) {
   const [min, setMin] = useState(profile.salary_expectation_min?.toString() ?? "");
   const [max, setMax] = useState(profile.salary_expectation_max?.toString() ?? "");
   const { save, isPending } = useSectionSave();
@@ -326,6 +367,7 @@ function SalarySection({ profile }: { profile: CandidateProfile }) {
       description="En pesos mexicanos (MXN), bruto mensual."
       onSubmit={handleSubmit}
       isPending={isPending}
+      variant={variant}
     >
       <div className="grid gap-4 sm:grid-cols-2">
         <FormField label="Mínimo" htmlFor="edit-salary-min">
@@ -339,7 +381,13 @@ function SalarySection({ profile }: { profile: CandidateProfile }) {
   );
 }
 
-function BioSection({ profile }: { profile: CandidateProfile }) {
+function BioSection({
+  profile,
+  variant,
+}: {
+  profile: CandidateProfile;
+  variant?: "light" | "soft";
+}) {
   const [bio, setBio] = useState(profile.bio ?? "");
   const { save, isPending } = useSectionSave();
 
@@ -353,6 +401,7 @@ function BioSection({ profile }: { profile: CandidateProfile }) {
       title="Sobre mí"
       description="Un par de líneas que las empresas verán en tu Perfil de Talento Verificado."
       onSubmit={handleSubmit}
+      variant={variant}
       isPending={isPending}
     >
       <FormField label="Biografía" htmlFor="edit-bio">
@@ -373,9 +422,10 @@ function BioSection({ profile }: { profile: CandidateProfile }) {
 function EditSkeleton() {
   return (
     <PageContainer className="flex flex-col gap-6 py-8 md:py-10">
-      <SkeletonCard />
-      <SkeletonCard />
-      <SkeletonCard />
+      <Skeleton className="h-8 w-48 skeleton-shimmer--dark" />
+      <Skeleton className="h-32 w-full skeleton-shimmer--dark" />
+      <Skeleton className="h-32 w-full skeleton-shimmer--dark" />
+      <Skeleton className="h-32 w-full skeleton-shimmer--dark" />
     </PageContainer>
   );
 }

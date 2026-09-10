@@ -586,7 +586,7 @@ export const mockApiClient: ApiClient = {
           { label: "Razón social registrada", done: company.legal_name.trim().length > 0 },
           { label: "Industria definida", done: company.industry.trim().length > 0 },
           { label: "Ubicación registrada", done: company.location != null },
-          { label: "Verificación de dominio (demo)", done: company.verification_status === "VERIFIED" },
+          { label: "Verificación de dominio", done: company.verification_status === "VERIFIED" },
         ],
       };
     },

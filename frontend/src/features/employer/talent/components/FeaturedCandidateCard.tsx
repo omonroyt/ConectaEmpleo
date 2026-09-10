@@ -1,7 +1,5 @@
-import { motion } from "motion/react";
 import type { AnonymousCandidateCard } from "@/api/types";
-import { Badge, CandidateAnonymousCard, ProgressRing } from "@/components/ui";
-import { useCountUp, useMotionSafe } from "@/lib/motion";
+import { Badge, CandidateAnonymousCard, Eyebrow, Reveal } from "@/components/ui";
 import {
   anonDisplayCode,
   availabilityLabels,
@@ -22,8 +20,9 @@ export interface FeaturedCandidateCardProps {
 
 /**
  * Destacado del ranking (posiciones 1-3 de E8). Envuelve `CandidateAnonymousCard`
- * del design system y le antepone la posición y el anillo de compatibilidad.
- * La secuencia de motion es: entrada de la card → count-up del score → anillo.
+ * del design system y le antepone una placa con la posición y la etiqueta
+ * textual del score. El porcentaje lo anima la propia card (su `ScoreBadge`
+ * carga de 0 al valor al entrar en pantalla), así que aquí no se repite.
  */
 export function FeaturedCandidateCard({
   card,
@@ -33,24 +32,20 @@ export function FeaturedCandidateCard({
   onView,
   onShortlist,
 }: FeaturedCandidateCardProps) {
-  const motionSafe = useMotionSafe();
-  const score = Math.round(useCountUp(card.total_score, 900));
-
   return (
-    <motion.div variants={motionSafe.cardEntrance} className="flex flex-col gap-3">
+    <Reveal className="flex h-full flex-col gap-3">
       <div className="flex items-center gap-3 px-1">
-        <ProgressRing value={card.total_score} size={76} stroke={8} />
+        <span
+          aria-hidden="true"
+          className="grid size-11 shrink-0 place-items-center rounded-md border border-border-glass bg-white/[0.06] text-base font-semibold tabular-nums text-text-on-dark"
+        >
+          {card.rank_position}
+        </span>
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[.18em] text-text-tertiary">
-            Posición #{card.rank_position} del ranking
-          </p>
-          <p className="text-sm font-medium text-text-primary">{card.score_label}</p>
-          {card.is_unlocked && (
-            <Badge tone="success" className="mt-1">
-              Identidad desbloqueada
-            </Badge>
-          )}
+          <Eyebrow>Posición en el ranking</Eyebrow>
+          <p className="mt-1 truncate text-sm font-medium text-text-on-dark">{card.score_label}</p>
         </div>
+        {card.is_unlocked && <Badge tone="success">Identidad desbloqueada</Badge>}
       </div>
 
       <CandidateAnonymousCard
@@ -59,7 +54,7 @@ export function FeaturedCandidateCard({
         geoLabel={geoBandLabels[card.geo_band]}
         availabilityLabel={availabilityLabels[card.availability]}
         yearsExperience={card.years_experience}
-        score={score}
+        score={card.total_score}
         scoreLabel={card.score_label}
         skills={card.skills.map((skill) => ({ name: skill.skill_name }))}
         evidence={card.evidence_counts}
@@ -73,6 +68,6 @@ export function FeaturedCandidateCard({
       />
 
       <span className="sr-only">{candidateSummaryText(card)}</span>
-    </motion.div>
+    </Reveal>
   );
 }

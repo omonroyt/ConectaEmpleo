@@ -1,4 +1,5 @@
 import { Chip } from "@/components/ui/Chip";
+import { useSurfaceTone, type SurfaceTone } from "@/components/ui/Surface";
 import { cn } from "@/lib/cn";
 
 export interface ChipGroupOption<T extends string> {
@@ -13,6 +14,8 @@ export interface ChipGroupProps<T extends string> {
   onChange: (value: T) => void;
   error?: string;
   hint?: string;
+  /** Fuerza la paleta; por defecto la hereda del panel (`Surface`/`Card`). */
+  tone?: SurfaceTone;
   className?: string;
 }
 
@@ -28,11 +31,17 @@ export function ChipGroup<T extends string>({
   onChange,
   error,
   hint,
+  tone,
   className,
 }: ChipGroupProps<T>) {
+  const resolved = useSurfaceTone(tone);
+  const labelClass = resolved === "dark" ? "text-text-on-dark" : "text-text-primary";
+  const errorClass = resolved === "dark" ? "text-danger-on-dark" : "text-danger";
+  const hintClass = resolved === "dark" ? "text-text-on-dark-secondary" : "text-text-secondary";
+
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <span className="text-sm font-medium text-text-primary">{label}</span>
+      <span className={cn("text-sm font-medium", labelClass)}>{label}</span>
       <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-2">
         {options.map((option) => (
           <Chip key={option.value} selected={value === option.value} onClick={() => onChange(option.value)}>
@@ -41,9 +50,9 @@ export function ChipGroup<T extends string>({
         ))}
       </div>
       {error ? (
-        <p className="text-sm text-danger">{error}</p>
+        <p className={cn("text-sm", errorClass)}>{error}</p>
       ) : hint ? (
-        <p className="text-sm text-text-secondary">{hint}</p>
+        <p className={cn("text-sm", hintClass)}>{hint}</p>
       ) : null}
     </div>
   );

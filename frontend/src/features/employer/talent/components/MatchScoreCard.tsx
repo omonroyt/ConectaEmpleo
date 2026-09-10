@@ -1,9 +1,8 @@
 import type { AnonymousCandidateCard } from "@/api/types";
-import { Card, Divider, ProgressRing } from "@/components/ui";
+import { Card, Divider, Eyebrow, ProgressRing } from "@/components/ui";
 import { BreakdownChart } from "./BreakdownChart";
 import { PenaltyList } from "./PenaltyList";
 import { EVIDENCE_NOTICE } from "../talentLabels";
-import { cn } from "@/lib/cn";
 
 export interface MatchScoreCardProps {
   /** Solo datos anónimos: este componente nunca recibe identidad. */
@@ -12,9 +11,9 @@ export interface MatchScoreCardProps {
 }
 
 /**
- * Card oscura protagonista de E9/E12: score total, etiqueta textual, desglose
- * por componente y penalizaciones. El anillo usa `tone="dark"` para conservar
- * contraste AA sobre el fondo oscuro sin necesitar una placa clara detrás.
+ * Panel protagonista de E9/E12: score total, etiqueta textual, desglose por
+ * componente y penalizaciones. Vidrio sobre el lienzo, con el anillo y las
+ * barras cargando de 0 a su valor al entrar en pantalla.
  */
 export function MatchScoreCard({ card, className }: MatchScoreCardProps) {
   const weightedTotal = card.breakdown.reduce((sum, item) => sum + item.contribution, 0);
@@ -22,41 +21,44 @@ export function MatchScoreCard({ card, className }: MatchScoreCardProps) {
 
   return (
     <Card
-      variant="dark"
+      variant="glass"
       padding="lg"
       background={{ asset: "matching", presence: "accent", overlay: "left" }}
-      className={cn("flex flex-col gap-6", className)}
+      className={className}
     >
-      <div className="flex flex-col items-center gap-5 sm:flex-row sm:items-center">
-        <div className="shrink-0">
-          <ProgressRing value={card.total_score} size={148} stroke={12} tone="dark" />
+      <div className="flex flex-col gap-7">
+        <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center">
+          <ProgressRing
+            value={card.total_score}
+            size={148}
+            stroke={12}
+            className="shrink-0"
+          />
+          <div className="min-w-0 text-center sm:text-left">
+            <Eyebrow tone="accent">Compatibilidad con la vacante</Eyebrow>
+            <p className="mt-2 text-balance text-2xl font-semibold tracking-[-0.03em] text-text-on-dark">
+              {card.score_label}
+            </p>
+            <p className="mt-2 max-w-[46ch] text-pretty text-sm text-text-on-dark-secondary">
+              Compatibilidad <span className="tabular-nums">{card.total_score} %</span> — resultado de
+              sumar <span className="tabular-nums">{weightedTotal.toFixed(1)}</span> puntos ponderados
+              {penaltyTotal > 0 ? ` y restar ${penaltyTotal} puntos de penalización` : ""}.
+            </p>
+            <p className="mt-3 text-xs text-text-on-dark-tertiary">{EVIDENCE_NOTICE}</p>
+          </div>
         </div>
-        <div className="text-center sm:text-left">
-          <p className="text-xs font-semibold uppercase tracking-[.18em] text-accent-soft">
-            Compatibilidad con la vacante
-          </p>
-          <p className="mt-1 text-2xl font-semibold text-text-on-dark">{card.score_label}</p>
-          <p className="mt-2 max-w-md text-sm text-text-on-dark-secondary">
-            Compatibilidad {card.total_score} % — resultado de sumar {weightedTotal.toFixed(1)} puntos
-            ponderados
-            {penaltyTotal > 0 ? ` y restar ${penaltyTotal} puntos de penalización` : ""}.
-          </p>
-          <p className="mt-2 text-xs uppercase tracking-[.18em] text-text-on-dark-secondary">
-            {EVIDENCE_NOTICE}
-          </p>
+
+        <Divider className="bg-white/10" />
+
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-[0.14em] text-text-on-dark-secondary">
+            Desglose del cálculo
+          </h3>
+          <BreakdownChart items={card.breakdown} onDark className="mt-5" />
         </div>
+
+        <PenaltyList penalties={card.penalties} onDark />
       </div>
-
-      <Divider className="bg-white/12" />
-
-      <div>
-        <h3 className="text-sm font-semibold uppercase tracking-[.14em] text-text-on-dark-secondary">
-          Desglose del cálculo
-        </h3>
-        <BreakdownChart items={card.breakdown} onDark className="mt-4" />
-      </div>
-
-      <PenaltyList penalties={card.penalties} onDark />
     </Card>
   );
 }

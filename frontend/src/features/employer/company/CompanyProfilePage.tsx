@@ -1,7 +1,20 @@
 import { useEffect, useState } from "react";
 import { Building2 } from "lucide-react";
 import { PageContainer } from "@/components/layout";
-import { Button, EmptyState, FormField, Input, PageHeader, Select, SkeletonCard, Textarea, useToast } from "@/components/ui";
+import {
+  Button,
+  Card,
+  EmptyState,
+  Eyebrow,
+  FormField,
+  Input,
+  Reveal,
+  RevealGroup,
+  Select,
+  SkeletonCard,
+  Textarea,
+  useToast,
+} from "@/components/ui";
 import { useCompanyMe, useUpdateCompany, useVerification } from "@/api/hooks";
 import type { Company, WorkMode } from "@/api/types";
 import { ChipGroup } from "@/features/employer/company/ChipGroup";
@@ -94,80 +107,98 @@ export function CompanyProfilePage() {
 
   return (
     <PageContainer className="py-10">
-      <PageHeader title="Perfil de empresa" subtitle="Esta información la ven los candidatos y ayuda al matching." />
+      <div>
+        <Eyebrow>Empresa</Eyebrow>
+        <h1 className="mt-1 text-balance text-3xl font-semibold tracking-[-0.03em] text-text-on-dark sm:text-4xl">
+          Perfil de empresa
+        </h1>
+        <p className="mt-2 max-w-[60ch] text-pretty text-text-on-dark-secondary">
+          Esta información la ven los candidatos y ayuda al matching.
+        </p>
+      </div>
 
       <div className="mt-8 grid gap-6 lg:grid-cols-3">
-        <div className="flex flex-col gap-6 lg:col-span-2">
-          <section className="rounded-lg border border-border bg-surface p-6">
-            <h2 className="text-base font-semibold text-text-primary">Identidad</h2>
-            <div className="mt-4 flex flex-col gap-4">
-              <FormField label="Nombre comercial" htmlFor="trade_name" required>
-                <Input value={form.trade_name} onChange={(e) => set("trade_name", e.target.value)} />
-              </FormField>
-              <FormField label="Razón social" htmlFor="legal_name" required>
-                <Input value={form.legal_name} onChange={(e) => set("legal_name", e.target.value)} />
-              </FormField>
-              <FormField label="Industria" htmlFor="industry" required>
-                <Select
-                  options={INDUSTRY_OPTIONS}
-                  value={form.industry}
-                  onChange={(e) => set("industry", e.target.value)}
-                />
-              </FormField>
-              <ChipGroup
-                label="Tamaño de la empresa"
-                options={COMPANY_SIZE_OPTIONS}
-                value={form.size}
-                onChange={(value) => set("size", value)}
-              />
-              <FormField label="URL de tu logo (opcional)" htmlFor="logo_url">
-                <Input value={form.logo_url} onChange={(e) => set("logo_url", e.target.value)} placeholder="https://…" />
-              </FormField>
-            </div>
-          </section>
-
-          <section className="rounded-lg border border-border bg-surface p-6">
-            <h2 className="text-base font-semibold text-text-primary">Ubicación y modalidad</h2>
-            <div className="mt-4 flex flex-col gap-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <FormField label="Ciudad" htmlFor="city" required>
-                  <Input value={form.city} onChange={(e) => set("city", e.target.value)} />
+        <RevealGroup className="flex flex-col gap-6 lg:col-span-2" as="div">
+          <Reveal>
+            <Card variant="light" padding="lg">
+              <h2 className="text-base font-semibold text-text-primary">Identidad</h2>
+              <div className="mt-4 flex flex-col gap-4">
+                <FormField label="Nombre comercial" htmlFor="trade_name" required>
+                  <Input value={form.trade_name} onChange={(e) => set("trade_name", e.target.value)} />
                 </FormField>
-                <FormField label="Estado" htmlFor="state" required>
-                  <Input value={form.state} onChange={(e) => set("state", e.target.value)} />
+                <FormField label="Razón social" htmlFor="legal_name" required>
+                  <Input value={form.legal_name} onChange={(e) => set("legal_name", e.target.value)} />
+                </FormField>
+                <FormField label="Industria" htmlFor="industry" required>
+                  <Select
+                    options={INDUSTRY_OPTIONS}
+                    value={form.industry}
+                    onChange={(e) => set("industry", e.target.value)}
+                  />
+                </FormField>
+                <ChipGroup
+                  label="Tamaño de la empresa"
+                  options={COMPANY_SIZE_OPTIONS}
+                  value={form.size}
+                  onChange={(value) => set("size", value)}
+                />
+                <FormField label="URL de tu logo (opcional)" htmlFor="logo_url">
+                  <Input value={form.logo_url} onChange={(e) => set("logo_url", e.target.value)} placeholder="https://…" />
                 </FormField>
               </div>
-              <ChipGroup
-                label="Modalidad predominante"
-                options={WORK_MODE_OPTIONS}
-                value={form.work_mode}
-                onChange={(value) => set("work_mode", value)}
-              />
-            </div>
-          </section>
+            </Card>
+          </Reveal>
 
-          <section className="rounded-lg border border-border bg-surface p-6">
-            <h2 className="text-base font-semibold text-text-primary">Equipo y cultura</h2>
-            <div className="mt-4">
-              <FormField label="Descripción corta (opcional)" htmlFor="description">
-                <Textarea
-                  autoResize
-                  rows={4}
-                  value={form.description}
-                  onChange={(e) => set("description", e.target.value)}
+          <Reveal>
+            <Card variant="soft" padding="lg">
+              <h2 className="text-base font-semibold text-text-primary">Ubicación y modalidad</h2>
+              <div className="mt-4 flex flex-col gap-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <FormField label="Ciudad" htmlFor="city" required>
+                    <Input value={form.city} onChange={(e) => set("city", e.target.value)} />
+                  </FormField>
+                  <FormField label="Estado" htmlFor="state" required>
+                    <Input value={form.state} onChange={(e) => set("state", e.target.value)} />
+                  </FormField>
+                </div>
+                <ChipGroup
+                  label="Modalidad predominante"
+                  options={WORK_MODE_OPTIONS}
+                  value={form.work_mode}
+                  onChange={(value) => set("work_mode", value)}
                 />
-              </FormField>
-            </div>
-          </section>
+              </div>
+            </Card>
+          </Reveal>
+
+          <Reveal>
+            <Card variant="light" padding="lg">
+              <h2 className="text-base font-semibold text-text-primary">Equipo y cultura</h2>
+              <div className="mt-4">
+                <FormField label="Descripción corta (opcional)" htmlFor="description">
+                  <Textarea
+                    autoResize
+                    rows={4}
+                    value={form.description}
+                    onChange={(e) => set("description", e.target.value)}
+                  />
+                </FormField>
+              </div>
+            </Card>
+          </Reveal>
 
           <div className="flex justify-end">
             <Button variant="primary" size="lg" loading={updateCompany.isPending} onClick={handleSubmit}>
               Guardar cambios
             </Button>
           </div>
-        </div>
+        </RevealGroup>
 
-        <VerificationCard verification={verificationQuery.data} loading={verificationQuery.isLoading} />
+        <RevealGroup>
+          <Reveal>
+            <VerificationCard verification={verificationQuery.data} loading={verificationQuery.isLoading} />
+          </Reveal>
+        </RevealGroup>
       </div>
     </PageContainer>
   );

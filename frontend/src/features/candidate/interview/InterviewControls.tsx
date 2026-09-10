@@ -30,9 +30,13 @@ function formatElapsed(ms: number): string {
 }
 
 const iconButton =
-  "inline-flex h-11 items-center gap-2 rounded-pill border border-white/15 px-4 text-sm font-medium text-text-on-dark-secondary transition-colors duration-fast ease-standard hover:border-white/30 hover:text-text-on-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-2 disabled:cursor-not-allowed disabled:opacity-40";
+  "inline-flex h-10 items-center gap-2 rounded-pill border border-white/15 bg-white/[0.04] px-3.5 text-[13px] font-medium text-text-on-dark-secondary transition-colors duration-fast ease-standard hover:border-white/30 hover:bg-white/[0.08] hover:text-text-on-dark focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-2 disabled:cursor-not-allowed disabled:opacity-40";
 
-/** Controles de la entrevista: terminar/enviar, repetir, micrófono, pausa y modo. */
+/**
+ * Controles de la entrevista dentro de la barra del compositor: terminar/enviar,
+ * repetir, micrófono, pausa y cambio de modo. Una sola fila centrada que se
+ * reordena al envolver, en vez de dos bloques de formulario sueltos.
+ */
 export function InterviewControls({
   state,
   mode,
@@ -56,21 +60,24 @@ export function InterviewControls({
   const showFinishAnswer = mode === "VOICE" && answering && !reviewing && !micMuted;
 
   return (
-    <div className="flex w-full flex-col gap-4">
+    <div className="flex w-full flex-col items-center gap-3">
       {mode === "VOICE" && answering && !reviewing && (
-        <p className="text-center text-sm tabular-nums text-text-on-dark-secondary" aria-live="off">
+        <p
+          className="text-[13px] tabular-nums text-text-on-dark-secondary"
+          aria-live="off"
+        >
           {micMuted ? "Micrófono en silencio" : `Grabando ${formatElapsed(elapsedMs)}`}
         </p>
       )}
 
-      <div className="flex flex-wrap items-center justify-center gap-3">
+      <div className="flex w-full flex-wrap items-center justify-center gap-2.5">
         {showFinishAnswer ? (
-          <Button size="lg" onClick={onFinishAnswer} loading={transcribing}>
+          <Button onClick={onFinishAnswer} loading={transcribing}>
             <Square className="size-4" aria-hidden="true" />
             Terminar respuesta
           </Button>
         ) : (
-          <Button size="lg" onClick={onSubmit} disabled={!canSubmit || busy} arrow={false}>
+          <Button onClick={onSubmit} disabled={!canSubmit || busy} arrow={false}>
             <Send className="size-4" aria-hidden="true" />
             Enviar respuesta
           </Button>
@@ -92,9 +99,7 @@ export function InterviewControls({
             {micMuted ? "Reactivar micrófono" : "Silenciar micrófono"}
           </button>
         )}
-      </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-3">
         {mode === "VOICE" && (
           <button
             type="button"

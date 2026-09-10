@@ -12,22 +12,22 @@ export interface UnlockModalProps {
 
 /**
  * Confirmación previa al desbloqueo de identidad (04 §E9).
- * El copy es fijo: la acción queda registrada y es irreversible para la demo.
+ * El copy es fijo: la acción queda registrada y no se deshace.
  */
 export function UnlockModal({ open, anonCode, loading = false, onClose, onConfirm }: UnlockModalProps) {
   return (
     <Modal open={open} onClose={onClose} title="Desbloquear identidad">
       <div className="flex flex-col gap-5">
-        <div className="flex items-start gap-3 rounded-md bg-surface-soft p-4">
-          <KeyRound className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
-          <p className="text-sm text-text-secondary">
+        <div className="flex items-start gap-3 rounded-md border border-white/[0.08] bg-white/[0.05] p-4">
+          <KeyRound className="mt-0.5 size-5 shrink-0 text-primary-on-dark" aria-hidden="true" />
+          <p className="text-pretty text-sm text-text-on-dark-secondary">
             Vas a desbloquear a{" "}
-            <span className="font-medium text-text-primary">{anonDisplayCode(anonCode)}</span>. Verás
+            <span className="font-medium text-text-on-dark">{anonDisplayCode(anonCode)}</span>. Verás
             nombre, contacto y documentos. Esta acción queda registrada.
           </p>
         </div>
 
-        <p className="text-sm text-text-tertiary">
+        <p className="text-pretty text-sm text-text-on-dark-tertiary">
           El primer filtro se hizo sin identidad para reducir sesgos. A partir de aquí la decisión y
           el contacto son tuyos.
         </p>

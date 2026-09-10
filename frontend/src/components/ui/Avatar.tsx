@@ -1,3 +1,4 @@
+import { useSurfaceTone, type SurfaceTone } from "@/components/ui/Surface";
 import { cn } from "@/lib/cn";
 
 export interface AvatarProps {
@@ -8,6 +9,8 @@ export interface AvatarProps {
   /** Semilla para variar el tono del monograma (ej. código anónimo del candidato). */
   seed?: string;
   size?: "sm" | "md" | "lg";
+  /** Fuerza la paleta; por defecto la hereda del panel (`Surface`/`Card`). */
+  tone?: SurfaceTone;
   className?: string;
 }
 
@@ -17,11 +20,18 @@ const sizeClasses: Record<NonNullable<AvatarProps["size"]>, string> = {
   lg: "size-16 text-lg",
 };
 
-const tones = [
+const tonesLight = [
   "bg-primary/15 text-primary",
   "bg-accent/20 text-accent",
   "bg-success-soft text-success",
   "bg-warning-soft text-warning",
+];
+
+const tonesDark = [
+  "bg-primary/20 text-primary-on-dark",
+  "bg-accent/25 text-accent-soft",
+  "bg-success/20 text-success-on-dark",
+  "bg-warning/20 text-warning-on-dark",
 ];
 
 function hashSeed(seed: string): number {
@@ -38,8 +48,18 @@ function initialsFrom(name: string): string {
 }
 
 /** Avatar con foto, iniciales o (si `anonymous`) monograma neutro — nunca muestra foto anónima. */
-export function Avatar({ name, src, anonymous = false, seed, size = "md", className }: AvatarProps) {
-  const tone = tones[hashSeed(seed ?? name ?? "conecta") % tones.length];
+export function Avatar({
+  name,
+  src,
+  anonymous = false,
+  seed,
+  size = "md",
+  tone,
+  className,
+}: AvatarProps) {
+  const resolved = useSurfaceTone(tone);
+  const tones = resolved === "dark" ? tonesDark : tonesLight;
+  const toneClass = tones[hashSeed(seed ?? name ?? "conecta") % tones.length];
 
   if (!anonymous && src) {
     return (
@@ -61,7 +81,7 @@ export function Avatar({ name, src, anonymous = false, seed, size = "md", classN
       className={cn(
         "flex shrink-0 items-center justify-center rounded-full font-semibold",
         sizeClasses[size],
-        tone,
+        toneClass,
         className,
       )}
     >

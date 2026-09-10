@@ -33,7 +33,7 @@ export function Tooltip({ content, children, className }: TooltipProps) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 4 }}
             transition={{ duration: reduced ? 0 : 0.12 }}
-            className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-max max-w-56 -translate-x-1/2 rounded-md bg-bg-dark px-2.5 py-1.5 text-center text-xs font-medium text-text-on-dark shadow-md"
+            className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 w-max max-w-56 -translate-x-1/2 rounded-md border border-border-glass bg-bg-dark/95 px-2.5 py-1.5 text-center text-xs font-medium text-text-on-dark shadow-glass backdrop-blur-sm"
           >
             {content}
           </motion.span>

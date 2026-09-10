@@ -104,7 +104,14 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
       ref={ref}
       onMouseMove={spotlight || onMouseMove ? handleMouseMove : undefined}
       className={cn(
-        "relative overflow-hidden rounded-lg border transition-[transform,box-shadow,border-color,background-color] duration-normal ease-out-smooth",
+        // `isolate` crea un contexto de apilamiento propio: dentro de él, el
+        // fondo de marca en `-z-10` se pinta por encima del color de fondo de
+        // la card pero por debajo del contenido en flujo. Eso permite que los
+        // hijos sean hijos DIRECTOS de la raíz — sin un div envoltorio — y que
+        // por tanto un `className` de layout (`flex flex-col gap-4`,
+        // `grid`, …) aplique de verdad al contenido en vez de quedarse
+        // gobernando un único hijo envoltorio.
+        "relative isolate overflow-hidden rounded-lg border transition-[transform,box-shadow,border-color,background-color] duration-normal ease-out-smooth",
         variantClasses[variant],
         elevationClasses[elevation ?? defaultElevation[variant]],
         paddingClasses[padding],
@@ -124,12 +131,11 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(function Card(
       {...rest}
     >
       {isDarkFamily && background && (
-        <BrandBackground {...background} className="opacity-60" />
+        <BrandBackground {...background} className="-z-10 opacity-60" />
       )}
-      {/* Los controles de formulario del interior heredan el tono del panel. */}
-      <Surface tone={isDarkFamily ? "dark" : "light"}>
-        <div className="relative z-10">{children}</div>
-      </Surface>
+      {/* `Surface` no renderiza DOM: solo declara el tono que heredan los
+          controles de formulario del interior. */}
+      <Surface tone={isDarkFamily ? "dark" : "light"}>{children}</Surface>
     </div>
   );
 });

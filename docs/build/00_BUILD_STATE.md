@@ -10,8 +10,8 @@
 
 | Campo | Valor |
 |---|---|
-| Fase activa | **COMPLETADA.** Backend y frontend integrados y verificados de punta a punta contra un backend real. |
-| Siguiente tarea | ninguna — el build queda cerrado. Lo que sigue es deploy/operación, no construcción (ver "Qué queda fuera" en la bitácora de B13). |
+| Fase activa | **COMPLETADA.** Fase R (rediseño visual, dirección R1: lienzo oscuro + paneles mixtos) cerrada. Spec: `06_REDISENO_VISUAL.md`. |
+| Siguiente tarea | ninguna — la fase R queda cerrada |
 | Tarea en curso | ninguna |
 | Último commit de construcción | 346159c (`feat(fe/B13)`), 7bfa90a (`feat(be/B13)`) |
 | Bloqueos | ninguno |
@@ -41,6 +41,73 @@ npm run e2e:smoke                    # 50 pasos en Chromium, ambos journeys, 390
 ```
 
 El último recorrido de navegador quedó **50/50 en verde, sin errores de consola**. Capturas en `frontend/output/e2e/` (ignorado por git). Usuarios demo (contraseña `demo1234`): `candidato@demo.mx` (perfil nuevo, recorre el golden path), `maria@demo.mx` (ya evaluada), `empresa@demo.mx`. Para reiniciar los datos del mock: `window.__ce.resetMock()` en la consola del navegador.
+
+
+## Cola de tareas — rediseño visual (fase R)
+
+Spec normativa: `06_REDISENO_VISUAL.md`. Origen: revisión del usuario sobre las 45 capturas de
+`pantallas-a-modificar/`. Regla del reparto: cada fila es dueña exclusiva de sus rutas, así R0a/R0b
+y las filas de pantalla pueden correr en paralelo sin pisarse. Solo el orquestador commitea y toca
+este tablero.
+
+| ID | Tarea | Rutas propias | Modelo | Depende de | Estado | Commit |
+|---|---|---|---|---|---|---|
+| R0 | Fundación: lienzo `.app-canvas`, superficies `glass`/`soft`, contexto `Surface` de tono, datos que se llenan al entrar en pantalla, `Slider` con relleno, fix de `SegmentedControl`, `BottomNav` sticky, fuera el bloque de usuarios demo | `styles/`, `lib/motion.ts`, `components/ui/` base, `components/layout/`, `features/auth/` | **opus** (orquestador) | — | DONE | 43a367a |
+| R0a | Componentes de contenido y datos al lienzo oscuro (JobCard, tarjetas de candidato, MetricCard, ScoreBadge, Tabs, EmptyState, Skeleton…) | `components/ui/` (contenido) | sonnet | R0 | DONE | |
+| R0b | Superposiciones (Modal/Drawer/BottomSheet/Toast/Tooltip), `Button`, `FileUploader`, 404 y reconstrucción de `/dev/ui` | `components/ui/` (overlays), `app/` | sonnet | R0 | DONE | |
+| R3 | Entrevista: quitar la columna derecha, Orbe a pantalla completa, pregunta centrada, contraste de la preparación, anillo del resultado | `features/candidate/interview/`, `components/interview/` | **opus** | R0 | DONE | |
+| R2 | Onboarding de candidato y CV (subida, CV conversacional, revisión) | `features/candidate/onboarding/`, `features/candidate/cv/` | sonnet | R0a | DONE | |
+| R4 | Candidato: home, perfil, edición de perfil, oportunidades | `features/candidate/home/`, `profile/`, `opportunities/` | sonnet | R0a | DONE | |
+| R5 | Empresa: onboarding, home, vacantes, nueva vacante, perfil ideal, perfil de empresa | `features/employer/onboarding/`, `home/`, `vacancies/`, `company/` | sonnet | R0a | DONE | |
+| R6 | Empresa: talento, detalle de candidato, perfil desbloqueado, comparador (no es responsive hoy), finalistas | `features/employer/talent/` | **opus** | R0a | DONE | |
+| R7 | Pantallas compartidas (notificaciones, mensajes, planes) y repaso final de consistencia | `features/shared/` | **opus** (orquestador) | R0a | DONE | |
+
+
+### Bitácora — fase R (rediseño visual)
+
+**Origen.** El usuario revisó las 45 capturas de `pantallas-a-modificar/` pantalla por pantalla. Su
+veredicto, repetido en varias formas: la información y la distribución están bien; lo que falla es
+el acabado visual. Compartió tres referencias, todas de lienzo oscuro con glow azul y paneles de
+vidrio. Se le planteó la disyuntiva de dirección y eligió **lienzo oscuro + paneles mixtos** para
+toda el área logueada.
+
+**Cómo se repartió.** Un orquestador (Opus) construyó la fundación y escribió `06_REDISENO_VISUAL.md`;
+siete constructores trabajaron en paralelo sobre carpetas disjuntas, sin commitear ninguno. Cada
+encargo llevaba las quejas textuales del usuario sobre sus pantallas y la obligación de mirar sus
+propias capturas de Playwright antes de cerrar.
+
+**Decisiones que conviene no volver a discutir.**
+- Las superficies son cuatro (`glass`, `light`, `soft`, `dark`) y hay que pasar `variant` explícito:
+  el default de `Card` es `glass`.
+- El tono se hereda por contexto (`Surface`). Un control que se ve mal casi siempre significa que
+  falta un `<Surface>` o que la `Card` tiene mal la variante, no que haya que repintar clases.
+- Los datos animan de 0 al valor en ~1.8 s **al entrar en pantalla**, no al montar. Un gráfico que
+  está más abajo debe animar cuando el usuario llega a él.
+
+**Errores encontrados durante la fase, y su causa raíz.**
+- Texto blanco sobre blanco en el selector Candidato/Empresa: la píldora activa iba en `-z-10`, que
+  la mandaba detrás del fondo del contenedor.
+- El anillo de progreso desbordaba su texto: la tipografía era fija en vez de derivarse del
+  diámetro.
+- El slider parecía una barra gris vacía: la pista medía 44 px de alto (por el objetivo táctil) y no
+  pintaba el tramo recorrido. Ahora el objetivo táctil lo aporta la bolita.
+- La barra inferior mobile aparecía a media página: era `fixed`; pasó a `sticky bottom-0`.
+- `Card` se tragaba el `className` de layout: los hijos iban dentro de un div envoltorio, así que un
+  `flex flex-col gap-4` gobernaba un único hijo. Se eliminó el envoltorio usando `isolate` + `-z-10`
+  en el fondo de marca.
+- El Orbe salía pequeño pese a dársele más caja: el render deja un anillo transparente y la esfera
+  visible es el 62,5 % de la caja. Ahora se dimensiona la esfera, no la caja.
+- Varias pantallas se veían rotas por paneles `bg-surface` sin contexto de tono: los controles
+  asumían oscuro sobre un fondo claro.
+
+**Verificación de cierre.** `typecheck`, `build`, `smoke:mock` (22), `smoke:interview` (13) y
+`e2e:smoke` (50 pasos en Chromium, 390 px y 1280 px) en verde, sin errores de consola. Capturas del
+estado posterior en `pantallas-a-modificar/pantallas-actualizadas/`, con los mismos nombres que las
+del estado anterior para poder compararlas una a una.
+
+**Qué queda fuera.** No se tocó funcionalidad, rutas, contratos de API ni la lógica de matching. La
+cobertura de competencias y la transcripción de la entrevista se siguen registrando en el backend
+para que las empresas las consulten; solo dejaron de mostrarse al candidato durante la entrevista.
 
 ## Cola de tareas — frontend
 

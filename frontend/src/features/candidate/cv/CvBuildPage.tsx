@@ -4,9 +4,10 @@ import { useNavigate } from "react-router";
 import { Mic, MicOff, Send } from "lucide-react";
 import { ImmersiveLayout } from "@/components/layout";
 import { BrandBackground } from "@/components/brand/BrandBackground";
-import { Avatar, Button, ProgressSteps, Textarea } from "@/components/ui";
+import { Avatar, Button, Eyebrow, ProgressSteps, Textarea } from "@/components/ui";
 import { useCvBuilder } from "@/api/hooks";
 import { useMotionSafe } from "@/lib/motion";
+import { useReducedMotion } from "@/lib/a11y";
 import { cn } from "@/lib/cn";
 import { BrowserVoiceGateway } from "@/voice";
 import type { CVBuilderSession } from "@/api/types";
@@ -21,6 +22,7 @@ interface ChatMessage {
 export function Component() {
   const navigate = useNavigate();
   const { fadeUp, pageSequence } = useMotionSafe();
+  const reducedMotion = useReducedMotion();
   const { createSession, sendMessage, finalize } = useCvBuilder();
 
   const [session, setSession] = useState<CVBuilderSession | null>(null);
@@ -104,10 +106,11 @@ export function Component() {
         initial="hidden"
         animate="visible"
         variants={pageSequence}
-        className="mx-auto flex w-full min-h-0 max-w-[680px] flex-1 flex-col gap-5"
+        className="mx-auto flex w-full min-h-0 flex-1 flex-col gap-4 sm:gap-6"
       >
-        <motion.div variants={fadeUp} className="flex flex-col gap-3">
-          <h1 className="text-xl font-semibold tracking-[-0.01em] text-text-on-dark sm:text-2xl">
+        <motion.div variants={fadeUp} className="flex flex-col gap-2">
+          <Eyebrow tone="dark">Con Sofía</Eyebrow>
+          <h1 className="text-balance text-xl font-semibold tracking-[-0.02em] text-text-on-dark sm:text-2xl">
             Conversemos sobre tu experiencia
           </h1>
           {session && (
@@ -126,15 +129,19 @@ export function Component() {
           aporta profundidad y las burbujas conservan su superficie neutra.
         */}
         {/*
-          Altura acotada en vez de `flex-1`: un hijo flex conserva
-          `min-height: auto`, así que el hilo no encogía por debajo de su
-          contenido y era la **página** la que hacía scroll — en móvil eso
-          dejaba fuera de pantalla el encabezado y el campo de respuesta. Con
-          altura definida el scroll ocurre dentro del hilo, como debe.
+          Altura en `dvh` (definida) en vez de `flex-1`: el shell
+          (`ImmersiveLayout`) no tiene una altura acotada, solo `min-h-dvh`,
+          así que un hijo `flex-1` no tiene de qué "sobrar" y no se limita
+          (ver historial de este archivo). Con una altura generosa y acotada
+          en `dvh`/`max-h` el hilo scrollea internamente y el compositor de
+          abajo, en flujo normal justo debajo, queda siempre visible sin
+          necesitar `position: sticky` (que sin un contenedor del alto exacto
+          del viewport se queda flotando sobre el hilo mientras se scrollea
+          la página, en vez de quedarse quieto al fondo).
         */}
         <motion.div
           variants={fadeUp}
-          className="relative flex h-[58dvh] max-h-[640px] min-h-[320px] flex-col overflow-hidden rounded-2xl border border-border-dark"
+          className="relative flex h-[68dvh] max-h-[760px] min-h-[420px] flex-col overflow-hidden rounded-2xl border border-border-dark sm:rounded-[28px]"
         >
           <BrandBackground asset="onboarding" presence="support" overlay="none" position="70% 35%" />
           <div
@@ -144,7 +151,7 @@ export function Component() {
 
           <div
             ref={listRef}
-            className="relative z-10 flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4 sm:p-5"
+            className="relative z-10 flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 sm:p-7"
           >
             {messages.map((message) => (
               <div
@@ -154,7 +161,7 @@ export function Component() {
                 {message.role === "agent" && <Avatar name="Sofía" size="sm" />}
                 <div
                   className={cn(
-                    "max-w-[82%] rounded-lg px-4 py-2.5 text-sm leading-relaxed text-pretty shadow-sm",
+                    "max-w-[85%] rounded-lg px-4 py-2.5 text-sm leading-relaxed text-pretty shadow-sm sm:max-w-[75%] sm:text-[0.9375rem]",
                     message.role === "agent"
                       ? "rounded-bl-sm bg-surface text-text-primary"
                       : "rounded-br-sm bg-gradient-cta text-white",
@@ -188,58 +195,109 @@ export function Component() {
           </div>
         </motion.div>
 
+        {/*
+          Compositor con apariencia "flotante" (vidrio + sombra + esquinas
+          redondeadas), pero en flujo normal justo debajo del hilo: como el
+          hilo ya tiene altura acotada, no hace falta `position: sticky` para
+          que quede siempre visible, y así se evita que flote encima del
+          propio hilo mientras se hace scroll de la página en pantallas bajas.
+        */}
         {done ? (
           <motion.div variants={fadeUp}>
-            <Button size="lg" arrow loading={finalize.isPending} onClick={handleFinalize} className="w-full">
-              Revisar mi perfil
-            </Button>
+            <div className="glass rounded-2xl p-4 sm:rounded-3xl sm:p-5">
+              <Button size="lg" arrow loading={finalize.isPending} onClick={handleFinalize} className="w-full">
+                Revisar mi perfil
+              </Button>
+            </div>
           </motion.div>
         ) : (
-          <motion.div variants={fadeUp} className="flex items-end gap-2">
-            <Textarea
-              autoResize
-              placeholder="Escribe tu respuesta…"
-              value={draftText}
-              disabled={!session}
-              onChange={(event) => setDraftText(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter" && !event.shiftKey) {
-                  event.preventDefault();
-                  handleSend();
-                }
-              }}
-              className="flex-1 bg-surface"
-            />
-            {voiceGateway.available && (
-              <button
-                type="button"
-                aria-pressed={isListening}
-                aria-label={isListening ? "Detener dictado" : "Dictar por voz"}
-                onClick={() => void toggleMic()}
-                className={cn(
-                  // A 390px, el micrófono y el botón de enviar dejaban al campo
-                  // de texto ~200px y el placeholder se partía en dos líneas.
-                  "flex size-12 shrink-0 items-center justify-center rounded-pill border transition-colors duration-fast ease-standard sm:size-14",
-                  isListening
-                    ? "border-danger bg-danger/10 text-danger"
-                    : "border-border-dark text-text-on-dark-secondary hover:text-text-on-dark",
-                )}
-              >
-                {isListening ? <MicOff className="size-5" /> : <Mic className="size-5" />}
-              </button>
-            )}
-            <Button
-              size="lg"
-              aria-label="Enviar"
-              disabled={!draftText.trim() || !session}
-              loading={sendMessage.isPending}
-              onClick={handleSend}
-              // Cuadrado: con solo un icono, `px-7` de `size="lg"` lo hacía
-              // innecesariamente ancho y comía el campo de respuesta.
-              className="size-12 shrink-0 px-0 sm:size-14"
-            >
-              <Send className="size-4" aria-hidden="true" />
-            </Button>
+          <motion.div variants={fadeUp}>
+            <div className="glass flex flex-col gap-4 rounded-2xl p-4 sm:rounded-3xl sm:p-5">
+              {/*
+                El micrófono es ahora la acción protagonista: un círculo grande
+                con halo de marca e invitación a hablar, en vez de un botón
+                secundario del tamaño del de enviar. El dictado sigue usando
+                exactamente el mismo handler/estado (`toggleMic`/`isListening`)
+                y los mismos `aria-label`; solo cambió su peso visual.
+              */}
+              {voiceGateway.available && (
+                <div className="flex flex-col items-center gap-2.5 border-b border-border-glass/70 pb-4 sm:pb-5">
+                  <button
+                    type="button"
+                    aria-pressed={isListening}
+                    aria-label={isListening ? "Detener dictado" : "Dictar por voz"}
+                    onClick={() => void toggleMic()}
+                    className={cn(
+                      "relative flex size-16 shrink-0 items-center justify-center rounded-full text-white shadow-[0_10px_34px_-8px_rgba(74,69,255,.85)]",
+                      "transition-transform duration-normal ease-out-smooth hover:scale-[1.04] active:scale-95",
+                      "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-2",
+                      "sm:size-20",
+                      isListening ? "bg-danger" : "bg-gradient-cta",
+                    )}
+                  >
+                    {isListening &&
+                      (reducedMotion ? (
+                        <span
+                          aria-hidden="true"
+                          className="absolute inset-0 rounded-full ring-4 ring-danger/50"
+                        />
+                      ) : (
+                        <>
+                          <motion.span
+                            aria-hidden="true"
+                            className="absolute inset-0 rounded-full border-2 border-danger/60"
+                            animate={{ scale: [1, 1.65], opacity: [0.55, 0] }}
+                            transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
+                          />
+                          <motion.span
+                            aria-hidden="true"
+                            className="absolute inset-0 rounded-full border-2 border-danger/60"
+                            animate={{ scale: [1, 1.65], opacity: [0.55, 0] }}
+                            transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut", delay: 0.55 }}
+                          />
+                        </>
+                      ))}
+                    {isListening ? (
+                      <MicOff className="relative size-6 sm:size-7" aria-hidden="true" />
+                    ) : (
+                      <Mic className="relative size-6 sm:size-7" aria-hidden="true" />
+                    )}
+                  </button>
+                  <p className="text-center text-sm text-text-on-dark-secondary">
+                    {isListening ? "Escuchando… toca para detener" : "Cuéntamelo hablando, es más rápido"}
+                  </p>
+                </div>
+              )}
+
+              <div className="flex items-end gap-2">
+                <Textarea
+                  autoResize
+                  placeholder="Escribe tu respuesta…"
+                  value={draftText}
+                  disabled={!session}
+                  onChange={(event) => setDraftText(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.shiftKey) {
+                      event.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  className="flex-1"
+                />
+                <Button
+                  size="lg"
+                  aria-label="Enviar"
+                  disabled={!draftText.trim() || !session}
+                  loading={sendMessage.isPending}
+                  onClick={handleSend}
+                  // Cuadrado: con solo un icono, `px-7` de `size="lg"` lo hacía
+                  // innecesariamente ancho y comía el campo de respuesta.
+                  className="size-12 shrink-0 px-0 sm:size-14"
+                >
+                  <Send className="size-4" aria-hidden="true" />
+                </Button>
+              </div>
+            </div>
           </motion.div>
         )}
       </motion.div>

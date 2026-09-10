@@ -5,16 +5,20 @@ import { AlertCircle, GitCompareArrows, Search, Users } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { AnonymousCandidateCard } from "@/api/types";
 import { useJob, useMatchResults, useRunMatch, useSetShortlistStage, useVacancy } from "@/api/hooks";
-import { BrandBackground } from "@/components/brand/BrandBackground";
-import { LightSurface, PageContainer } from "@/components/layout";
+import { PageContainer } from "@/components/layout";
 import {
   Button,
+  Card,
   EmptyState,
+  Eyebrow,
   ProcessingStatus,
+  Reveal,
+  RevealGroup,
+  Skeleton,
   SkeletonCard,
   useToast,
 } from "@/components/ui";
-import { useMotionSafe } from "@/lib/motion";
+import { useAnimatedNumber, useMotionSafe } from "@/lib/motion";
 import { CandidateCompactRow } from "./components/CandidateCompactRow";
 import { FeaturedCandidateCard } from "./components/FeaturedCandidateCard";
 import {
@@ -74,6 +78,9 @@ export function Component() {
 
   const resultsQuery = useMatchResults(runId, { limit: PAGE_SIZE, offset });
   const total = resultsQuery.data?.total ?? 0;
+
+  // Contador de candidatos evaluados: cuenta de 0 al total al entrar en pantalla.
+  const evaluatedCount = useAnimatedNumber<HTMLParagraphElement>(total);
 
   // Al cambiar de corrida, se descarta lo acumulado.
   useEffect(() => {
@@ -174,8 +181,11 @@ export function Component() {
   // ---- estados de página -------------------------------------------------
   if (vacancyQuery.isLoading) {
     return (
-      <PageContainer className="py-10">
-        <div className="flex flex-col gap-4">
+      <PageContainer className="flex flex-col gap-6 py-10">
+        <Skeleton className="h-9 w-72" />
+        <Skeleton className="h-28 w-full" />
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <SkeletonCard />
           <SkeletonCard />
           <SkeletonCard />
         </div>
@@ -197,169 +207,194 @@ export function Component() {
   }
 
   return (
-    <div className="min-h-full bg-bg-light">
-      {/* Header oscuro con acento de marca solo aquí (01 §8). */}
-      <header className="relative overflow-hidden bg-bg-dark pb-16 pt-10">
-        <BrandBackground asset="matching" presence="accent" overlay="left" />
-        <PageContainer className="relative z-10">
-          <p className="text-xs font-semibold uppercase tracking-[.18em] text-accent-soft">
-            Talento compatible
-          </p>
-          <h1 className="mt-2 max-w-3xl text-3xl font-semibold text-text-on-dark sm:text-4xl">
+    <PageContainer className="flex flex-col gap-10 py-10 md:py-14">
+      <motion.div
+        variants={motionSafe.pageSequence}
+        initial="hidden"
+        animate="visible"
+        className="flex flex-col gap-8"
+      >
+        <motion.header variants={motionSafe.fadeUp}>
+          <Eyebrow tone="accent">Talento compatible</Eyebrow>
+          <h1 className="mt-3 max-w-[20ch] text-balance text-3xl font-semibold leading-[1.08] tracking-[-0.03em] text-text-on-dark sm:text-[2.5rem]">
             {vacancy.title}
           </h1>
-          <p className="mt-3 text-sm text-text-on-dark-secondary">
-            {runId
-              ? `${total} ${total === 1 ? "candidato evaluado" : "candidatos evaluados"} para esta vacante.`
-              : "Aún no has ejecutado una búsqueda para esta vacante."}
+          <p className="mt-4 max-w-[62ch] text-pretty text-base text-text-on-dark-secondary">
+            El ranking ordena a cada persona por la evidencia que respalda su perfil.{" "}
+            {PRIVACY_NOTICE}
           </p>
-          <p className="mt-1 text-sm text-text-on-dark-secondary">{PRIVACY_NOTICE}</p>
+        </motion.header>
 
-          <div className="mt-6 flex flex-wrap gap-3">
-            <Button
-              variant="primary"
-              size="md"
-              disabled={selectedIds.length < 2}
-              onClick={() =>
-                navigate(
-                  `/employer/vacancies/${vacancy.id}/compare?ids=${selectedIds.join(",")}`,
-                )
-              }
-            >
-              <GitCompareArrows className="size-4" aria-hidden="true" />
-              Comparar ({selectedIds.length})
-            </Button>
-            <Button
-              variant="secondary"
-              size="md"
-              onClick={() => navigate(`/employer/vacancies/${vacancy.id}/shortlist`)}
-            >
-              Ver selección
-            </Button>
-          </div>
-          {selectedIds.length < 2 && (
-            <p className="mt-2 text-xs text-text-on-dark-secondary">
-              Selecciona 2 o 3 candidatos para comparar.
-            </p>
-          )}
-        </PageContainer>
-      </header>
+        {/* Contexto de la corrida + acciones de la pantalla. */}
+        <motion.div variants={motionSafe.fadeUp}>
+          <Card variant="glass" padding="lg">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <dl className="grid min-w-0 flex-1 gap-x-10 gap-y-5 sm:grid-cols-2 lg:grid-cols-3">
+                <div>
+                  <dt>
+                    <Eyebrow>Candidatos evaluados</Eyebrow>
+                  </dt>
+                  <dd>
+                    <p
+                      ref={evaluatedCount.ref}
+                      className="mt-2 text-3xl font-semibold tabular-nums tracking-[-0.03em] text-text-on-dark"
+                    >
+                      {runId ? Math.round(evaluatedCount.display) : "—"}
+                    </p>
+                  </dd>
+                </div>
+                <div>
+                  <dt>
+                    <Eyebrow>Seleccionados para comparar</Eyebrow>
+                  </dt>
+                  <dd>
+                    <p className="mt-2 text-3xl font-semibold tabular-nums tracking-[-0.03em] text-text-on-dark">
+                      {selectedIds.length}
+                      <span className="text-lg text-text-on-dark-tertiary"> / {MAX_COMPARE}</span>
+                    </p>
+                  </dd>
+                </div>
+                <div className="max-w-[36ch]">
+                  <dt>
+                    <Eyebrow>Estado de la búsqueda</Eyebrow>
+                  </dt>
+                  <dd className="mt-2 text-pretty text-sm text-text-on-dark-secondary">
+                    {runId
+                      ? "Ranking listo. Selecciona 2 o 3 perfiles para verlos lado a lado."
+                      : "Aún no has ejecutado una búsqueda para esta vacante."}
+                  </dd>
+                </div>
+              </dl>
 
-      <LightSurface>
-        <PageContainer>
-          {isProcessing ? (
-            <ProcessingStatus messages={PROCESSING_MESSAGES} progress={job?.progress} />
-          ) : jobFailed ? (
+              <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
+                <Button
+                  variant="primary"
+                  size="md"
+                  disabled={selectedIds.length < 2}
+                  onClick={() =>
+                    navigate(`/employer/vacancies/${vacancy.id}/compare?ids=${selectedIds.join(",")}`)
+                  }
+                >
+                  <GitCompareArrows className="size-4" aria-hidden="true" />
+                  Comparar ({selectedIds.length})
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={() => navigate(`/employer/vacancies/${vacancy.id}/shortlist`)}
+                >
+                  Ver selección
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </motion.div>
+      </motion.div>
+
+      {isProcessing ? (
+        <Card variant="glass" padding="lg">
+          <ProcessingStatus messages={PROCESSING_MESSAGES} progress={job?.progress} />
+        </Card>
+      ) : jobFailed ? (
+        <EmptyState
+          icon={AlertCircle}
+          title="La búsqueda no se completó"
+          description="Algo falló mientras comparábamos los perfiles. Puedes volver a intentarlo."
+          cta={{ label: "Reintentar búsqueda", onClick: startMatch }}
+        />
+      ) : !runId ? (
+        <EmptyState
+          icon={Search}
+          title="Aún no has buscado talento para esta vacante"
+          description="Ejecuta la búsqueda para obtener un ranking anónimo basado en la evidencia de cada perfil."
+          cta={{ label: "Buscar talento", onClick: startMatch }}
+        />
+      ) : (
+        <div className="flex flex-col gap-8">
+          <TalentFilters value={filter} onChange={setFilter} />
+
+          {resultsQuery.isLoading && loaded.length === 0 ? (
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+          ) : resultsQuery.isError ? (
             <EmptyState
               icon={AlertCircle}
-              title="La búsqueda no se completó"
-              description="Algo falló mientras comparábamos los perfiles. Puedes volver a intentarlo."
-              cta={{ label: "Reintentar búsqueda", onClick: startMatch }}
+              title="No pudimos cargar el ranking"
+              description="Vuelve a intentarlo en unos segundos."
+              cta={{ label: "Reintentar", onClick: () => void resultsQuery.refetch() }}
             />
-          ) : !runId ? (
+          ) : visible.length === 0 ? (
             <EmptyState
-              icon={Search}
-              title="Aún no has buscado talento para esta vacante"
-              description="Ejecuta la búsqueda para obtener un ranking anónimo basado en la evidencia de cada perfil."
-              cta={{ label: "Buscar talento", onClick: startMatch }}
+              icon={Users}
+              title={
+                loaded.length === 0
+                  ? "Aún no hay candidatos evaluados para esta familia"
+                  : "Ningún candidato cumple este filtro"
+              }
+              description={
+                loaded.length === 0
+                  ? "Cuando haya perfiles evaluados en esta familia de puestos aparecerán aquí, siempre de forma anónima."
+                  : "Elige otro filtro para ver más perfiles del ranking."
+              }
+              cta={
+                loaded.length === 0
+                  ? undefined
+                  : { label: "Ver todos", onClick: () => setFilter("ALL") }
+              }
             />
           ) : (
             <>
-              <TalentFilters value={filter} onChange={setFilter} className="mb-8" />
+              <RevealGroup className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {featured.map((card) => (
+                  <FeaturedCandidateCard
+                    key={card.match_result_id}
+                    card={card}
+                    selected={selectedIds.includes(card.match_result_id)}
+                    shortlisted={shortlisted[card.match_result_id] === true}
+                    onToggleCompare={() => toggleCompare(card.match_result_id)}
+                    onView={() => navigate(`/employer/candidates/${card.match_result_id}`)}
+                    onShortlist={() => addToShortlist(card.match_result_id, card.anon_code)}
+                  />
+                ))}
+              </RevealGroup>
 
-              {resultsQuery.isLoading && loaded.length === 0 ? (
-                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                  <SkeletonCard />
-                  <SkeletonCard />
-                  <SkeletonCard />
-                </div>
-              ) : resultsQuery.isError ? (
-                <EmptyState
-                  icon={AlertCircle}
-                  title="No pudimos cargar el ranking"
-                  description="Vuelve a intentarlo en unos segundos."
-                  cta={{ label: "Reintentar", onClick: () => void resultsQuery.refetch() }}
-                />
-              ) : visible.length === 0 ? (
-                <EmptyState
-                  icon={Users}
-                  title={
-                    loaded.length === 0
-                      ? "Aún no hay candidatos evaluados para esta familia"
-                      : "Ningún candidato cumple este filtro"
-                  }
-                  description={
-                    loaded.length === 0
-                      ? "Cuando haya perfiles evaluados en esta familia de puestos aparecerán aquí, siempre de forma anónima."
-                      : "Prueba con otro filtro para ver más perfiles del ranking."
-                  }
-                  cta={
-                    loaded.length === 0
-                      ? undefined
-                      : { label: "Ver todos", onClick: () => setFilter("ALL") }
-                  }
-                />
-              ) : (
-                <>
-                  <motion.div
-                    variants={motionSafe.staggerContainer(0.08, 0.05)}
-                    initial="hidden"
-                    animate="visible"
-                    className="grid gap-6 md:grid-cols-2 xl:grid-cols-3"
-                  >
-                    {featured.map((card) => (
-                      <FeaturedCandidateCard
-                        key={card.match_result_id}
+              {rest.length > 0 && (
+                <RevealGroup as="ul" stagger={0.05} className="flex flex-col gap-3">
+                  {rest.map((card, index) => (
+                    <Reveal as="li" key={card.match_result_id}>
+                      <CandidateCompactRow
                         card={card}
+                        index={index}
                         selected={selectedIds.includes(card.match_result_id)}
                         shortlisted={shortlisted[card.match_result_id] === true}
                         onToggleCompare={() => toggleCompare(card.match_result_id)}
                         onView={() => navigate(`/employer/candidates/${card.match_result_id}`)}
                         onShortlist={() => addToShortlist(card.match_result_id, card.anon_code)}
                       />
-                    ))}
-                  </motion.div>
+                    </Reveal>
+                  ))}
+                </RevealGroup>
+              )}
 
-                  {rest.length > 0 && (
-                    <motion.ul
-                      variants={motionSafe.staggerContainer(0.05, 0.1)}
-                      initial="hidden"
-                      animate="visible"
-                      className="mt-8 flex flex-col gap-3"
-                    >
-                      {rest.map((card) => (
-                        <motion.li key={card.match_result_id} variants={motionSafe.cardEntrance}>
-                          <CandidateCompactRow
-                            card={card}
-                            selected={selectedIds.includes(card.match_result_id)}
-                            shortlisted={shortlisted[card.match_result_id] === true}
-                            onToggleCompare={() => toggleCompare(card.match_result_id)}
-                            onView={() => navigate(`/employer/candidates/${card.match_result_id}`)}
-                            onShortlist={() => addToShortlist(card.match_result_id, card.anon_code)}
-                          />
-                        </motion.li>
-                      ))}
-                    </motion.ul>
-                  )}
-
-                  {hasMore && (
-                    <div className="mt-8 flex justify-center">
-                      <Button
-                        variant="secondary"
-                        size="md"
-                        loading={resultsQuery.isFetching}
-                        onClick={() => setOffset(loaded.length)}
-                      >
-                        Ver más ({loaded.length} de {total})
-                      </Button>
-                    </div>
-                  )}
-                </>
+              {hasMore && (
+                <div className="flex justify-center">
+                  <Button
+                    variant="secondary"
+                    size="md"
+                    loading={resultsQuery.isFetching}
+                    onClick={() => setOffset(loaded.length)}
+                  >
+                    Ver más ({loaded.length} de {total})
+                  </Button>
+                </div>
               )}
             </>
           )}
-        </PageContainer>
-      </LightSurface>
-    </div>
+        </div>
+      )}
+    </PageContainer>
   );
 }

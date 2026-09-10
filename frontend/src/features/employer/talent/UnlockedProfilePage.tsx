@@ -16,8 +16,7 @@ import {
 } from "lucide-react";
 import { ApiClientError } from "@/api/client";
 import { useFullProfile } from "@/api/hooks";
-import { BrandBackground } from "@/components/brand/BrandBackground";
-import { LightSurface, PageContainer } from "@/components/layout";
+import { PageContainer } from "@/components/layout";
 import {
   AIInsightCard,
   Avatar,
@@ -25,8 +24,12 @@ import {
   Button,
   Card,
   EmptyState,
+  Eyebrow,
   Modal,
+  Reveal,
+  RevealGroup,
   SectionHeader,
+  Skeleton,
   SkeletonCard,
   useToast,
 } from "@/components/ui";
@@ -81,9 +84,13 @@ export function Component() {
 
   if (profileQuery.isLoading) {
     return (
-      <PageContainer className="flex flex-col gap-4 py-10">
-        <SkeletonCard />
-        <SkeletonCard />
+      <PageContainer className="flex flex-col gap-6 py-10">
+        <Skeleton className="h-9 w-64" />
+        <Skeleton className="h-32 w-full" />
+        <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
       </PageContainer>
     );
   }
@@ -113,248 +120,253 @@ Revisamos tu Perfil de Talento Verificado en Conecta Empleo y nos gustaría conv
 Quedamos atentos,
 Equipo de reclutamiento`;
 
+  const contact = [
+    { icon: Mail, label: "Correo", value: profile.email, breakAll: true },
+    { icon: Phone, label: "Teléfono", value: profile.phone ?? "No proporcionado", breakAll: false },
+    {
+      icon: MapPin,
+      label: "Ubicación",
+      value:
+        [profile.location.city, profile.location.state].filter(Boolean).join(", ") ||
+        "No especificada",
+      breakAll: false,
+    },
+  ];
+
   return (
-    <div className="min-h-full bg-bg-light">
-      <header className="relative overflow-hidden bg-bg-dark pb-20 pt-8">
-        <BrandBackground asset="profile" presence="support" overlay="left" />
-        <PageContainer className="relative z-10">
-          <Button
-            variant="ghost"
-            size="md"
-            onClick={() => navigate(`/employer/candidates/${matchResultId}`)}
-            className="-ml-4 text-text-on-dark"
+    <PageContainer className="flex flex-col gap-10 py-8 pb-16 md:gap-12 md:py-10">
+      <div>
+        <Button
+          variant="ghost"
+          size="md"
+          onClick={() => navigate(`/employer/candidates/${matchResultId}`)}
+          className="-ml-4"
+        >
+          <ArrowLeft className="size-4" aria-hidden="true" />
+          Ver perfil anónimo
+        </Button>
+
+        <header className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-center">
+          {/* Transición de desbloqueo: borroso → nítido. */}
+          <motion.div
+            initial={reduced ? { opacity: 1 } : { filter: "blur(14px)", scale: 0.94, opacity: 0.4 }}
+            animate={{ filter: "blur(0px)", scale: 1, opacity: 1 }}
+            transition={
+              reduced ? { duration: 0 } : { duration: durations.slow, ease: easings.outSmooth }
+            }
+            className="shrink-0"
           >
-            <ArrowLeft className="size-4" aria-hidden="true" />
-            Ver perfil anónimo
-          </Button>
+            <Avatar name={profile.full_name} src={profile.photo_url ?? undefined} size="lg" />
+          </motion.div>
 
-          <div className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-center">
-            {/* Transición de desbloqueo: borroso → nítido. */}
-            <motion.div
-              initial={reduced ? { opacity: 1 } : { filter: "blur(14px)", scale: 0.94, opacity: 0.4 }}
-              animate={{ filter: "blur(0px)", scale: 1, opacity: 1 }}
-              transition={
-                reduced ? { duration: 0 } : { duration: durations.slow, ease: easings.outSmooth }
-              }
-            >
-              <Avatar name={profile.full_name} src={profile.photo_url ?? undefined} size="lg" />
-            </motion.div>
+          <motion.div
+            initial={reduced ? { opacity: 0 } : { opacity: 0, y: 24, filter: "blur(4px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={
+              reduced
+                ? { duration: 0.15 }
+                : { duration: durations.slow, ease: easings.outSmooth, delay: 0.25 }
+            }
+            className="min-w-0"
+          >
+            <Badge tone="success">
+              <ShieldCheck className="mr-1.5 size-3.5" aria-hidden="true" />
+              Identidad desbloqueada · {formatDate(unlockedAt)}
+            </Badge>
+            <h1 className="mt-3 text-balance text-3xl font-semibold leading-[1.08] tracking-[-0.03em] text-text-on-dark sm:text-[2.5rem]">
+              {profile.full_name}
+            </h1>
+            <p className="mt-2 text-pretty text-base text-text-on-dark-secondary">
+              {jobFamilyLabels[profile.job_family_code]} · {anonDisplayCode(profile.anon_code)} ·
+              posición #{profile.rank_position} del ranking
+            </p>
+          </motion.div>
+        </header>
+      </div>
 
-            <motion.div
-              initial={reduced ? { opacity: 0 } : { opacity: 0, y: 24, filter: "blur(4px)" }}
-              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              transition={
-                reduced
-                  ? { duration: 0.15 }
-                  : { duration: durations.slow, ease: easings.outSmooth, delay: 0.25 }
-              }
-            >
-              <Badge tone="success">
-                <ShieldCheck className="size-3.5" aria-hidden="true" />
-                Identidad desbloqueada · {formatDate(unlockedAt)}
-              </Badge>
-              <h1 className="mt-2 text-3xl font-semibold text-text-on-dark sm:text-4xl">
-                {profile.full_name}
-              </h1>
-              <p className="mt-1 text-sm text-text-on-dark-secondary">
-                {jobFamilyLabels[profile.job_family_code]} ·{" "}
-                {anonDisplayCode(profile.anon_code)} · posición #{profile.rank_position} del ranking
-              </p>
-            </motion.div>
-          </div>
-        </PageContainer>
-      </header>
-
-      <LightSurface>
-        <PageContainer className="flex flex-col gap-12">
-          {/* Contacto */}
-          <Card padding="lg" className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <dl className="grid gap-4 sm:grid-cols-3">
-              <div>
-                <dt className="flex items-center gap-1.5 text-xs text-text-tertiary">
-                  <Mail className="size-3.5" aria-hidden="true" />
-                  Correo
+      {/* Contacto */}
+      <Card variant="glass" padding="lg">
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+          <dl className="grid gap-x-8 gap-y-5 sm:grid-cols-3">
+            {contact.map((item) => (
+              <div key={item.label} className="min-w-0">
+                <dt className="flex items-center gap-1.5 text-text-on-dark-tertiary">
+                  <item.icon className="size-3.5" aria-hidden="true" />
+                  <Eyebrow>{item.label}</Eyebrow>
                 </dt>
-                <dd className="mt-1 break-all text-sm font-medium text-text-primary">
-                  {profile.email}
+                <dd
+                  className={`mt-2 text-sm font-medium text-text-on-dark ${
+                    item.breakAll ? "break-all" : ""
+                  }`}
+                >
+                  {item.value}
                 </dd>
               </div>
-              <div>
-                <dt className="flex items-center gap-1.5 text-xs text-text-tertiary">
-                  <Phone className="size-3.5" aria-hidden="true" />
-                  Teléfono
-                </dt>
-                <dd className="mt-1 text-sm font-medium text-text-primary">
-                  {profile.phone ?? "No proporcionado"}
-                </dd>
-              </div>
-              <div>
-                <dt className="flex items-center gap-1.5 text-xs text-text-tertiary">
-                  <MapPin className="size-3.5" aria-hidden="true" />
-                  Ubicación
-                </dt>
-                <dd className="mt-1 text-sm font-medium text-text-primary">
-                  {[profile.location.city, profile.location.state].filter(Boolean).join(", ") ||
-                    "No especificada"}
-                </dd>
-              </div>
-            </dl>
+            ))}
+          </dl>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
-              <Button variant="secondary" size="md" onClick={() => void copyEmail()}>
-                {copied ? (
-                  <Check className="size-4 text-success" aria-hidden="true" />
-                ) : (
-                  <Copy className="size-4" aria-hidden="true" />
-                )}
-                {copied ? "Correo copiado" : "Copiar correo"}
-              </Button>
-              <Button variant="primary" size="md" onClick={() => setInviteOpen(true)}>
-                Invitar a entrevista
-              </Button>
-            </div>
-          </Card>
-
-          {/* Score, desglose y explicación (mismo bloque que E9) */}
-          <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-start">
-            <MatchScoreCard card={profile} />
-            <div className="flex flex-col gap-4">
-              <AIInsightCard
-                title="Por qué es compatible"
-                body={profile.explanation_text ?? undefined}
-                why={profile.strengths}
-                missing={profile.gaps}
-                loading={profile.explanation_text == null}
-              />
-              {profile.company_note && (
-                <AIInsightCard
-                  title="Qué convendría verificar en una entrevista presencial"
-                  body={profile.company_note}
-                  why={[]}
-                  missing={[]}
-                />
+          <div className="flex flex-col gap-3 sm:flex-row lg:shrink-0">
+            <Button variant="secondary" size="md" onClick={() => void copyEmail()}>
+              {copied ? (
+                <Check className="size-4 text-success-on-dark" aria-hidden="true" />
+              ) : (
+                <Copy className="size-4" aria-hidden="true" />
               )}
-              <p className="text-sm text-text-tertiary">{AI_SUPPORT_NOTICE}</p>
-            </div>
+              {copied ? "Correo copiado" : "Copiar correo"}
+            </Button>
+            <Button variant="primary" size="md" onClick={() => setInviteOpen(true)}>
+              Invitar a entrevista
+            </Button>
           </div>
+        </div>
+      </Card>
 
-          {/* Evidencia (mismo bloque que E9) */}
-          <CandidateEvidenceSections card={profile} />
-
-          {/* Experiencia */}
-          <section>
-            <SectionHeader title="Experiencia" />
-            {profile.experience.length === 0 ? (
-              <p className="mt-4 text-sm text-text-secondary">Sin experiencia registrada.</p>
-            ) : (
-              <ul className="mt-4 flex flex-col gap-3">
-                {profile.experience.map((item) => (
-                  <li key={item.id}>
-                    <Card padding="md" className="flex gap-3">
-                      <BriefcaseBusiness
-                        className="mt-0.5 size-5 shrink-0 text-primary"
-                        aria-hidden="true"
-                      />
-                      <div>
-                        <p className="text-sm font-medium text-text-primary">
-                          {item.position} · {item.company}
-                        </p>
-                        <p className="text-xs text-text-tertiary">
-                          {formatDate(item.start_date)} —{" "}
-                          {item.is_current || !item.end_date ? "Actualidad" : formatDate(item.end_date)}
-                        </p>
-                        {item.description && (
-                          <p className="mt-1.5 text-sm text-text-secondary">{item.description}</p>
-                        )}
-                      </div>
-                    </Card>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          {/* Estudios */}
-          <section>
-            <SectionHeader title="Estudios" />
-            {profile.education.length === 0 ? (
-              <p className="mt-4 text-sm text-text-secondary">Sin estudios registrados.</p>
-            ) : (
-              <ul className="mt-4 flex flex-col gap-3">
-                {profile.education.map((item) => (
-                  <li key={item.id}>
-                    <Card padding="md" className="flex gap-3">
-                      <GraduationCap
-                        className="mt-0.5 size-5 shrink-0 text-primary"
-                        aria-hidden="true"
-                      />
-                      <div>
-                        <p className="text-sm font-medium text-text-primary">{item.degree}</p>
-                        {(item.institution || item.start_year != null) && (
-                          <p className="text-xs text-text-tertiary">
-                            {[
-                              item.institution || null,
-                              item.start_year != null
-                                ? `${item.start_year}–${item.end_year ?? "en curso"}`
-                                : null,
-                            ]
-                              .filter(Boolean)
-                              .join(" · ")}
-                          </p>
-                        )}
-                      </div>
-                    </Card>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-
-          {/* Documentos */}
-          <section>
-            <SectionHeader
-              title="Documentos"
-              description="Archivos que la persona subió a su perfil verificado."
+      {/* Score, desglose y explicación (mismo bloque que E9) */}
+      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr] lg:items-start">
+        <MatchScoreCard card={profile} />
+        <div className="flex flex-col gap-6">
+          <AIInsightCard
+            title="Por qué es compatible"
+            body={profile.explanation_text ?? undefined}
+            why={profile.strengths}
+            missing={profile.gaps}
+            loading={profile.explanation_text == null}
+          />
+          {profile.company_note && (
+            <AIInsightCard
+              title="Qué convendría verificar en una entrevista presencial"
+              body={profile.company_note}
+              why={[]}
+              missing={[]}
             />
-            {profile.documents.length === 0 ? (
-              <p className="mt-4 text-sm text-text-secondary">Sin documentos cargados.</p>
-            ) : (
-              <ul className="mt-4 flex flex-col gap-3">
-                {profile.documents.map((doc) => (
-                  <li key={doc.id}>
-                    <Card padding="md" className="flex items-center gap-3">
-                      <FileText className="size-5 shrink-0 text-primary" aria-hidden="true" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-text-primary">
-                          {doc.original_filename}
-                        </p>
-                        <p className="text-xs text-text-tertiary">
-                          {doc.type} · subido el {formatDate(doc.uploaded_at)}
-                        </p>
-                      </div>
-                      {doc.url ? (
-                        <Button variant="ghost" size="md" href={doc.url}>
-                          Abrir
-                        </Button>
-                      ) : (
-                        <Badge tone="neutral">Sin vista previa</Badge>
-                      )}
-                    </Card>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </PageContainer>
-      </LightSurface>
+          )}
+          <p className="text-sm text-text-on-dark-tertiary">{AI_SUPPORT_NOTICE}</p>
+        </div>
+      </div>
+
+      {/* Evidencia (mismo bloque que E9) */}
+      <CandidateEvidenceSections card={profile} />
+
+      {/* Experiencia */}
+      <section>
+        <SectionHeader title="Experiencia" />
+        {profile.experience.length === 0 ? (
+          <p className="mt-5 text-sm text-text-on-dark-secondary">Sin experiencia registrada.</p>
+        ) : (
+          <RevealGroup as="ul" className="mt-6 flex flex-col gap-3">
+            {profile.experience.map((item) => (
+              <Reveal as="li" key={item.id}>
+                <Card variant="glass" padding="md">
+                  <div className="flex gap-4">
+                  <BriefcaseBusiness
+                    className="mt-0.5 size-5 shrink-0 text-primary-on-dark"
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-text-on-dark">
+                      {item.position} · {item.company}
+                    </p>
+                    <p className="mt-0.5 text-xs text-text-on-dark-tertiary">
+                      {formatDate(item.start_date)} —{" "}
+                      {item.is_current || !item.end_date ? "Actualidad" : formatDate(item.end_date)}
+                    </p>
+                    {item.description && (
+                      <p className="mt-2 max-w-[70ch] text-pretty text-sm text-text-on-dark-secondary">
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
+                  </div>
+                </Card>
+              </Reveal>
+            ))}
+          </RevealGroup>
+        )}
+      </section>
+
+      {/* Estudios */}
+      <section>
+        <SectionHeader title="Estudios" />
+        {profile.education.length === 0 ? (
+          <p className="mt-5 text-sm text-text-on-dark-secondary">Sin estudios registrados.</p>
+        ) : (
+          <RevealGroup as="ul" className="mt-6 flex flex-col gap-3">
+            {profile.education.map((item) => (
+              <Reveal as="li" key={item.id}>
+                <Card variant="glass" padding="md">
+                  <div className="flex gap-4">
+                  <GraduationCap
+                    className="mt-0.5 size-5 shrink-0 text-primary-on-dark"
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-text-on-dark">{item.degree}</p>
+                    {(item.institution || item.start_year != null) && (
+                      <p className="mt-0.5 text-xs text-text-on-dark-tertiary">
+                        {[
+                          item.institution || null,
+                          item.start_year != null
+                            ? `${item.start_year}–${item.end_year ?? "en curso"}`
+                            : null,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    )}
+                  </div>
+                  </div>
+                </Card>
+              </Reveal>
+            ))}
+          </RevealGroup>
+        )}
+      </section>
+
+      {/* Documentos */}
+      <section>
+        <SectionHeader
+          title="Documentos"
+          description="Archivos que la persona subió a su perfil verificado."
+        />
+        {profile.documents.length === 0 ? (
+          <p className="mt-5 text-sm text-text-on-dark-secondary">Sin documentos cargados.</p>
+        ) : (
+          <RevealGroup as="ul" className="mt-6 flex flex-col gap-3">
+            {profile.documents.map((doc) => (
+              <Reveal as="li" key={doc.id}>
+                <Card variant="glass" padding="md">
+                  <div className="flex items-center gap-4">
+                  <FileText className="size-5 shrink-0 text-primary-on-dark" aria-hidden="true" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-text-on-dark">
+                      {doc.original_filename}
+                    </p>
+                    <p className="mt-0.5 text-xs text-text-on-dark-tertiary">
+                      {doc.type} · subido el {formatDate(doc.uploaded_at)}
+                    </p>
+                  </div>
+                  {doc.url ? (
+                    <Button variant="ghost" size="md" href={doc.url}>
+                      Abrir
+                    </Button>
+                  ) : (
+                    <Badge tone="neutral">Sin vista previa</Badge>
+                  )}
+                  </div>
+                </Card>
+              </Reveal>
+            ))}
+          </RevealGroup>
+        )}
+      </section>
 
       <Modal open={inviteOpen} onClose={() => setInviteOpen(false)} title="Invitar a entrevista">
         <div className="flex flex-col gap-4">
-          <p className="text-sm text-text-secondary">
-            Esta es una plantilla sugerida. En esta versión de la demo el mensaje no se envía: cópialo
-            y mándalo por tu canal habitual.
+          <p className="text-sm text-text-on-dark-secondary">
+            Esta es una plantilla sugerida. El mensaje no se envía desde aquí: cópialo y mándalo por
+            tu canal habitual.
           </p>
-          <pre className="whitespace-pre-wrap rounded-md bg-surface-soft p-4 text-sm text-text-primary">
+          <pre className="whitespace-pre-wrap rounded-md border border-white/[0.08] bg-white/[0.04] p-4 text-sm text-text-on-dark">
             {inviteTemplate}
           </pre>
           <div className="flex justify-end">
@@ -364,6 +376,6 @@ Equipo de reclutamiento`;
           </div>
         </div>
       </Modal>
-    </div>
+    </PageContainer>
   );
 }

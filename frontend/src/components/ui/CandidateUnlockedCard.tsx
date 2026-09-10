@@ -1,5 +1,5 @@
 import { Mail, Phone } from "lucide-react";
-import { Card } from "@/components/ui/Card";
+import { Card, type CardVariant } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { ScoreBadge } from "@/components/ui/ScoreBadge";
 import { SkillChip } from "@/components/ui/SkillChip";
@@ -23,6 +23,8 @@ export interface CandidateUnlockedCardProps {
   scoreLabel: string;
   skills: CandidateAnonymousSkill[];
   evidence: CandidateAnonymousEvidenceSummary;
+  /** Superficie del `Card` interno. Default: `glass` (lienzo oscuro). */
+  variant?: CardVariant;
   className?: string;
 }
 
@@ -39,36 +41,54 @@ export function CandidateUnlockedCard({
   scoreLabel,
   skills,
   evidence,
+  variant = "glass",
   className,
 }: CandidateUnlockedCardProps) {
+  const isDark = variant === "dark" || variant === "glass";
+
   return (
-    <Card className={cn("flex flex-col gap-4", className)}>
+    <Card variant={variant} className={cn("flex flex-col gap-4", className)}>
       <div className="flex items-center gap-3">
         <Avatar name={name} src={photoUrl} size="lg" />
         <div>
-          <p className="text-base font-semibold text-text-primary">{name}</p>
-          <p className="text-sm text-text-secondary">
+          <p className={cn("text-base font-semibold", isDark ? "text-text-on-dark" : "text-text-primary")}>
+            {name}
+          </p>
+          <p className={cn("text-sm", isDark ? "text-text-on-dark-secondary" : "text-text-secondary")}>
             {geoLabel} · {availabilityLabel}
           </p>
         </div>
       </div>
 
-      <div className="flex flex-col gap-1 text-sm text-text-secondary">
-        <a href={`mailto:${email}`} className="flex items-center gap-2 hover:text-primary">
+      <div
+        className={cn(
+          "flex flex-col gap-1 text-sm",
+          isDark ? "text-text-on-dark-secondary" : "text-text-secondary",
+        )}
+      >
+        <a
+          href={`mailto:${email}`}
+          className={cn("flex items-center gap-2", isDark ? "hover:text-primary-on-dark" : "hover:text-primary")}
+        >
           <Mail className="size-4" aria-hidden="true" />
           {email}
         </a>
         {phone && (
-          <a href={`tel:${phone}`} className="flex items-center gap-2 hover:text-primary">
+          <a
+            href={`tel:${phone}`}
+            className={cn("flex items-center gap-2", isDark ? "hover:text-primary-on-dark" : "hover:text-primary")}
+          >
             <Phone className="size-4" aria-hidden="true" />
             {phone}
           </a>
         )}
       </div>
 
-      <p className="text-sm text-text-secondary">{formatYearsExperience(yearsExperience)}</p>
+      <p className={cn("text-sm", isDark ? "text-text-on-dark-secondary" : "text-text-secondary")}>
+        {formatYearsExperience(yearsExperience)}
+      </p>
 
-      <ScoreBadge score={score} label={scoreLabel} />
+      <ScoreBadge score={score} label={scoreLabel} variant="bar" />
 
       <div className="flex flex-wrap gap-2">
         {skills.slice(0, 6).map((skill) => (

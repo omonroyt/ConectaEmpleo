@@ -9,9 +9,12 @@ import {
   Button,
   Card,
   Chip,
+  Eyebrow,
   FormField,
   Input,
   ProgressSteps,
+  Reveal,
+  RevealGroup,
   Select,
   Skeleton,
   Slider,
@@ -66,11 +69,17 @@ type AboutValues = {
 
 const TOTAL_STEPS = 3;
 
+const STEP_NAMES: Record<1 | 2 | 3, string> = {
+  1: "Tipo de puesto",
+  2: "Sobre ti",
+  3: "Tu perfil",
+};
+
 /** C3 — Onboarding candidato `/candidate/onboarding`, wizard de 3 pasos. */
 export function Component() {
   const navigate = useNavigate();
   const { showToast } = useToast();
-  const { fadeUp, slideInRight, slideInLeft } = useMotionSafe();
+  const { fadeUp, pageSequence, slideInRight, slideInLeft } = useMotionSafe();
 
   const { data: me } = useCandidateMe();
   const { data: families, isLoading: familiesLoading, isError: familiesError, refetch: refetchFamilies } =
@@ -166,7 +175,7 @@ export function Component() {
         </div>
 
         <motion.div initial="hidden" animate="visible" variants={fadeUp} className="pt-6">
-          <ProgressSteps total={TOTAL_STEPS} current={step} />
+          <ProgressSteps total={TOTAL_STEPS} current={step} stepName={STEP_NAMES[step]} />
         </motion.div>
 
         <AnimatePresence mode="wait">
@@ -179,46 +188,56 @@ export function Component() {
             className="mt-8"
           >
             {step === 1 && (
-              <div className="flex flex-col gap-6">
-                <div>
-                  <h1 className="text-2xl font-semibold text-text-on-dark sm:text-3xl">
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={pageSequence}
+                className="flex flex-col gap-8"
+              >
+                <motion.div variants={fadeUp} className="max-w-[46ch]">
+                  <Eyebrow tone="dark">Antes de empezar</Eyebrow>
+                  <h1 className="mt-3 text-balance text-3xl font-semibold leading-[1.08] tracking-[-0.03em] text-text-on-dark sm:text-4xl">
                     ¿Qué tipo de puesto buscas?
                   </h1>
-                  <p className="mt-2 text-sm text-text-on-dark-secondary">
+                  <p className="mt-3 text-pretty text-sm leading-relaxed text-text-on-dark-secondary sm:text-base">
                     Usaremos esto para preparar tu entrevista y buscarte oportunidades relevantes.
                   </p>
-                </div>
+                </motion.div>
 
-                {familiesLoading ? (
-                  <div className="grid gap-3">
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-24 w-full" />
-                    <Skeleton className="h-24 w-full" />
-                  </div>
-                ) : familiesError ? (
-                  <Card padding="md" className="flex flex-col items-start gap-3">
-                    <p className="text-sm text-text-secondary">
-                      No pudimos cargar las opciones. Revisa tu conexión.
-                    </p>
-                    <Button variant="secondary" onClick={() => refetchFamilies()}>
-                      Reintentar
-                    </Button>
-                  </Card>
-                ) : (
-                  <RadioCards
-                    name="job-family"
-                    value={jobFamilyId}
-                    onChange={setJobFamilyId}
-                    options={(families ?? []).map((family) => ({
-                      value: family.id,
-                      label: family.name,
-                      description: family.role_objective,
-                      icon: familyIconByCode[family.code],
-                    }))}
-                  />
-                )}
+                <motion.div variants={fadeUp}>
+                  {familiesLoading ? (
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <Skeleton className="h-28 w-full skeleton-shimmer--dark" />
+                      <Skeleton className="h-28 w-full skeleton-shimmer--dark" />
+                      <Skeleton className="h-28 w-full skeleton-shimmer--dark" />
+                    </div>
+                  ) : familiesError ? (
+                    <Card variant="glass" padding="md" className="flex flex-col items-start gap-3">
+                      <p className="text-sm text-text-on-dark-secondary">
+                        No pudimos cargar las opciones. Revisa tu conexión.
+                      </p>
+                      <Button variant="secondary" onClick={() => refetchFamilies()}>
+                        Reintentar
+                      </Button>
+                    </Card>
+                  ) : (
+                    <RadioCards
+                      name="job-family"
+                      tone="dark"
+                      columns={2}
+                      value={jobFamilyId}
+                      onChange={setJobFamilyId}
+                      options={(families ?? []).map((family) => ({
+                        value: family.id,
+                        label: family.name,
+                        description: family.role_objective,
+                        icon: familyIconByCode[family.code],
+                      }))}
+                    />
+                  )}
+                </motion.div>
 
-                <div className="flex justify-end">
+                <motion.div variants={fadeUp} className="flex justify-end">
                   <Button
                     size="lg"
                     arrow
@@ -228,22 +247,29 @@ export function Component() {
                   >
                     Continuar
                   </Button>
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             )}
 
             {step === 2 && (
-              <div className="flex flex-col gap-6">
-                <div>
-                  <h1 className="text-2xl font-semibold text-text-on-dark sm:text-3xl">
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={pageSequence}
+                className="flex flex-col gap-8"
+              >
+                <motion.div variants={fadeUp} className="max-w-[46ch]">
+                  <Eyebrow tone="dark">Sobre ti</Eyebrow>
+                  <h1 className="mt-3 text-balance text-3xl font-semibold leading-[1.08] tracking-[-0.03em] text-text-on-dark sm:text-4xl">
                     Cuéntanos sobre ti.
                   </h1>
-                  <p className="mt-2 text-sm text-text-on-dark-secondary">
+                  <p className="mt-3 text-pretty text-sm leading-relaxed text-text-on-dark-secondary sm:text-base">
                     Esta información nos ayuda a mostrarte oportunidades acordes a ti.
                   </p>
-                </div>
+                </motion.div>
 
-                <Card padding="lg" className="flex flex-col gap-4">
+                <motion.div variants={fadeUp}>
+                <Card variant="glass" padding="lg" className="flex flex-col gap-4">
                   <FormField label="Nombre completo" htmlFor="ob-name" error={aboutErrors.fullName}>
                     <Input
                       value={about.fullName}
@@ -275,7 +301,7 @@ export function Component() {
                   </div>
 
                   <div>
-                    <p className="text-sm font-medium text-text-primary">Disponibilidad</p>
+                    <p className="text-sm font-medium text-text-on-dark">Disponibilidad</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       {availabilityOptions.map((option) => (
                         <Chip
@@ -288,7 +314,7 @@ export function Component() {
                       ))}
                     </div>
                     {aboutErrors.availability && (
-                      <p className="mt-1.5 text-sm text-danger">{aboutErrors.availability}</p>
+                      <p className="mt-1.5 text-sm text-danger-on-dark">{aboutErrors.availability}</p>
                     )}
                   </div>
 
@@ -312,76 +338,99 @@ export function Component() {
                       onChange={(value) => setAbout((v) => ({ ...v, salaryMax: value }))}
                     />
                   </div>
-                  {aboutErrors.salaryMax && <p className="text-sm text-danger">{aboutErrors.salaryMax}</p>}
+                  {aboutErrors.salaryMax && (
+                    <p className="text-sm text-danger-on-dark">{aboutErrors.salaryMax}</p>
+                  )}
                 </Card>
+                </motion.div>
 
-                <div className="flex items-center justify-between">
+                <motion.div variants={fadeUp} className="flex items-center justify-between">
                   <Button variant="ghost" onClick={() => goTo(1)}>
                     Volver
                   </Button>
                   <Button size="lg" arrow loading={updateCandidate.isPending} onClick={handleAboutContinue}>
                     Continuar
                   </Button>
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             )}
 
             {step === 3 && (
-              <div className="flex flex-col gap-6">
-                <div>
-                  <h1 className="text-2xl font-semibold text-text-on-dark sm:text-3xl">
+              <motion.div
+                initial="hidden"
+                animate="visible"
+                variants={pageSequence}
+                className="flex flex-col gap-8"
+              >
+                <motion.div variants={fadeUp} className="max-w-[46ch]">
+                  <Eyebrow tone="dark">Último paso</Eyebrow>
+                  <h1 className="mt-3 text-balance text-3xl font-semibold leading-[1.08] tracking-[-0.03em] text-text-on-dark sm:text-4xl">
                     ¿Cómo quieres construir tu perfil?
                   </h1>
-                  <p className="mt-2 text-sm text-text-on-dark-secondary">
+                  <p className="mt-3 text-pretty text-sm leading-relaxed text-text-on-dark-secondary sm:text-base">
                     Elige la forma que te resulte más cómoda; puedes ajustar todo después.
                   </p>
-                </div>
+                </motion.div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Card
-                    interactive
-                    padding="lg"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => navigate("/candidate/cv/upload")}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") navigate("/candidate/cv/upload");
-                    }}
-                  >
-                    <span className="flex size-11 items-center justify-center rounded-md bg-primary/10 text-primary">
-                      <FileText className="size-5" aria-hidden="true" />
-                    </span>
-                    <h3 className="mt-4 text-lg font-semibold text-text-primary">Subir mi CV</h3>
-                    <p className="mt-2 text-sm text-text-secondary">
-                      Extraemos tu información con IA para ahorrarte tiempo.
-                    </p>
-                  </Card>
-                  <Card
-                    interactive
-                    padding="lg"
-                    role="button"
-                    tabIndex={0}
-                    onClick={() => navigate("/candidate/cv/build")}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter" || event.key === " ") navigate("/candidate/cv/build");
-                    }}
-                  >
-                    <span className="flex size-11 items-center justify-center rounded-md bg-primary/10 text-primary">
-                      <Sparkles className="size-5" aria-hidden="true" />
-                    </span>
-                    <h3 className="mt-4 text-lg font-semibold text-text-primary">Crear desde cero</h3>
-                    <p className="mt-2 text-sm text-text-secondary">
-                      Construye tu perfil paso a paso, conversando con Sofía.
-                    </p>
-                  </Card>
-                </div>
+                <RevealGroup className="grid gap-4 sm:grid-cols-2">
+                  <Reveal>
+                    <Card
+                      variant="glass"
+                      spotlight
+                      interactive
+                      padding="lg"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate("/candidate/cv/upload")}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") navigate("/candidate/cv/upload");
+                      }}
+                      className="flex h-full flex-col"
+                    >
+                      <span className="flex size-12 items-center justify-center rounded-md bg-gradient-cta text-white shadow-[0_6px_20px_-6px_rgba(74,69,255,.9)]">
+                        <FileText className="size-5" aria-hidden="true" />
+                      </span>
+                      <h3 className="mt-5 text-lg font-semibold tracking-[-0.01em] text-text-on-dark">
+                        Subir mi CV
+                      </h3>
+                      <p className="mt-2 text-pretty text-sm leading-relaxed text-text-on-dark-secondary">
+                        Extraemos tu información con IA para ahorrarte tiempo.
+                      </p>
+                    </Card>
+                  </Reveal>
+                  <Reveal>
+                    <Card
+                      variant="glass"
+                      spotlight
+                      interactive
+                      padding="lg"
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => navigate("/candidate/cv/build")}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") navigate("/candidate/cv/build");
+                      }}
+                      className="flex h-full flex-col"
+                    >
+                      <span className="flex size-12 items-center justify-center rounded-md bg-gradient-cta text-white shadow-[0_6px_20px_-6px_rgba(74,69,255,.9)]">
+                        <Sparkles className="size-5" aria-hidden="true" />
+                      </span>
+                      <h3 className="mt-5 text-lg font-semibold tracking-[-0.01em] text-text-on-dark">
+                        Crear desde cero
+                      </h3>
+                      <p className="mt-2 text-pretty text-sm leading-relaxed text-text-on-dark-secondary">
+                        Construye tu perfil paso a paso, conversando con Sofía.
+                      </p>
+                    </Card>
+                  </Reveal>
+                </RevealGroup>
 
-                <div>
+                <motion.div variants={fadeUp}>
                   <Button variant="ghost" onClick={() => goTo(2)}>
                     Volver
                   </Button>
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             )}
           </motion.div>
         </AnimatePresence>

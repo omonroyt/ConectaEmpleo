@@ -13,8 +13,9 @@ export interface QuestionPanelProps {
 }
 
 /**
- * Cabecera de la entrevista: progreso, chip de repregunta (PROBE) y la pregunta
- * en grande con `aria-live` y crossfade al cambiar de turno.
+ * Cabecera de la entrevista, centrada sobre el Orb: el avance como antetítulo
+ * discreto, el chip de repregunta (PROBE) y la pregunta en grande con
+ * `aria-live` y crossfade al cambiar de turno.
  */
 export function QuestionPanel({ turn, asked, budget, placeholder }: QuestionPanelProps) {
   const safe = useMotionSafe();
@@ -22,17 +23,15 @@ export function QuestionPanel({ turn, asked, budget, placeholder }: QuestionPane
   const isProbe = turn?.references_turn_id != null;
 
   return (
-    <div className="w-full">
-      <div className="flex flex-col gap-3">
-        <ProgressSteps
-          total={budget}
-          current={asked}
-          label={`Pregunta ${current} de ${budget}`}
-          className="[&>p]:text-text-on-dark-secondary"
-        />
-      </div>
+    <div className="relative z-10 flex w-full flex-col items-center gap-3.5">
+      <ProgressSteps
+        total={budget}
+        current={asked}
+        label={`Pregunta ${current} de ${budget}`}
+        className="flex-row items-center gap-3 [&>p]:tabular-nums [&>p]:uppercase [&>p]:tracking-[0.16em]"
+      />
 
-      <div className="mt-6 min-h-[96px] sm:min-h-[112px]">
+      <div className="flex min-h-[84px] w-full items-start justify-center sm:min-h-[96px]">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={turn?.id ?? "placeholder"}
@@ -40,18 +39,18 @@ export function QuestionPanel({ turn, asked, budget, placeholder }: QuestionPane
             initial="hidden"
             animate="visible"
             exit={{ opacity: 0 }}
+            className="flex flex-col items-center gap-3"
           >
             {isProbe && (
-              <span className="mb-2.5 inline-flex items-center gap-1.5 rounded-pill bg-accent/20 px-2.5 py-1 text-[11px] font-semibold text-accent-soft">
+              <span className="inline-flex items-center gap-1.5 rounded-pill bg-accent/20 px-3 py-1 text-[11px] font-semibold text-accent-soft">
                 <CornerDownRight className="size-3" aria-hidden="true" />
                 Profundiza en tu respuesta anterior
               </span>
             )}
-            {/* La entrevista se escucha; el texto es apoyo, no el protagonista.
-                Una pregunta en display size compite con el orbe y obliga a
-                elegir entre leer y escuchar. */}
+            {/* La entrevista se escucha; el texto acompaña al Orb, no compite
+                con él: tamaño display contenido y ancho de lectura corto. */}
             <h2
-              className="max-w-[46ch] text-balance text-lg font-medium leading-snug text-text-on-dark sm:text-xl md:text-[1.45rem]"
+              className="max-w-[24ch] text-balance text-center text-xl font-medium leading-[1.28] tracking-[-0.02em] text-text-on-dark sm:max-w-[26ch] sm:text-2xl md:text-[1.75rem]"
               aria-live="polite"
             >
               {turn?.question_text ?? placeholder ?? "Preparando tu entrevista…"}

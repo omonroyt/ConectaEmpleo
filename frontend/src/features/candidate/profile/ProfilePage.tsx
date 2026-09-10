@@ -9,9 +9,12 @@ import {
   Button,
   Card,
   EmptyState,
+  Eyebrow,
   EvidenceBadge,
   ProgressBar,
   ProgressRing,
+  Reveal,
+  RevealGroup,
   ScoreBadge,
   Skeleton,
   SkeletonCard,
@@ -112,15 +115,13 @@ function ProfileHero({
           initial="hidden"
           animate="visible"
           variants={staggerContainer(0.08, 0.05)}
-          className="flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between"
+          className="flex flex-col gap-10 lg:flex-row lg:items-center lg:justify-between"
         >
           <motion.div variants={fadeUp} className="flex items-start gap-4">
             <Avatar name={profile.full_name} src={profile.photo_url ?? undefined} size="lg" />
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[.18em] text-accent-soft">
-                Perfil verificado
-              </p>
-              <h1 className="mt-1 text-3xl font-semibold text-text-on-dark sm:text-4xl">
+              <Eyebrow tone="accent">Perfil verificado</Eyebrow>
+              <h1 className="mt-1 text-balance text-3xl font-semibold text-text-on-dark sm:text-4xl">
                 Tu talento habla por ti.
               </h1>
               <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm text-text-on-dark-secondary">
@@ -139,22 +140,27 @@ function ProfileHero({
                   <Badge tone="success">Entrevista con IA completada</Badge>
                 </div>
               )}
+              <div className="mt-5 flex flex-wrap items-center gap-3">
+                <Button variant="secondary" size="md" onClick={() => navigate("/candidate/profile/edit")}>
+                  <Pencil className="size-4" aria-hidden="true" />
+                  Editar perfil
+                </Button>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  href="/demo/cv-ejemplo.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Download className="size-4" aria-hidden="true" />
+                  Descargar CV
+                </Button>
+              </div>
             </div>
           </motion.div>
 
-          <motion.div variants={fadeUp} className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-3 rounded-lg border border-border-dark bg-white/5 px-4 py-2">
-              <ProgressRing value={profile.completion_percent} size={52} stroke={5} tone="dark" />
-              <span className="text-sm text-text-on-dark-secondary">Perfil completo</span>
-            </div>
-            <Button variant="secondary" size="md" onClick={() => navigate("/candidate/profile/edit")}>
-              <Pencil className="size-4" aria-hidden="true" />
-              Editar perfil
-            </Button>
-            <Button variant="secondary" size="md" href="/demo/cv-ejemplo.pdf" target="_blank" rel="noopener noreferrer">
-              <Download className="size-4" aria-hidden="true" />
-              Descargar CV
-            </Button>
+          <motion.div variants={fadeUp} className="shrink-0 self-center">
+            <ProgressRing value={profile.completion_percent} label="Perfil completo" size={168} tone="dark" />
           </motion.div>
         </motion.div>
       </PageContainer>
@@ -233,9 +239,17 @@ function EvaluatedBody({
   );
 }
 
-function SectionCard({ title, children }: { title?: string; children: ReactNode }) {
+function SectionCard({
+  title,
+  children,
+  variant = "light",
+}: {
+  title?: string;
+  children: ReactNode;
+  variant?: "light" | "soft";
+}) {
   return (
-    <Card padding="lg" className="flex flex-col gap-4">
+    <Card variant={variant} padding="lg" className="flex flex-col gap-4">
       {title && <h3 className="text-lg font-semibold text-text-primary">{title}</h3>}
       {children}
     </Card>
@@ -252,52 +266,56 @@ function AboutSection({
   onEdit: () => void;
 }) {
   return (
-    <div className="flex flex-col gap-4">
-      <SectionCard>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <ScoreBadge score={talentProfile.overall_score} label={talentProfile.overall_label} />
-          <Button variant="ghost" size="md" onClick={onEdit}>
-            <Pencil className="size-4" aria-hidden="true" />
-            Editar biografía
-          </Button>
-        </div>
-        {profile.bio ? (
-          <p className="text-base text-text-primary">{profile.bio}</p>
-        ) : talentProfile.summary_text ? (
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[.14em] text-text-tertiary">
-              Resumen generado por IA
-            </p>
-            <p className="mt-1 text-base text-text-primary">{talentProfile.summary_text}</p>
+    <RevealGroup className="flex flex-col gap-4">
+      <Reveal>
+        <SectionCard>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <ScoreBadge score={talentProfile.overall_score} label={talentProfile.overall_label} />
+            <Button variant="ghost" size="md" onClick={onEdit}>
+              <Pencil className="size-4" aria-hidden="true" />
+              Editar biografía
+            </Button>
           </div>
-        ) : (
-          <p className="text-sm text-text-secondary">
-            Aún no agregaste una biografía. Cuéntales a las empresas quién eres en un par de líneas.
-          </p>
-        )}
-      </SectionCard>
+          {profile.bio ? (
+            <p className="text-pretty text-base text-text-primary">{profile.bio}</p>
+          ) : talentProfile.summary_text ? (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[.14em] text-text-tertiary">
+                Resumen generado por IA
+              </p>
+              <p className="mt-1 text-pretty text-base text-text-primary">{talentProfile.summary_text}</p>
+            </div>
+          ) : (
+            <p className="text-sm text-text-secondary">
+              Aún no agregaste una biografía. Cuéntales a las empresas quién eres en un par de líneas.
+            </p>
+          )}
+        </SectionCard>
+      </Reveal>
       {talentProfile.strengths.length > 0 && (
-        <AIInsightCard
-          title="Fortaleza principal"
-          why={talentProfile.strengths.slice(0, 3)}
-          missing={talentProfile.evidence_gaps.slice(0, 2)}
-        />
+        <Reveal>
+          <AIInsightCard
+            title="Fortaleza principal"
+            why={talentProfile.strengths.slice(0, 3)}
+            missing={talentProfile.evidence_gaps.slice(0, 2)}
+          />
+        </Reveal>
       )}
-    </div>
+    </RevealGroup>
   );
 }
 
 function EvidenceLegend() {
   const levels: EvidenceLevel[] = ["declared", "evaluated", "verified"];
   return (
-    <div className="flex flex-wrap gap-4 rounded-lg border border-border bg-surface-soft/60 p-4">
+    <Card variant="soft" padding="md" className="flex flex-wrap gap-4">
       {levels.map((level) => (
         <div key={level} className="flex items-center gap-2 text-sm text-text-secondary">
           <EvidenceBadge level={level} size="sm" />
           <span>{evidenceDescriptions[level]}</span>
         </div>
       ))}
-    </div>
+    </Card>
   );
 }
 
@@ -323,15 +341,13 @@ function SkillsSection({ skills, loading }: { skills: CandidateSkill[] | undefin
   return (
     <div className="flex flex-col gap-4">
       <EvidenceLegend />
-      <div className="flex flex-wrap gap-2">
+      <RevealGroup className="flex flex-wrap gap-2" stagger={0.04}>
         {skills.map((skill) => (
-          <SkillChip
-            key={skill.skill_code}
-            name={skill.skill_name}
-            evidence={evidenceLevelForSkill(skill)}
-          />
+          <Reveal key={skill.skill_code}>
+            <SkillChip name={skill.skill_name} evidence={evidenceLevelForSkill(skill)} />
+          </Reveal>
         ))}
-      </div>
+      </RevealGroup>
     </div>
   );
 }
@@ -347,23 +363,25 @@ function EvidenceSection({ evaluations }: { evaluations: CompetencyEvaluation[] 
     );
   }
   return (
-    <div className="flex flex-col gap-4">
+    <RevealGroup className="flex flex-col gap-4">
       {evaluations.map((evaluation, index) => (
-        <SectionCard key={evaluation.competency_code}>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h4 className="font-medium text-text-primary">{evaluation.competency_name}</h4>
-            {evaluation.rubric_source === "PROVISIONAL" && <Badge tone="warning">Rúbrica provisional</Badge>}
-          </div>
-          <ProgressBar value={evaluation.score} showValue delay={index * 80} />
-          <p className="text-sm text-text-secondary">
-            {confidenceLabel(evaluation.confidence)} · {evaluation.justification}
-          </p>
-          {evaluation.limitations && (
-            <p className="text-xs text-text-tertiary">{evaluation.limitations}</p>
-          )}
-        </SectionCard>
+        <Reveal key={evaluation.competency_code}>
+          <SectionCard variant={index % 2 === 0 ? "light" : "soft"}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h4 className="font-medium text-text-primary">{evaluation.competency_name}</h4>
+              {evaluation.rubric_source === "PROVISIONAL" && <Badge tone="warning">Rúbrica provisional</Badge>}
+            </div>
+            <ProgressBar value={evaluation.score} showValue tone="light" delay={index * 90} />
+            <p className="text-sm text-pretty text-text-secondary">
+              {confidenceLabel(evaluation.confidence)} · {evaluation.justification}
+            </p>
+            {evaluation.limitations && (
+              <p className="text-xs text-text-tertiary">{evaluation.limitations}</p>
+            )}
+          </SectionCard>
+        </Reveal>
       ))}
-    </div>
+    </RevealGroup>
   );
 }
 
@@ -378,21 +396,23 @@ function ExperienceSection({ items }: { items: ExperienceItem[] }) {
     );
   }
   return (
-    <div className="flex flex-col gap-4">
-      {items.map((item) => (
-        <SectionCard key={item.id}>
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h4 className="font-medium text-text-primary">{item.position}</h4>
-            {item.is_current && <Badge tone="info">Actual</Badge>}
-          </div>
-          <p className="text-sm text-text-secondary">{item.company}</p>
-          <p className="text-xs text-text-tertiary">
-            {formatDate(item.start_date)} — {item.end_date ? formatDate(item.end_date) : "Actualidad"}
-          </p>
-          {item.description && <p className="text-sm text-text-primary">{item.description}</p>}
-        </SectionCard>
+    <RevealGroup className="flex flex-col gap-4">
+      {items.map((item, index) => (
+        <Reveal key={item.id}>
+          <SectionCard variant={index % 2 === 0 ? "light" : "soft"}>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h4 className="font-medium text-text-primary">{item.position}</h4>
+              {item.is_current && <Badge tone="info">Actual</Badge>}
+            </div>
+            <p className="text-sm text-text-secondary">{item.company}</p>
+            <p className="text-xs text-text-tertiary">
+              {formatDate(item.start_date)} — {item.end_date ? formatDate(item.end_date) : "Actualidad"}
+            </p>
+            {item.description && <p className="text-pretty text-sm text-text-primary">{item.description}</p>}
+          </SectionCard>
+        </Reveal>
       ))}
-    </div>
+    </RevealGroup>
   );
 }
 
@@ -407,21 +427,23 @@ function EducationSection({ items }: { items: EducationItem[] }) {
     );
   }
   return (
-    <div className="flex flex-col gap-4">
-      {items.map((item) => (
-        <SectionCard key={item.id}>
-          <h4 className="font-medium text-text-primary">{item.degree}</h4>
-          {item.institution && <p className="text-sm text-text-secondary">{item.institution}</p>}
-          {/* Sin años declarados no se muestra el renglón: antes se rellenaba
-              con años inventados por el CV conversacional. */}
-          {item.start_year != null && (
-            <p className="text-xs text-text-tertiary">
-              {item.start_year} — {item.end_year ?? "actualidad"}
-            </p>
-          )}
-        </SectionCard>
+    <RevealGroup className="flex flex-col gap-4">
+      {items.map((item, index) => (
+        <Reveal key={item.id}>
+          <SectionCard variant={index % 2 === 0 ? "light" : "soft"}>
+            <h4 className="font-medium text-text-primary">{item.degree}</h4>
+            {item.institution && <p className="text-sm text-text-secondary">{item.institution}</p>}
+            {/* Sin años declarados no se muestra el renglón: antes se rellenaba
+                con años inventados por el CV conversacional. */}
+            {item.start_year != null && (
+              <p className="text-xs text-text-tertiary">
+                {item.start_year} — {item.end_year ?? "actualidad"}
+              </p>
+            )}
+          </SectionCard>
+        </Reveal>
       ))}
-    </div>
+    </RevealGroup>
   );
 }
 
@@ -450,44 +472,46 @@ function LearningPathSection({
     );
   }
   return (
-    <div className="flex flex-col gap-4">
-      {gaps.map((gap) => (
-        <SectionCard key={gap.competency_code} title={gap.competency_name}>
-          <div className="flex items-center gap-2 text-sm text-text-secondary">
-            <Badge tone="neutral">Nivel actual {gap.current_level}</Badge>
-            <Badge tone="info">Meta {gap.target_level}</Badge>
-          </div>
-          <p className="text-sm text-text-secondary">{gap.why_it_matters}</p>
-          {gap.recommendations.length > 0 && (
-            <ul className="flex flex-col gap-2">
-              {gap.recommendations.map((rec) => (
-                <li
-                  key={`${rec.provider}-${rec.title}`}
-                  className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface-soft/60 px-3 py-2 text-sm"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-medium text-text-primary">{rec.title}</p>
-                    <p className="text-xs text-text-secondary">
-                      {rec.provider} · {rec.estimated_effort}
-                    </p>
-                  </div>
-                  {rec.url && (
-                    <a
-                      href={rec.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline"
-                    >
-                      Ver <ExternalLink className="size-3.5" aria-hidden="true" />
-                    </a>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </SectionCard>
+    <RevealGroup className="flex flex-col gap-4">
+      {gaps.map((gap, index) => (
+        <Reveal key={gap.competency_code}>
+          <SectionCard title={gap.competency_name} variant={index % 2 === 0 ? "light" : "soft"}>
+            <div className="flex items-center gap-2 text-sm text-text-secondary">
+              <Badge tone="neutral">Nivel actual {gap.current_level}</Badge>
+              <Badge tone="info">Meta {gap.target_level}</Badge>
+            </div>
+            <p className="text-sm text-pretty text-text-secondary">{gap.why_it_matters}</p>
+            {gap.recommendations.length > 0 && (
+              <ul className="flex flex-col gap-2">
+                {gap.recommendations.map((rec) => (
+                  <li
+                    key={`${rec.provider}-${rec.title}`}
+                    className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-3 py-2 text-sm"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-text-primary">{rec.title}</p>
+                      <p className="text-xs text-text-secondary">
+                        {rec.provider} · {rec.estimated_effort}
+                      </p>
+                    </div>
+                    {rec.url && (
+                      <a
+                        href={rec.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline"
+                      >
+                        Ver <ExternalLink className="size-3.5" aria-hidden="true" />
+                      </a>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+        </Reveal>
       ))}
-    </div>
+    </RevealGroup>
   );
 }
 
@@ -502,14 +526,18 @@ function ConstructionBody() {
     <LightSurface>
       <PageContainer>
         <motion.div initial="hidden" animate="visible" variants={fadeUp}>
-          <Card padding="lg" className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <Card
+            variant="light"
+            padding="lg"
+            className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between"
+          >
             <div className="flex items-start gap-4">
               <span className="flex size-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
                 <Sparkles className="size-6" aria-hidden="true" />
               </span>
               <div>
                 <h2 className="text-lg font-semibold text-text-primary">Tu perfil se está construyendo</h2>
-                <p className="mt-1 max-w-xl text-sm text-text-secondary">
+                <p className="mt-1 max-w-xl text-pretty text-sm text-text-secondary">
                   Aún no generamos tu Perfil de Talento Verificado. Completa tu entrevista con IA para que la
                   evidencia de tus respuestas alimente tu perfil.
                 </p>
@@ -531,19 +559,19 @@ function ConstructionBody() {
 
 function ProfileSkeleton() {
   return (
-    <div className="flex flex-col gap-8 p-6 md:p-8">
+    <PageContainer className="flex flex-col gap-8 py-8 md:py-10">
       <div className="flex items-center gap-4">
-        <Skeleton className="size-16 rounded-full" />
+        <Skeleton className="size-16 rounded-full skeleton-shimmer--dark" />
         <div className="flex-1 space-y-2">
-          <Skeleton className="h-4 w-1/3" />
-          <Skeleton className="h-7 w-1/2" />
+          <Skeleton className="h-4 w-1/3 skeleton-shimmer--dark" />
+          <Skeleton className="h-7 w-1/2 skeleton-shimmer--dark" />
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
-        <SkeletonCard />
-        <SkeletonCard />
+        <Skeleton className="h-40 w-full skeleton-shimmer--dark" />
+        <Skeleton className="h-40 w-full skeleton-shimmer--dark" />
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

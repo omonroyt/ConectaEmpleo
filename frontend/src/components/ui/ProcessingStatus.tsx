@@ -3,6 +3,7 @@ import { motion } from "motion/react";
 import { Loader2 } from "lucide-react";
 import { useReducedMotion } from "@/lib/a11y";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { useSurfaceTone, type SurfaceTone } from "@/components/ui/Surface";
 import { cn } from "@/lib/cn";
 
 export interface ProcessingStatusProps {
@@ -11,6 +12,8 @@ export interface ProcessingStatusProps {
   progress?: number;
   /** Intervalo de rotación de mensajes en ms (default ~1.2s). */
   intervalMs?: number;
+  /** Fuerza la paleta; por defecto la hereda del panel (`Surface`/`Card`). */
+  tone?: SurfaceTone;
   className?: string;
 }
 
@@ -19,10 +22,13 @@ export function ProcessingStatus({
   messages,
   progress,
   intervalMs = 1200,
+  tone,
   className,
 }: ProcessingStatusProps) {
   const [index, setIndex] = useState(0);
   const reduced = useReducedMotion();
+  const resolved = useSurfaceTone(tone);
+  const isDark = resolved === "dark";
 
   useEffect(() => {
     if (messages.length <= 1) return;
@@ -39,14 +45,25 @@ export function ProcessingStatus({
       <motion.span
         animate={reduced ? undefined : { rotate: 360 }}
         transition={reduced ? undefined : { duration: 1.4, repeat: Infinity, ease: "linear" }}
-        className="flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary"
+        className={cn(
+          "flex size-12 items-center justify-center rounded-full",
+          isDark ? "bg-primary/20 text-primary-on-dark" : "bg-primary/10 text-primary",
+        )}
       >
         <Loader2 className="size-6" aria-hidden="true" />
       </motion.span>
-      <p aria-live="polite" className="text-sm font-medium text-text-primary">
+      <p
+        aria-live="polite"
+        className={cn(
+          "text-pretty text-sm font-medium",
+          isDark ? "text-text-on-dark" : "text-text-primary",
+        )}
+      >
         {message}
       </p>
-      {typeof progress === "number" && <ProgressBar value={progress} className="w-full max-w-xs" />}
+      {typeof progress === "number" && (
+        <ProgressBar value={progress} tone={resolved} className="w-full max-w-xs" />
+      )}
     </div>
   );
 }

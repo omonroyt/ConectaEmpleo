@@ -80,7 +80,7 @@ async function step(label, fn) {
   log(`→ ${label}`);
   try { await fn(); } catch (err) {
     problems.push(`${label}: ${err.message}`);
-    log(`  ✗ ${err.message}`);
+    log("  x " + err.message);
     throw err;
   }
 }
@@ -110,13 +110,13 @@ async function run(browser, baseURL) {
   await snap(page, "a-registro-candidato");
 
   await step("registro (empresa)", async () => {
-    await page.getByRole("radio", { name: "Empresa" }).click();
+    await page.locator("label", { hasText: "Empresa" }).first().click();
     await page.waitForTimeout(400);
   });
   await snap(page, "a-registro-empresa");
 
   await step("registro: errores de validación", async () => {
-    await page.getByRole("radio", { name: "Busco empleo" }).click().catch(() => {});
+    await page.locator("label", { hasText: "Busco empleo" }).first().click().catch(() => {});
     await page.getByLabel("Correo").fill("no-es-un-correo");
     await page.getByLabel("Contraseña", { exact: true }).fill("123");
     await page.getByRole("button", { name: "Crear cuenta" }).click();
@@ -188,7 +188,7 @@ async function run(browser, baseURL) {
 
   await step("empresa: registro nuevo → onboarding", async () => {
     await page2.goto("/register");
-    await page2.getByRole("radio", { name: "Empresa" }).click();
+    await page2.locator("label", { hasText: "Empresa" }).first().click();
     await page2.getByLabel("Correo").fill(`qa-empresa-${Date.now()}@demo.mx`);
     await page2.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
     await page2.getByLabel("Confirmar contraseña").fill(PASSWORD);
@@ -201,7 +201,8 @@ async function run(browser, baseURL) {
   await step("empresa: onboarding paso 2 (ubicación)", async () => {
     await page2.getByLabel("Nombre comercial").fill("Logística del Bajío");
     await page2.getByLabel("Razón social").fill("Logística del Bajío S.A. de C.V.");
-    await page2.getByLabel("Industria").fill("Logística y transporte");
+    await page2.getByLabel("Industria").selectOption({ index: 1 });
+    await page2.getByRole("button", { name: /personas/ }).nth(1).click().catch(() => {});
     await page2.getByRole("button", { name: "Continuar" }).click();
     await page2.waitForSelector("text=Ubicación y modalidad", { timeout: 10000 });
   });
@@ -209,7 +210,8 @@ async function run(browser, baseURL) {
 
   await step("empresa: onboarding paso 3 (equipo y cultura)", async () => {
     await page2.getByLabel("Ciudad").fill("León");
-    await page2.getByLabel("Estado").selectOption({ index: 1 }).catch(() => {});
+    await page2.getByLabel("Estado").fill("Guanajuato");
+    await page2.getByRole("button", { name: "Presencial" }).first().click().catch(() => {});
     await page2.getByRole("button", { name: "Continuar" }).click();
     await page2.waitForSelector("text=Equipo y cultura", { timeout: 10000 });
   });

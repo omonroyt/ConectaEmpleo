@@ -12,7 +12,6 @@ import {
   fieldErrorsFrom,
   type RegisterFormValues,
 } from "@/features/auth/auth.schemas";
-import { DemoHint } from "@/features/auth/DemoHint";
 import type { Role } from "@/api/types";
 
 const roleOptions = [
@@ -65,11 +64,18 @@ export function Component() {
 
   return (
     <AuthLayout
-      asset={role === "COMPANY" ? "employer" : "brand-main"}
-      heroTitle="Crea tu cuenta"
+      heroEyebrow="Crea tu cuenta"
+      heroTitle="Que tu experiencia se pueda comprobar"
       heroSubtitle="Un perfil respaldado por evidencia, no solo por palabras."
     >
       <motion.div initial="hidden" animate="visible" variants={pageSequence} className="flex flex-col gap-6">
+        <motion.div variants={fadeUp} className="flex flex-col gap-1.5">
+          <h2 className="text-xl font-semibold tracking-[-0.02em] text-text-on-dark">
+            Crear cuenta
+          </h2>
+          <p className="text-sm text-text-on-dark-secondary">¿Cómo vas a usar Conecta Empleo?</p>
+        </motion.div>
+
         <motion.div variants={fadeUp}>
           <RadioCards
             name="role"
@@ -126,7 +132,7 @@ export function Component() {
           </motion.div>
 
           {formError && (
-            <p role="alert" aria-live="polite" className="text-sm text-danger">
+            <p role="alert" aria-live="polite" className="text-sm text-danger-on-dark">
               {formError}
             </p>
           )}
@@ -136,24 +142,22 @@ export function Component() {
               Crear cuenta
             </Button>
           </motion.div>
-          <motion.p variants={fadeUp} className="text-xs text-text-tertiary">
+          <motion.p variants={fadeUp} className="text-xs leading-relaxed text-text-on-dark-tertiary">
             Al continuar aceptas que usemos tu información para construir tu perfil y conectarte con
             oportunidades relevantes. Nunca compartimos tu identidad sin tu consentimiento.
           </motion.p>
         </motion.form>
 
-        <motion.p variants={fadeUp} className="text-center text-sm text-text-secondary">
+        <motion.p variants={fadeUp} className="text-center text-sm text-text-on-dark-secondary">
           ¿Ya tienes cuenta?{" "}
           <button
             type="button"
             onClick={() => navigate(`/login?role=${role}`)}
-            className="font-medium text-primary underline-offset-2 hover:underline"
+            className="font-medium text-primary-on-dark underline-offset-2 transition-colors hover:text-text-on-dark hover:underline"
           >
             Iniciar sesión
           </button>
         </motion.p>
-
-        <DemoHint />
       </motion.div>
     </AuthLayout>
   );

@@ -24,7 +24,10 @@ export function CandidateShell({ user, onLogout }: CandidateShellProps) {
   const navigate = useNavigate();
 
   return (
-    <div className="flex min-h-dvh bg-bg-light">
+    <div className="app-canvas flex min-h-dvh text-text-on-dark">
+      <a href="#contenido" className="skip-link">
+        Saltar al contenido
+      </a>
       <Sidebar
         items={candidateNavItems}
         ctaLabel="Continuar entrevista"
@@ -32,9 +35,9 @@ export function CandidateShell({ user, onLogout }: CandidateShellProps) {
         user={user}
         onLogout={onLogout}
       />
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         <TopBar user={user} onNotificationsClick={() => navigate("/candidate/notifications")} />
-        <main className="flex-1 pb-20 md:pb-0">
+        <main id="contenido" className="relative z-10 flex-1">
           <Outlet />
         </main>
         <BottomNav items={candidateNavItems} />

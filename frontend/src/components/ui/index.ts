@@ -16,7 +16,10 @@ export * from "@/components/ui/Stepper";
 export * from "@/components/ui/SegmentedControl";
 export * from "@/components/ui/FileUploader";
 
+export * from "@/components/ui/Surface";
 export * from "@/components/ui/Card";
+export * from "@/components/ui/Eyebrow";
+export * from "@/components/ui/Reveal";
 export * from "@/components/ui/Chip";
 export * from "@/components/ui/FilterPills";
 export * from "@/components/ui/SkillChip";

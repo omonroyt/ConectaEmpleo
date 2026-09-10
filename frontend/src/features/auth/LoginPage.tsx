@@ -9,13 +9,20 @@ import { ApiClientError } from "@/api";
 import { homePathForRole } from "@/store/session";
 import { useMotionSafe } from "@/lib/motion";
 import { loginSchema, fieldErrorsFrom, type LoginFormValues } from "@/features/auth/auth.schemas";
-import { DemoHint } from "@/features/auth/DemoHint";
 
 type AudienceRole = "CANDIDATE" | "COMPANY";
 
-const copyByRole: Record<AudienceRole, { title: string; subtitle: string }> = {
-  CANDIDATE: { title: "Bienvenido de vuelta", subtitle: "Tu talento habla por ti." },
-  COMPANY: { title: "Acceso para empresas", subtitle: "Encuentra talento con evidencia." },
+const copyByRole: Record<AudienceRole, { eyebrow: string; title: string; subtitle: string }> = {
+  CANDIDATE: {
+    eyebrow: "Entra a tu cuenta",
+    title: "Bienvenido de vuelta",
+    subtitle: "Tu talento habla por ti.",
+  },
+  COMPANY: {
+    eyebrow: "Acceso para empresas",
+    title: "Contrata por evidencia",
+    subtitle: "Encuentra talento verificado, sin sesgos de entrada.",
+  },
 };
 
 /** C1 — Login `/login`. */
@@ -58,10 +65,21 @@ export function Component() {
   };
 
   return (
-    <AuthLayout asset={audience === "COMPANY" ? "employer" : "brand-main"} heroTitle={copy.title} heroSubtitle={copy.subtitle}>
+    <AuthLayout heroEyebrow={copy.eyebrow} heroTitle={copy.title} heroSubtitle={copy.subtitle}>
       <motion.div initial="hidden" animate="visible" variants={pageSequence} className="flex flex-col gap-6">
+        <motion.div variants={fadeUp} className="flex flex-col gap-1.5">
+          <h2 className="text-xl font-semibold tracking-[-0.02em] text-text-on-dark">
+            Iniciar sesión
+          </h2>
+          <p className="text-sm text-text-on-dark-secondary">
+            Elige con qué tipo de cuenta quieres entrar.
+          </p>
+        </motion.div>
+
         <motion.div variants={fadeUp}>
           <SegmentedControl
+            tone="dark"
+            fullWidth
             aria-label="Tipo de cuenta"
             options={[
               { value: "CANDIDATE", label: "Candidato" },
@@ -102,7 +120,7 @@ export function Component() {
           </motion.div>
 
           {formError && (
-            <p role="alert" aria-live="polite" className="text-sm text-danger">
+            <p role="alert" aria-live="polite" className="text-sm text-danger-on-dark">
               {formError}
             </p>
           )}
@@ -114,18 +132,16 @@ export function Component() {
           </motion.div>
         </motion.form>
 
-        <motion.p variants={fadeUp} className="text-center text-sm text-text-secondary">
+        <motion.p variants={fadeUp} className="text-center text-sm text-text-on-dark-secondary">
           ¿Aún no tienes cuenta?{" "}
           <button
             type="button"
             onClick={() => navigate(`/register?role=${audience}`)}
-            className="font-medium text-primary underline-offset-2 hover:underline"
+            className="font-medium text-primary-on-dark underline-offset-2 transition-colors hover:text-text-on-dark hover:underline"
           >
             Crear cuenta
           </button>
         </motion.p>
-
-        <DemoHint />
       </motion.div>
     </AuthLayout>
   );

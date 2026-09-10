@@ -2,27 +2,43 @@
 
 /* ---------------------------------------------------------------------- */
 /* Design tokens — Conecta Empleo (docs/build/01_FRONTEND_FOUNDATIONS.md §3) */
+/* Dirección visual R1 (docs/build/06_REDISENO_VISUAL.md): lienzo oscuro de */
+/* marca + paneles mixtos (vidrio oscuro · panel claro · oscuro suave).     */
 /* ---------------------------------------------------------------------- */
 
 @theme {
-  /* Colores */
+  /* Colores — lienzo oscuro */
   --color-bg-dark: #070a12;
   --color-bg-dark-soft: #0d1020;
   --color-surface-dark: #111521;
+  /* Escalón intermedio para anidar paneles sobre `surface-dark` sin bordes. */
+  --color-surface-dark-2: #161b2b;
+
+  /* Colores — superficies claras (paneles de contenido denso sobre el lienzo) */
   --color-bg-light: #f7f8fb;
   --color-surface: #ffffff;
   --color-surface-soft: #f1f3f8;
+  /* Tinte frío para alternar secciones dentro de un panel claro y que deje
+     de leerse como "todo blanco". */
+  --color-surface-tint: #eef1f9;
 
   --color-text-primary: #0a0b10;
   --color-text-secondary: #62687a;
   --color-text-tertiary: #9197a8;
   --color-text-on-dark: #f7f8fc;
   --color-text-on-dark-secondary: #b5bbd0;
+  /* Tercer nivel sobre oscuro: cumple AA (4.6:1 sobre #070a12) para texto
+     de apoyo; no usar por debajo de 12px. */
+  --color-text-on-dark-tertiary: #8a91a8;
 
   --color-primary: #173cff;
   --color-primary-2: #4a45ff;
   --color-accent: #8e6dff;
   --color-accent-soft: #cbc5ff;
+  /* Azul claro legible sobre el lienzo oscuro: `--color-primary` puro no
+     cumple contraste sobre #070a12 (era el bug de los textos azules que se
+     perdían en la pantalla de preparación de entrevista). */
+  --color-primary-on-dark: #9db4ff;
 
   --color-success: #28b75a;
   --color-success-soft: #e9f8ee;
@@ -30,11 +46,18 @@
   --color-warning-soft: #fff6e6;
   --color-danger: #e25151;
   --color-danger-soft: #fff0f0;
+  /* Variantes legibles sobre oscuro (AA sobre #070a12). */
+  --color-success-on-dark: #5fd98c;
+  --color-warning-on-dark: #f7c46a;
+  --color-danger-on-dark: #ff8a8a;
 
   --color-border: #d9dce5;
   --color-border-dark: rgba(255, 255, 255, 0.12);
+  /* Filo de vidrio: hairline algo más marcado para separar paneles glass
+     apoyados directamente sobre el lienzo. */
+  --color-border-glass: rgba(255, 255, 255, 0.16);
 
-  /* Radios */
+  /* Radios — escalonados: más cerrado adentro, más suave en el contenedor */
   --radius-sm: 12px;
   --radius-md: 16px;
   --radius-lg: 22px;
@@ -42,11 +65,23 @@
   --radius-2xl: 32px;
   --radius-pill: 999px;
 
-  /* Sombras */
+  /* Sombras — tintadas con el azul del lienzo, nunca negro puro */
   --shadow-sm: 0 4px 16px rgba(10, 12, 26, 0.05);
   --shadow-md: 0 10px 32px rgba(10, 12, 26, 0.08);
   --shadow-lg: 0 20px 64px rgba(10, 12, 26, 0.12);
   --shadow-selected: 0 0 0 3px rgba(52, 72, 255, 0.07);
+  /* Panel claro apoyado sobre el lienzo oscuro: necesita más caída y un
+     tinte azul para no recortarse como una calcomanía. */
+  --shadow-panel: 0 24px 70px -20px rgba(4, 8, 26, 0.75);
+  /* Vidrio: caída externa + filo interior superior (refracción de borde). */
+  --shadow-glass:
+    0 18px 48px -24px rgba(3, 6, 20, 0.9),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.07);
+  --shadow-glass-hover:
+    0 26px 64px -24px rgba(3, 6, 20, 0.95),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
+  /* Halo azul para elementos que "emiten" (anillos, CTA, orbe). */
+  --shadow-glow: 0 0 44px -8px rgba(74, 69, 255, 0.55);
 
   /* Motion */
   --ease-out-smooth: cubic-bezier(0.16, 1, 0.3, 1);
@@ -55,13 +90,15 @@
   --duration-fast: 160ms;
   --duration-normal: 320ms;
   --duration-slow: 560ms;
+  /* Carga de datos (anillos, barras, contadores): ~2s pedidos por diseño. */
+  --duration-data: 1800ms;
 
   /* Tipografia */
   --font-sans:
     "Inter Variable", Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
-/* Gradientes: variables normales (no son tokens de escala de Tailwind) */
+/* Gradientes y escalas que no son tokens de utilidad de Tailwind */
 :root {
   --gradient-brand: linear-gradient(
     100deg,
@@ -83,6 +120,34 @@
       transparent 28%
     ),
     linear-gradient(145deg, #070a12 0%, #10152a 70%, #0a0d18 100%);
+
+  /* Lienzo de la app logueada: glow radial ambiental, sin imagen. Se aplica
+     con `.app-canvas` sobre el `<main>`/shell y queda detrás de todo. */
+  --gradient-canvas:
+    radial-gradient(
+      120% 80% at 88% -8%,
+      rgba(50, 74, 255, 0.28),
+      transparent 58%
+    ),
+    radial-gradient(
+      90% 60% at 4% 0%,
+      rgba(110, 74, 255, 0.14),
+      transparent 60%
+    ),
+    linear-gradient(180deg, #080b15 0%, #070a12 42%, #06080f 100%);
+
+  /* Vidrio oscuro: mezcla translúcida que funciona con y sin backdrop-filter. */
+  --surface-glass: rgba(255, 255, 255, 0.045);
+  --surface-glass-hover: rgba(255, 255, 255, 0.07);
+
+  /* Escala de z-index: nada de valores arbitrarios tipo 9999. */
+  --z-base: 0;
+  --z-raised: 10;
+  --z-sticky: 20;
+  --z-nav: 40;
+  --z-overlay: 60;
+  --z-modal: 70;
+  --z-toast: 80;
 }
 
 @layer utilities {

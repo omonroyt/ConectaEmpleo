@@ -1,5 +1,6 @@
 import { cloneElement, isValidElement, type ReactElement } from "react";
 import { AlertCircle } from "lucide-react";
+import { useSurfaceTone, type SurfaceTone } from "@/components/ui/Surface";
 import { cn } from "@/lib/cn";
 
 interface ControlProps {
@@ -14,6 +15,8 @@ export interface FormFieldProps {
   hint?: string;
   error?: string;
   required?: boolean;
+  /** Fuerza la paleta; por defecto la hereda del panel (`Surface`/`Card`). */
+  tone?: SurfaceTone;
   className?: string;
   children: ReactElement<ControlProps>;
 }
@@ -29,9 +32,11 @@ export function FormField({
   hint,
   error,
   required,
+  tone,
   className,
   children,
 }: FormFieldProps) {
+  const resolved = useSurfaceTone(tone);
   const hintId = `${htmlFor}-hint`;
   const errorId = `${htmlFor}-error`;
   const describedBy = error ? errorId : hint ? hintId : undefined;
@@ -46,10 +51,19 @@ export function FormField({
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <label htmlFor={htmlFor} className="text-sm font-medium text-text-primary">
+      <label
+        htmlFor={htmlFor}
+        className={cn(
+          "text-sm font-medium",
+          resolved === "dark" ? "text-text-on-dark" : "text-text-primary",
+        )}
+      >
         {label}
         {required && (
-          <span className="text-danger" aria-hidden="true">
+          <span
+            className={resolved === "dark" ? "text-danger-on-dark" : "text-danger"}
+            aria-hidden="true"
+          >
             {" "}
             *
           </span>
@@ -57,12 +71,24 @@ export function FormField({
       </label>
       {control}
       {error ? (
-        <p id={errorId} className="flex items-center gap-1.5 text-sm text-danger">
+        <p
+          id={errorId}
+          className={cn(
+            "flex items-center gap-1.5 text-sm",
+            resolved === "dark" ? "text-danger-on-dark" : "text-danger",
+          )}
+        >
           <AlertCircle className="size-4 shrink-0" aria-hidden="true" />
           {error}
         </p>
       ) : hint ? (
-        <p id={hintId} className="text-sm text-text-secondary">
+        <p
+          id={hintId}
+          className={cn(
+            "text-sm",
+            resolved === "dark" ? "text-text-on-dark-tertiary" : "text-text-secondary",
+          )}
+        >
           {hint}
         </p>
       ) : null}

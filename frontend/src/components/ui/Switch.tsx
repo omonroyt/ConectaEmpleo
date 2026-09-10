@@ -1,6 +1,7 @@
 import { useId, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { useReducedMotion } from "@/lib/a11y";
+import { useSurfaceTone, type SurfaceTone } from "@/components/ui/Surface";
 import { cn } from "@/lib/cn";
 
 export interface SwitchProps {
@@ -9,6 +10,8 @@ export interface SwitchProps {
   label?: ReactNode;
   id?: string;
   disabled?: boolean;
+  /** Fuerza la paleta; por defecto la hereda del panel (`Surface`/`Card`). */
+  tone?: SurfaceTone;
   className?: string;
 }
 
@@ -18,8 +21,10 @@ export function Switch({
   label,
   id,
   disabled,
+  tone,
   className,
 }: SwitchProps) {
+  const resolved = useSurfaceTone(tone);
   const generatedId = useId();
   const switchId = id ?? generatedId;
   const reduced = useReducedMotion();
@@ -43,7 +48,11 @@ export function Switch({
         className={cn(
           "relative h-7 w-12 shrink-0 rounded-pill border transition-colors duration-fast ease-standard",
           "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-2",
-          checked ? "border-primary bg-primary" : "border-border bg-surface-soft",
+          checked
+            ? "border-primary-2 bg-gradient-cta"
+            : resolved === "dark"
+              ? "border-border-glass bg-white/[0.08]"
+              : "border-border bg-surface-soft",
         )}
       >
         <motion.span
@@ -52,7 +61,16 @@ export function Switch({
           className="absolute top-0.5 size-6 rounded-full bg-white shadow-sm"
         />
       </button>
-      {label && <span className="text-sm text-text-primary">{label}</span>}
+      {label && (
+        <span
+          className={cn(
+            "text-sm",
+            resolved === "dark" ? "text-text-on-dark" : "text-text-primary",
+          )}
+        >
+          {label}
+        </span>
+      )}
     </label>
   );
 }

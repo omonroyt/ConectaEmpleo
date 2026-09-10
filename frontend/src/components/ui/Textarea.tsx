@@ -4,11 +4,15 @@ import {
   type InputEvent,
   type TextareaHTMLAttributes,
 } from "react";
+import { fieldControlClassesFor } from "@/components/ui/Input";
+import { useSurfaceTone, type SurfaceTone } from "@/components/ui/Surface";
 import { cn } from "@/lib/cn";
 
 export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   /** Crece automáticamente entre 1 y 4 líneas según el contenido. */
   autoResize?: boolean;
+  /** Fuerza la paleta; por defecto la hereda del panel (`Surface`/`Card`). */
+  tone?: SurfaceTone;
   className?: string;
 }
 
@@ -18,10 +22,11 @@ const MAX_LINES = 4;
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   function Textarea(
-    { autoResize = false, className, onInput, rows = 2, ...rest },
+    { autoResize = false, tone, className, onInput, rows = 2, ...rest },
     ref,
   ) {
     const innerRef = useRef<HTMLTextAreaElement | null>(null);
+    const resolved = useSurfaceTone(tone);
 
     const setRefs = (node: HTMLTextAreaElement | null) => {
       innerRef.current = node;
@@ -45,10 +50,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
         rows={rows}
         onInput={handleInput}
         className={cn(
-          "w-full rounded-md border border-border bg-[#FAFBFD] px-4 py-3.5 text-base text-text-primary",
-          "placeholder:text-text-tertiary transition-[border-color,box-shadow] duration-fast ease-standard",
-          "focus:border-primary-2 focus:outline-none focus:shadow-[0_0_0_4px_rgba(74,69,255,.1)]",
-          "disabled:cursor-not-allowed disabled:opacity-60 aria-[invalid=true]:border-danger",
+          fieldControlClassesFor(resolved),
+          "py-3.5",
           autoResize ? "resize-none overflow-hidden" : "resize-y",
           className,
         )}

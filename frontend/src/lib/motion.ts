@@ -165,6 +165,11 @@ function easeOutCubic(t: number): number {
   return 1 - Math.pow(1 - t, 3);
 }
 
+/** Duración por defecto de las animaciones de datos (anillos, barras,
+ * contadores). Coincide con `--duration-data` en tokens.css: el diseño pide
+ * que un dato tarde ~2s en llenarse para que se lea como una carga real. */
+export const DATA_DURATION_MS = 1800;
+
 /**
  * Cuenta de 0 (o del valor previo) hasta `value` con rAF y ease-out.
  * Si `enabled` es false o el usuario prefiere menos movimiento, devuelve
@@ -172,8 +177,9 @@ function easeOutCubic(t: number): number {
  */
 export function useCountUp(
   value: number,
-  durationMs = 900,
+  durationMs = DATA_DURATION_MS,
   enabled = true,
+  delayMs = 0,
 ): number {
   const reduced = useReducedMotion();
   const [display, setDisplay] = useState(reduced || !enabled ? value : 0);
@@ -193,26 +199,68 @@ export function useCountUp(
     }
 
     let frame = 0;
-    const start = performance.now();
+    let timer = 0;
 
-    const tick = (now: number) => {
-      const elapsed = now - start;
-      const progress = Math.min(1, elapsed / durationMs);
-      const eased = easeOutCubic(progress);
-      setDisplay(from + delta * eased);
-      if (progress < 1) {
-        frame = requestAnimationFrame(tick);
-      } else {
-        fromRef.current = value;
-      }
+    const run = () => {
+      const start = performance.now();
+      const tick = (now: number) => {
+        const elapsed = now - start;
+        const progress = Math.min(1, elapsed / durationMs);
+        const eased = easeOutCubic(progress);
+        setDisplay(from + delta * eased);
+        if (progress < 1) {
+          frame = requestAnimationFrame(tick);
+        } else {
+          fromRef.current = value;
+        }
+      };
+      frame = requestAnimationFrame(tick);
     };
 
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    if (delayMs > 0) {
+      timer = window.setTimeout(run, delayMs);
+    } else {
+      run();
+    }
+
+    return () => {
+      cancelAnimationFrame(frame);
+      if (timer) window.clearTimeout(timer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value, durationMs, enabled, reduced]);
+  }, [value, durationMs, enabled, delayMs, reduced]);
 
   return display;
+}
+
+export interface AnimatedNumberOptions {
+  /** Duración de la cuenta en ms (default `DATA_DURATION_MS`, ~2s). */
+  durationMs?: number;
+  /** Retraso antes de arrancar, para escalonar varias barras de una lista. */
+  delayMs?: number;
+}
+
+/**
+ * Dato que se llena de 0 a `value` **cuando entra en pantalla**, no al montar.
+ *
+ * Devuelve el `ref` que hay que colgar del nodo raíz del gráfico y el valor
+ * en curso. Es la primitiva que usan `ProgressRing`, `ProgressBar` y
+ * cualquier contador de la app: así un gráfico que está más abajo en la
+ * página anima cuando el usuario llega a él, en vez de haber terminado su
+ * animación antes de ser visible.
+ *
+ * Con `prefers-reduced-motion` devuelve el valor final de inmediato.
+ */
+export function useAnimatedNumber<T extends Element = HTMLDivElement>(
+  value: number,
+  { durationMs = DATA_DURATION_MS, delayMs = 0 }: AnimatedNumberOptions = {},
+): { ref: RefObject<T | null>; display: number } {
+  const ref = useRef<T | null>(null);
+  // `0px` en vez del margen negativo por defecto: un anillo debe animar en
+  // cuanto asoma, no 80px después.
+  const inView = useInViewOnce(ref, "0px");
+  const display = useCountUp(value, durationMs, inView, delayMs);
+  return { ref, display };
 }
 
 /**
@@ -247,4 +295,27 @@ export function useInViewOnce(
   }, [ref, margin]);
 
   return inView;
+}
+
+/**
+ * Variantes del reveal escalonado de listas (`<Reveal>` / `<RevealGroup>` en
+ * `components/ui/Reveal.tsx`). El hijo entra desplazado 18px y con un leve
+ * blur, dentro de su contenedor — nunca "cayendo" desde el borde de la
+ * pantalla.
+ */
+export const revealItem: Variants = {
+  hidden: { opacity: 0, y: 18, filter: "blur(6px)" },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: "blur(0px)",
+    transition: { duration: durations.slow, ease: easings.outSmooth },
+  },
+};
+
+export function revealGroup(stagger = 0.08, delayChildren = 0.05): Variants {
+  return {
+    hidden: {},
+    visible: { transition: { staggerChildren: stagger, delayChildren } },
+  };
 }

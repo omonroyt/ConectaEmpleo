@@ -1,6 +1,6 @@
 import { motion, type Variants } from "motion/react";
 import { useReducedMotion } from "@/lib/a11y";
-import { easings } from "@/lib/motion";
+import { durations, easings } from "@/lib/motion";
 import { ComparePanel } from "@/features/auth/landing/panels/ComparePanel";
 import { ProfilePanel } from "@/features/auth/landing/panels/ProfilePanel";
 import { TalentPanel } from "@/features/auth/landing/panels/TalentPanel";
@@ -22,28 +22,33 @@ import { VerticalText } from "@/features/auth/landing/VerticalText";
  */
 
 /**
- * Entrada propia de los paneles, más lenta y escalonada que la del texto.
+ * Entrada de los paneles: **la misma cadencia y la misma velocidad que el
+ * texto**, para que el hero se lea como una sola cascada continua.
  *
- * Con la variante compartida `fadeUp` (0.56 s, stagger 0.06) los tres entraban
- * casi a la vez y a la misma velocidad que los textos, lo que se percibía como
- * un golpe. Aquí la composición aparece **después** del texto, con más recorrido
- * entre paneles y un `scale` sutil que da sensación de profundidad. Sin `blur`:
- * en cajas grandes con sombra proyectada es caro y produce saltos.
+ * Una versión previa los hacía entrar más lento (0.85 s) y con `delayChildren`
+ * de 0.42 s encima del turno que ya les tocaba en la secuencia del hero. Medido
+ * en el navegador, eso abría un hueco de ~790 ms entre el último bloque de
+ * texto y el primer panel: la composición se sentía desenganchada del texto.
+ *
+ * Ahora la duración es `durations.slow` y el escalonado 0.12 s, exactamente los
+ * de `fadeUp` y `pageSequence`, sin retraso extra. Se conserva un `scale` muy
+ * leve para dar profundidad, y se sigue evitando el `blur` de `fadeUp`: en
+ * cajas grandes con sombra proyectada es caro y produce saltos.
  */
 const panelEntrance: Variants = {
-  hidden: { opacity: 0, y: 34, scale: 0.975 },
+  hidden: { opacity: 0, y: 24, scale: 0.985 },
   visible: {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { duration: 0.85, ease: easings.outSmooth },
+    transition: { duration: durations.slow, ease: easings.outSmooth },
   },
 };
 
 const panelsContainer: Variants = {
   hidden: {},
   visible: {
-    transition: { staggerChildren: 0.16, delayChildren: 0.42 },
+    transition: { staggerChildren: 0.12, delayChildren: 0 },
   },
 };
 
@@ -64,19 +69,6 @@ export function PanelsStack() {
 
   return (
     <div className="relative w-full lg:w-[58%]">
-      {/* Móvil / tablet: solo perfil, y perfil+ranking apilados en tablet */}
-      <motion.div
-        variants={container}
-        className="mx-auto flex w-full max-w-sm flex-col items-stretch gap-6 md:max-w-md lg:hidden"
-      >
-        <motion.div variants={panelVariant}>
-          <ProfilePanel />
-        </motion.div>
-        <motion.div variants={panelVariant} className="hidden md:block">
-          <TalentPanel />
-        </motion.div>
-      </motion.div>
-
       {/* En pantallas de poca altura (portátiles de 768–860 px) la composición
           no cabe y obliga a hacer scroll para ver un panel que no aporta
           información nueva. Se reduce la escala desde el borde superior, sin
@@ -124,6 +116,25 @@ export function PanelsStack() {
         </motion.div>
 
         <VerticalText className="absolute right-0 top-1/2 hidden -translate-y-1/2 xl:block" />
+      </motion.div>
+
+      {/* Móvil / tablet: solo perfil, y perfil+ranking apilados en tablet.
+          Va **después** de la composición de escritorio en el DOM aunque en
+          pantalla aparezca en su lugar (son excluyentes por CSS). El motivo es
+          de ritmo: el escalonado del hero reparte turnos por orden de montaje y
+          no sabe que un bloque está oculto, así que el que va primero se come
+          un turno. Con este orden, en escritorio los paneles entran justo en el
+          turno siguiente al último bloque de texto. */}
+      <motion.div
+        variants={container}
+        className="mx-auto flex w-full max-w-sm flex-col items-stretch gap-6 md:max-w-md lg:hidden"
+      >
+        <motion.div variants={panelVariant}>
+          <ProfilePanel />
+        </motion.div>
+        <motion.div variants={panelVariant} className="hidden md:block">
+          <TalentPanel />
+        </motion.div>
       </motion.div>
     </div>
   );

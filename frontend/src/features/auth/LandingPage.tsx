@@ -24,7 +24,7 @@ export function Component() {
           initial="hidden"
           animate="visible"
           variants={pageSequence}
-          className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-14 px-6 py-10 sm:px-8 sm:py-14 lg:flex-row lg:items-center lg:gap-8 lg:px-10 lg:py-12"
+          className="mx-auto flex w-full max-w-[1440px] flex-1 flex-col gap-14 px-6 py-10 sm:px-8 sm:py-14 lg:flex-row lg:items-center lg:gap-8 lg:px-10 lg:py-5 xl:py-7"
         >
           <HeroLeft />
           <PanelsStack />

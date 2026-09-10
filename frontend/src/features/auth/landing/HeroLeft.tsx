@@ -28,7 +28,19 @@ export function HeroLeft() {
   const { fadeUp } = useMotionSafe();
 
   return (
-    <div className="flex flex-col items-start gap-6 text-left lg:w-[42%] lg:shrink-0">
+    <>
+      {/* En portátiles de poca altura la columna de texto es la que empuja el
+          hero fuera del viewport. Se compacta el titular y el ritmo vertical
+          en lugar de recortar contenido. */}
+      <style>{`
+        @media (min-width: 1024px) and (max-height: 820px) {
+          .hero-left { gap: 1rem; }
+          .hero-left h1 { font-size: 46px; line-height: 1.04; }
+          .hero-left .hero-left__features { padding-top: .5rem; gap: 1rem; }
+          .hero-left .hero-left__footnote { padding-top: .75rem; }
+        }
+      `}</style>
+      <div className="hero-left flex flex-col items-start gap-6 text-left lg:w-[42%] lg:shrink-0">
       <motion.p
         variants={fadeUp}
         className="text-[11px] font-semibold uppercase tracking-[.22em] text-text-on-dark-secondary/70 sm:text-xs"
@@ -76,7 +88,7 @@ export function HeroLeft() {
       {/* Móvil: icono junto al texto (hay ancho de sobra). Desktop: icono encima,
           porque la columna izquierda ocupa el 42 % y en fila el texto se
           comprimía a ~110 px, partiendo cada descripción en cuatro líneas. */}
-      <motion.div variants={fadeUp} className="grid w-full grid-cols-1 gap-5 pt-5 sm:grid-cols-3 sm:gap-6">
+      <motion.div variants={fadeUp} className="hero-left__features grid w-full grid-cols-1 gap-5 pt-5 sm:grid-cols-3 sm:gap-6">
         {FEATURES.map((feature) => (
           <div key={feature.title} className="flex items-start gap-3 sm:flex-col sm:gap-3">
             <span
@@ -97,7 +109,7 @@ export function HeroLeft() {
 
       <motion.div
         variants={fadeUp}
-        className="flex items-center gap-3 pt-6 text-[10px] font-medium uppercase tracking-[.3em] text-text-on-dark-secondary/40"
+        className="hero-left__footnote flex items-center gap-3 pt-6 text-[10px] font-medium uppercase tracking-[.3em] text-text-on-dark-secondary/40"
       >
         <span aria-hidden="true" className="h-px w-8 bg-text-on-dark-secondary/30" />
         <p className="leading-[1.7]">
@@ -108,6 +120,7 @@ export function HeroLeft() {
           Resultados reales
         </p>
       </motion.div>
-    </div>
+      </div>
+    </>
   );
 }

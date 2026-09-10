@@ -6,14 +6,6 @@ import { PANEL_SHELL } from "@/features/auth/landing/panelStyles";
 
 const TABS = ["Resumen", "Habilidades", "Experiencia", "Evidencias", "Evaluaciones"] as const;
 const PROFILE_CHIPS = ["Inventarios", "Montacargas", "WMS/ERP", "+2"];
-const HIGHLIGHT_SKILLS = [
-  "Control de inventarios",
-  "Recepción y despacho",
-  "Seguridad en montacargas",
-  "WMS",
-  "Coordinación de equipo",
-];
-
 /**
  * Panel protagonista "Perfil desbloqueado" (07_LANDING_HERO.md §5.2). Único
  * panel con identidad real, porque representa el estado posterior al
@@ -89,18 +81,6 @@ export function ProfilePanel({ className }: { className?: string }) {
         <Metric value="3" label="verificadas con documento" />
       </div>
 
-      <div>
-        <p className="text-[11px] font-semibold uppercase tracking-[.14em] text-text-tertiary">
-          Habilidades destacadas
-        </p>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
-          {HIGHLIGHT_SKILLS.map((skill) => (
-            <Chip key={skill} className="!h-7 !px-2.5 !text-[11px]">
-              {skill}
-            </Chip>
-          ))}
-        </div>
-      </div>
     </div>
   );
 }

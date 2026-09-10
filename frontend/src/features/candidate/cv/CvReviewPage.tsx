@@ -29,6 +29,7 @@ import {
   useToast,
 } from "@/components/ui";
 import { useConfirmExtraction, useExtraction } from "@/api/hooks";
+import { FIRST_JOB_STATEMENT } from "@/api/mock/engine/cvNormalize";
 import { useMotionSafe } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 import type {
@@ -320,6 +321,16 @@ export function Component() {
 
   const pendingClaims = useMemo(() => claims.filter((claim) => claim.needs_validation), [claims]);
 
+  /**
+   * El normalizador emite este claim (sin validación pendiente) cuando la
+   * persona dijo que no ha trabajado. Es lo que convierte "no no estuve en
+   * otros trabajos" en un estado legible del CV en vez de un puesto falso.
+   */
+  const seeksFirstJob = useMemo(
+    () => claims.some((claim) => claim.statement === FIRST_JOB_STATEMENT),
+    [claims],
+  );
+
   const saveExperience = (item: ExperienceItem) => {
     setExperience((current) => {
       const exists = current.some((entry) => entry.id === item.id);
@@ -469,8 +480,14 @@ export function Component() {
                     {experience.length === 0 ? (
                       <EmptyState
                         icon={Briefcase}
-                        title="Sin experiencia registrada"
-                        description="Si estás buscando tu primer empleo, puedes dejar esta sección vacía y continuar."
+                        title={
+                          seeksFirstJob ? FIRST_JOB_STATEMENT : "Sin experiencia registrada"
+                        }
+                        description={
+                          seeksFirstJob
+                            ? "Así lo entendimos de lo que nos contaste. No es un problema: la entrevista se centrará en cómo resuelves situaciones, no en cuántos años llevas."
+                            : "Si estás buscando tu primer empleo, puedes dejar esta sección vacía y continuar."
+                        }
                         cta={{
                           label: "Agregar experiencia",
                           onClick: () => setExperienceModal(emptyExperience()),

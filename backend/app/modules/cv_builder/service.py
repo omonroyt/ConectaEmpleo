@@ -14,7 +14,6 @@ previous_jobs, education, certifications, logistics, salary`.
 
 from __future__ import annotations
 
-import re
 import uuid
 from datetime import datetime, timezone
 from html import escape
@@ -29,6 +28,7 @@ from app.modules.candidates.models import CandidateProfile
 from app.modules.catalog.models import JobFamily
 from app.modules.cv_builder.models import CVBuilderMessage as CVBuilderMessageModel
 from app.modules.cv_builder.models import CVBuilderSession as CVBuilderSessionModel
+from app.modules.cv_builder.normalize import normalize_cv
 from app.modules.cv_builder.schemas import (
     CVBuilderMessage,
     CVBuilderReply,
@@ -89,89 +89,73 @@ def _next_sequence(db: Session, session_id: uuid.UUID) -> int:
 
 def _build_parts(
     answers: dict[str, str],
+    *,
+    job_family_code: str | None = None,
 ) -> tuple[list[dict], list[dict], list[dict], list[dict], list[ClaimInput]]:
     """Ensambla experiencia/educación/skills/certificaciones/claims desde las respuestas.
 
-    Refleja `frontend/src/api/mock/engine/cv.ts::buildExtractionFromCvBuilder`
-    (mismo golden path, mismas reglas: nunca inventa datos que el candidato no
-    dio, "Por confirmar" para lo que no se preguntó explícitamente como
-    empresa/institución).
+    Toda la interpretación vive en `cv_builder/normalize.py` (ver
+    `docs/build/08_CV_NARRATIVE_NORMALIZATION.md`); aquí solo se traduce el
+    resultado a la forma del contrato HTTP.
+
+    Antes esta función copiaba la transcripción literal a los campos del CV
+    (`position = answers["last_job"]`), lo que hacía que "no no estuve en otros
+    trabajos" apareciera como un puesto de trabajo, y **fabricaba** empresa
+    ("Por confirmar") y fechas (`now_year - 1`) que nadie había dicho. Las
+    fechas inventadas no eran cosméticas: `matching/engine.py::years_of_experience`
+    las leía y le acreditaba al candidato años de experiencia que no existían.
+
+    Lo que la persona no dijo se queda **vacío**: `""` para empresa y fecha,
+    `None` para los años de estudios. `matching/engine.py::_parse_date` ya
+    devuelve `None` para una cadena vacía y `years_of_experience` la omite, así
+    que el motor ya tolera esto sin cambios.
     """
 
-    now_year = datetime.now(timezone.utc).year
-    experience: list[dict] = []
-    education: list[dict] = []
-    skills: list[dict] = []
-    certifications: list[dict] = []
-    claims: list[ClaimInput] = []
+    normalized = normalize_cv(answers, job_family_code=job_family_code)
 
-    last_job = answers.get("last_job")
-    if last_job:
-        experience.append(
-            {
-                "id": str(uuid.uuid4()),
-                "company": "Por confirmar",
-                "position": last_job,
-                "start_date": f"{now_year - 1}-01-01",
-                "end_date": None,
-                "is_current": True,
-                "description": answers.get("activities", ""),
-                "skills": [],
-            }
+    experience = [
+        {
+            "id": str(uuid.uuid4()),
+            "company": item.company,
+            "position": item.position,
+            "start_date": "",
+            "end_date": None,
+            "is_current": item.is_current,
+            "description": item.description,
+            "skills": [],
+        }
+        for item in normalized.experience
+    ]
+
+    education = [
+        {
+            "id": str(uuid.uuid4()),
+            "institution": item.institution,
+            "degree": item.degree,
+            "start_year": None,
+            "end_year": None,
+        }
+        for item in normalized.education
+    ]
+
+    skills = [{"code": code, "name": name, "level": 2} for code, name in normalized.skills]
+    certifications = [{"name": name, "issuer": None, "year": None} for name in normalized.certifications]
+
+    claims = [
+        ClaimInput(
+            source="CONVERSATION",
+            skill_code=None,
+            statement=claim.statement,
+            claimed_level=None,
+            needs_validation=claim.needs_validation,
+            source_ref=(
+                {"turn": _FIELD_ORDER.index(claim.source_field) + 1}
+                if claim.source_field in _FIELD_ORDER
+                else None
+            ),
         )
-
-    tools = answers.get("tools")
-    if tools:
-        for raw in re.split(r",| y ", tools, flags=re.I):
-            name = raw.strip()
-            if name:
-                code = re.sub(r"\s+", "_", name.upper())[:30]
-                skills.append({"code": code, "name": name, "level": 2})
-
-    previous_jobs = answers.get("previous_jobs")
-    if previous_jobs:
-        experience.append(
-            {
-                "id": str(uuid.uuid4()),
-                "company": "Por confirmar",
-                "position": previous_jobs,
-                "start_date": f"{now_year - 3}-01-01",
-                "end_date": f"{now_year - 1}-01-01",
-                "is_current": False,
-                "description": previous_jobs,
-                "skills": [],
-            }
-        )
-
-    education_answer = answers.get("education")
-    if education_answer:
-        education.append(
-            {
-                "id": str(uuid.uuid4()),
-                "institution": "Por confirmar",
-                "degree": education_answer,
-                "start_year": now_year - 8,
-                "end_year": now_year - 5,
-            }
-        )
-
-    certifications_answer = answers.get("certifications")
-    if certifications_answer:
-        certifications.append({"name": certifications_answer, "issuer": None, "year": None})
-
-    for field in ("logistics", "salary"):
-        value = answers.get(field)
-        if value:
-            claims.append(
-                ClaimInput(
-                    source="CONVERSATION",
-                    skill_code=None,
-                    statement=value,
-                    claimed_level=None,
-                    needs_validation=True,
-                    source_ref={"turn": _FIELD_ORDER.index(field) + 1},
-                )
-            )
+        for claim in normalized.claims
+    ]
 
     return experience, education, skills, certifications, claims
 
@@ -188,8 +172,10 @@ def _claim_input_to_schema(claim: ClaimInput) -> Claim:
     )
 
 
-def _draft_from_answers(answers: dict[str, str]) -> CVExtractionPatch:
-    experience, education, skills, certifications, claims = _build_parts(answers)
+def _draft_from_answers(answers: dict[str, str], *, job_family_code: str | None = None) -> CVExtractionPatch:
+    experience, education, skills, certifications, claims = _build_parts(
+        answers, job_family_code=job_family_code
+    )
     return CVExtractionPatch(
         experience=[ExperienceItem.model_validate(e) for e in experience],
         education=[EducationItem.model_validate(e) for e in education],
@@ -199,14 +185,16 @@ def _draft_from_answers(answers: dict[str, str]) -> CVExtractionPatch:
     )
 
 
-def to_session_schema(session: CVBuilderSessionModel) -> CVBuilderSessionSchema:
+def to_session_schema(
+    session: CVBuilderSessionModel, *, job_family_code: str | None = None
+) -> CVBuilderSessionSchema:
     turn = session.max_turns if session.status == "FINALIZED" else min(session.turn_index + 1, session.max_turns)
     return CVBuilderSessionSchema(
         id=session.id,
         status=session.status,
         turn=turn,
         max_turns=session.max_turns,
-        draft=_draft_from_answers(session.answers or {}),
+        draft=_draft_from_answers(session.answers or {}, job_family_code=job_family_code),
     )
 
 
@@ -248,7 +236,11 @@ def create_session(db: Session, *, profile: CandidateProfile) -> CVBuilderReply:
     db.refresh(session)
     db.refresh(message)
 
-    return CVBuilderReply(session=to_session_schema(session), agent_message=to_message_schema(message), done=False)
+    return CVBuilderReply(
+        session=to_session_schema(session, job_family_code=job_family_code),
+        agent_message=to_message_schema(message),
+        done=False,
+    )
 
 
 def send_message(
@@ -278,7 +270,9 @@ def send_message(
         db.refresh(session)
         db.refresh(agent_message)
         return CVBuilderReply(
-            session=to_session_schema(session), agent_message=to_message_schema(agent_message), done=False
+            session=to_session_schema(session, job_family_code=_resolve_job_family_code(db, profile)),
+            agent_message=to_message_schema(agent_message),
+            done=False,
         )
 
     job_family_code = _resolve_job_family_code(db, profile)
@@ -309,11 +303,15 @@ def send_message(
     db.refresh(agent_message)
 
     return CVBuilderReply(
-        session=to_session_schema(session), agent_message=to_message_schema(agent_message), done=result.done
+        session=to_session_schema(session, job_family_code=job_family_code),
+        agent_message=to_message_schema(agent_message),
+        done=result.done,
     )
 
 
-def _render_cv_document_html(profile: CandidateProfile, answers: dict[str, str]) -> str:
+def _render_cv_document_html(
+    profile: CandidateProfile, answers: dict[str, str], *, job_family_code: str | None = None
+) -> str:
     """CV descargable en HTML plano (docs/build/05_BACKEND_TASKS.md, fila B5).
 
     Decisión documentada: HTML/texto estructurado servido por `StoragePort`,
@@ -323,7 +321,9 @@ def _render_cv_document_html(profile: CandidateProfile, answers: dict[str, str])
     desde el navegador (`Ctrl+P -> Guardar como PDF` funciona igual de bien).
     """
 
-    experience, education, skills, certifications, _claims = _build_parts(answers)
+    experience, education, skills, certifications, _claims = _build_parts(
+        answers, job_family_code=job_family_code
+    )
     name = escape(profile.full_name or profile.anon_code)
 
     def _rows(items: list[str]) -> str:
@@ -364,7 +364,10 @@ def finalize_session(db: Session, *, session: CVBuilderSessionModel, profile: Ca
             "Todavía faltan preguntas por responder antes de poder cerrar la conversación."
         )
 
-    experience, education, skills, certifications, claims = _build_parts(session.answers or {})
+    job_family_code = _resolve_job_family_code(db, profile)
+    experience, education, skills, certifications, claims = _build_parts(
+        session.answers or {}, job_family_code=job_family_code
+    )
     extraction = cv_extraction_service.create_extraction(
         db,
         candidate_id=profile.id,
@@ -379,7 +382,7 @@ def finalize_session(db: Session, *, session: CVBuilderSessionModel, profile: Ca
         ai_invocation_id=None,
     )
 
-    html = _render_cv_document_html(profile, session.answers or {})
+    html = _render_cv_document_html(profile, session.answers or {}, job_family_code=job_family_code)
     storage = get_storage()
     storage_key = storage.save_text(
         owner_user_id=profile.user_id, doc_type="cv_builder", filename=f"cv-{session.id}.html", text=html

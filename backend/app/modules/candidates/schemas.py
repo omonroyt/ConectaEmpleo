@@ -33,7 +33,10 @@ class EducationItem(BaseModel):
     id: str
     institution: str
     degree: str
-    start_year: int
+    #: `None` = la persona no dijo el año. El CV conversacional los fabricaba
+    #: (`now_year - 8`) y esos años inventados se renderizaban como dato real
+    #: en el perfil publico y en la vista desbloqueada de la empresa.
+    start_year: int | None = None
     end_year: int | None = None
 
 

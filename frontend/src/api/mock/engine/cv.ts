@@ -1,6 +1,7 @@
 import type { Claim, CVExtraction, EducationItem, ExperienceItem } from "@/api/types";
 import { genId, nowIso, wordCount } from "../util";
 import { CV_BUILDER_SCRIPT, type CvBuilderField } from "../seed/cvBuilderScript";
+import { normalizeCv } from "./cvNormalize";
 import type { StoredCvBuilderSession } from "../state";
 
 const FAMILY_SKILL_HINTS: Record<string, string[]> = {
@@ -67,69 +68,66 @@ export function generateExtractionFromFile(familyId: string | null, filename: st
   };
 }
 
-/** Arma la extracción final del CV conversacional a partir de las respuestas capturadas por turno. */
-export function buildExtractionFromCvBuilder(answers: Record<string, string>): CVExtraction {
-  const now = new Date();
-  const experience: ExperienceItem[] = [];
-  const education: EducationItem[] = [];
-  const claims: Claim[] = [];
-  const skills: CVExtraction["skills"] = [];
+/**
+ * Arma la extracción final del CV conversacional a partir de las respuestas
+ * capturadas por turno.
+ *
+ * Toda la interpretación vive en `./cvNormalize`, puerto TS de
+ * `backend/app/modules/cv_builder/normalize.py` — aquí solo se traduce a la
+ * forma del contrato. Antes esta función copiaba la transcripción literal
+ * (`position: lastJob`) y fabricaba empresa ("Por confirmar") y fechas
+ * (`now - 1 año`) que nadie había dicho; ver
+ * `docs/build/08_CV_NARRATIVE_NORMALIZATION.md`.
+ */
+export function buildExtractionFromCvBuilder(
+  answers: Record<string, string>,
+  jobFamilyId: string | null = null,
+): CVExtraction {
+  const normalized = normalizeCv(answers, jobFamilyId);
 
-  const lastJob = answers.last_job;
-  if (lastJob) {
-    experience.push({
-      id: genId("exp"),
-      company: "Por confirmar",
-      position: lastJob,
-      start_date: `${now.getFullYear() - 1}-01-01`,
-      end_date: null,
-      is_current: true,
-      description: answers.activities ?? "",
-      skills: [],
-    });
-  }
-  const tools = answers.tools;
-  if (tools) {
-    for (const raw of tools.split(/,| y /i)) {
-      const name = raw.trim();
-      if (name.length > 0) skills.push({ code: name.toUpperCase().replace(/\s+/g, "_").slice(0, 30), name, level: 2 });
-    }
-  }
-  const previousJobs = answers.previous_jobs;
-  if (previousJobs) {
-    experience.push({
-      id: genId("exp"),
-      company: "Por confirmar",
-      position: previousJobs,
-      start_date: `${now.getFullYear() - 3}-01-01`,
-      end_date: `${now.getFullYear() - 1}-01-01`,
-      is_current: false,
-      description: previousJobs,
-      skills: [],
-    });
-  }
-  const educationAnswer = answers.education;
-  if (educationAnswer) {
-    education.push({ id: genId("edu"), institution: "Por confirmar", degree: educationAnswer, start_year: now.getFullYear() - 8, end_year: now.getFullYear() - 5 });
-  }
-  const certifications: CVExtraction["certifications"] = answers.certifications
-    ? [{ name: answers.certifications, issuer: null, year: null }]
-    : [];
+  const experience: ExperienceItem[] = normalized.experience.map((item) => ({
+    id: genId("exp"),
+    company: item.company,
+    position: item.position,
+    start_date: "",
+    end_date: null,
+    is_current: item.isCurrent,
+    description: item.description,
+    skills: [],
+  }));
 
-  for (const field of ["logistics", "salary"] as CvBuilderField[]) {
-    const value = answers[field];
-    if (value) {
-      claims.push({
-        id: genId("claim"),
-        source: "CONVERSATION",
-        skill_code: null,
-        statement: value,
-        claimed_level: null,
-        needs_validation: true,
-        source_ref: { turn: CV_BUILDER_SCRIPT.findIndex((t) => t.field === field) + 1 },
-      });
-    }
-  }
+  const education: EducationItem[] = normalized.education.map((item) => ({
+    id: genId("edu"),
+    institution: item.institution,
+    degree: item.degree,
+    start_year: null,
+    end_year: null,
+  }));
+
+  const skills: CVExtraction["skills"] = normalized.skills.map((skill) => ({
+    code: skill.code,
+    name: skill.name,
+    level: 2,
+  }));
+
+  const certifications: CVExtraction["certifications"] = normalized.certifications.map((name) => ({
+    name,
+    issuer: null,
+    year: null,
+  }));
+
+  const claims: Claim[] = normalized.claims.map((claim) => {
+    const turn = CV_BUILDER_SCRIPT.findIndex((t) => t.field === (claim.sourceField as CvBuilderField));
+    return {
+      id: genId("claim"),
+      source: "CONVERSATION",
+      skill_code: null,
+      statement: claim.statement,
+      claimed_level: null,
+      needs_validation: claim.needsValidation,
+      source_ref: turn >= 0 ? { turn: turn + 1 } : null,
+    };
+  });
 
   return {
     id: genId("ext"),

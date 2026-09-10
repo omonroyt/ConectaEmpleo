@@ -42,7 +42,7 @@ export interface Skill { id: string; code: string; name: string; category: strin
 // ---------- candidato ----------
 export interface Location { city: string; state: string; }
 export interface ExperienceItem { id: string; company: string; position: string; start_date: string; end_date: string | null; is_current: boolean; description: string; skills: string[]; }
-export interface EducationItem { id: string; institution: string; degree: string; start_year: number; end_year: number | null; }
+export interface EducationItem { id: string; institution: string; degree: string; start_year: number | null; end_year: number | null; }
 export interface CandidateProfile {
   id: string; user_id: string; full_name: string; phone: string | null; photo_url: string | null;
   birth_date: string | null; gender: string | null;              // nunca se envían a IA ni a empresa antes del unlock

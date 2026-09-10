@@ -241,7 +241,12 @@ def build_candidate_snapshot_for_ai(profile: CandidateProfile) -> CandidateSnaps
             EducationItemDTO(
                 institution=e.get("institution", ""),
                 degree=e.get("degree", ""),
-                start_year=e.get("start_year", 0),
+                # `EducationItemDTO.start_year` (app/ai/contracts/base.py) sigue
+                # siendo obligatorio y ese archivo esta fuera del alcance de este
+                # cambio, asi que aqui 0 significa "sin dato" para el snapshot de
+                # IA. El contrato HTTP -- lo que ve la empresa -- si distingue
+                # `None` y ya no muestra un anio inventado.
+                start_year=e.get("start_year") or 0,
                 end_year=e.get("end_year"),
             )
             for e in profile.education

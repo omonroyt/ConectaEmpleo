@@ -290,9 +290,18 @@ Equipo de reclutamiento`;
                       />
                       <div>
                         <p className="text-sm font-medium text-text-primary">{item.degree}</p>
-                        <p className="text-xs text-text-tertiary">
-                          {item.institution} · {item.start_year}–{item.end_year ?? "en curso"}
-                        </p>
+                        {(item.institution || item.start_year != null) && (
+                          <p className="text-xs text-text-tertiary">
+                            {[
+                              item.institution || null,
+                              item.start_year != null
+                                ? `${item.start_year}–${item.end_year ?? "en curso"}`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </p>
+                        )}
                       </div>
                     </Card>
                   </li>

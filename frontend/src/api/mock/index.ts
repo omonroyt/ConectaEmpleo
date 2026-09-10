@@ -119,8 +119,8 @@ function toPublicInterview(stored: StoredInterview) {
 
 // ---------- cvBuilder: mapeo a tipos públicos ----------
 
-function toPublicCvSession(session: StoredCvBuilderSession) {
-  const draft: CVExtractionPatch = buildExtractionFromCvBuilder(session.answers);
+function toPublicCvSession(session: StoredCvBuilderSession, jobFamilyId: string | null = null) {
+  const draft: CVExtractionPatch = buildExtractionFromCvBuilder(session.answers, jobFamilyId);
   return {
     id: session.id,
     status: session.status,
@@ -461,7 +461,7 @@ export const mockApiClient: ApiClient = {
         };
         db.cvBuilderSessions[session.id] = session;
         return {
-          session: toPublicCvSession(session),
+          session: toPublicCvSession(session, db.candidates[candidateId]?.profile.job_family_id ?? null),
           agent_message: { id: genId("msg"), role: "agent" as const, text: CV_BUILDER_SCRIPT[0]!.prompt, created_at: nowIso() },
           done: false,
         };
@@ -475,7 +475,10 @@ export const mockApiClient: ApiClient = {
         const step = advanceCvBuilder(session, text);
         const messageText = step.done && !step.agentMessage ? CV_BUILDER_CLOSING : step.agentMessage;
         return {
-          session: toPublicCvSession(session),
+          session: toPublicCvSession(
+            session,
+            db.candidates[session.candidateId]?.profile.job_family_id ?? null,
+          ),
           agent_message: { id: genId("msg"), role: "agent" as const, text: messageText, created_at: nowIso() },
           done: step.done,
         };
@@ -486,8 +489,12 @@ export const mockApiClient: ApiClient = {
       return mutate((db) => {
         const session = db.cvBuilderSessions[id];
         if (!session) throw new ApiClientError("NOT_FOUND", 404, "La sesión de CV conversacional no existe.");
-        const extraction = buildExtractionFromCvBuilder(session.answers);
-        db.candidates[session.candidateId]!.extraction = extraction;
+        const candidate = db.candidates[session.candidateId]!;
+        const extraction = buildExtractionFromCvBuilder(
+          session.answers,
+          candidate.profile.job_family_id,
+        );
+        candidate.extraction = extraction;
         session.status = "FINALIZED";
         return extraction;
       });

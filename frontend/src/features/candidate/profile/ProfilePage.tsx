@@ -411,10 +411,14 @@ function EducationSection({ items }: { items: EducationItem[] }) {
       {items.map((item) => (
         <SectionCard key={item.id}>
           <h4 className="font-medium text-text-primary">{item.degree}</h4>
-          <p className="text-sm text-text-secondary">{item.institution}</p>
-          <p className="text-xs text-text-tertiary">
-            {item.start_year} — {item.end_year ?? "actualidad"}
-          </p>
+          {item.institution && <p className="text-sm text-text-secondary">{item.institution}</p>}
+          {/* Sin años declarados no se muestra el renglón: antes se rellenaba
+              con años inventados por el CV conversacional. */}
+          {item.start_year != null && (
+            <p className="text-xs text-text-tertiary">
+              {item.start_year} — {item.end_year ?? "actualidad"}
+            </p>
+          )}
         </SectionCard>
       ))}
     </div>

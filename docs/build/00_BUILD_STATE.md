@@ -125,6 +125,8 @@ Detectada al construir el frontend contra el contrato de `02_API_CONTRACT.md`. C
 
 ### 2026-09-09 — B14 (Opus) — capa de comprensión del entrevistador
 
+Commit: `d62e226` (`fix(be/B14): interpret the answer before probing, instead of quoting the transcript`).
+
 **El bug.** En la entrevista por voz, la repregunta salía así:
 `Mencionó que "Sí, te puedo compartir lo que hice. Eh,..."; cuénteme más a detalle, ¿qué hizo
 exactamente en ese momento?`. El agente no estaba entendiendo la respuesta: pegaba un fragmento

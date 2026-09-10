@@ -56,12 +56,15 @@ function RowCells({ label, values }: { label: string; values: [number, number, n
     <>
       <span className="truncate pr-2 text-[10px] text-text-secondary">{label}</span>
       {values.map((value, index) => (
-        <div
-          key={index}
-          aria-hidden="true"
-          className="h-1.5 w-8 overflow-hidden rounded-pill bg-surface-soft"
-        >
-          <div className="h-full rounded-pill bg-gradient-brand" style={{ width: `${value}%` }} />
+        // La barra sola no dice cuánto vale: sin la cifra al lado se leía como
+        // un adorno. Con el número se entiende que es una comparación real.
+        <div key={index} className="flex items-center gap-1.5">
+          <div aria-hidden="true" className="h-1.5 w-8 overflow-hidden rounded-pill bg-surface-soft">
+            <div className="h-full rounded-pill bg-gradient-brand" style={{ width: `${value}%` }} />
+          </div>
+          <span className="text-[9px] font-medium tabular-nums text-text-tertiary">
+            {(value / 10).toFixed(1)}
+          </span>
         </div>
       ))}
     </>

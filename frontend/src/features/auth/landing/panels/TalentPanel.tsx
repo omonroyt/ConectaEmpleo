@@ -17,7 +17,9 @@ const ROWS: TalentRow[] = [
   { initials: "MT", code: "CANDIDATO #024", role: "Encargado de almacén", score: 92, skills: "Inventarios · Seguridad · WMS" },
   { initials: "DR", code: "CANDIDATO #087", role: "Encargado de almacén", score: 87 },
   { initials: "VD", code: "CANDIDATO #112", role: "Auxiliar administrativo", score: 81 },
-  { initials: "SM", code: "CANDIDATO #140", role: "Operador de maquinaria pesada", score: 78 },
+  // "Operador de maquinaria pesada" no cabe en el ancho del panel y truncaba
+  // a media palabra; el puesto se entiende igual sin el calificativo.
+  { initials: "SM", code: "CANDIDATO #140", role: "Operador de maquinaria", score: 78 },
 ];
 
 /**
@@ -35,12 +37,14 @@ export function TalentPanel({ className }: { className?: string }) {
         <span className="truncate text-xs">Buscar candidatos…</span>
       </div>
 
-      <div className="flex flex-wrap gap-1.5" aria-hidden="true">
-        <Chip selected className="!h-7 !px-2.5 !text-xs">
+      {/* Sin envolver: los tres filtros van en una sola línea como en la
+          referencia. Con `flex-wrap` "Disponibles" caía solo a un renglón. */}
+      <div className="flex flex-nowrap gap-1.5" aria-hidden="true">
+        <Chip selected className="!h-7 shrink-0 !px-2.5 !text-[11px]">
           Todos
         </Chip>
-        <Chip className="!h-7 !px-2.5 !text-xs">Verificados</Chip>
-        <Chip className="!h-7 !px-2.5 !text-xs">Disponibles</Chip>
+        <Chip className="!h-7 shrink-0 !px-2.5 !text-[11px]">Verificados</Chip>
+        <Chip className="!h-7 shrink-0 !px-2.5 !text-[11px]">Disponibles</Chip>
       </div>
 
       <ul className="flex flex-col divide-y divide-border/70">

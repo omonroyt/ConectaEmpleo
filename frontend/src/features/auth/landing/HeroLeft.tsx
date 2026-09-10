@@ -73,18 +73,23 @@ export function HeroLeft() {
         </Button>
       </motion.div>
 
-      <motion.div variants={fadeUp} className="grid w-full grid-cols-1 gap-4 pt-4 sm:grid-cols-3">
+      {/* Móvil: icono junto al texto (hay ancho de sobra). Desktop: icono encima,
+          porque la columna izquierda ocupa el 42 % y en fila el texto se
+          comprimía a ~110 px, partiendo cada descripción en cuatro líneas. */}
+      <motion.div variants={fadeUp} className="grid w-full grid-cols-1 gap-5 pt-5 sm:grid-cols-3 sm:gap-6">
         {FEATURES.map((feature) => (
-          <div key={feature.title} className="flex items-start gap-3">
+          <div key={feature.title} className="flex items-start gap-3 sm:flex-col sm:gap-3">
             <span
               className="flex size-11 shrink-0 items-center justify-center rounded-md border border-white/10"
               style={{ backgroundColor: "rgba(74,69,255,.14)" }}
             >
               <feature.icon className="size-5 text-accent-soft" aria-hidden="true" />
             </span>
-            <div>
-              <p className="text-sm font-semibold text-text-on-dark">{feature.title}</p>
-              <p className="text-xs text-text-on-dark-secondary">{feature.description}</p>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold leading-snug text-text-on-dark">{feature.title}</p>
+              <p className="mt-1 text-xs leading-relaxed text-text-on-dark-secondary">
+                {feature.description}
+              </p>
             </div>
           </div>
         ))}

@@ -40,7 +40,9 @@ export function PanelsStack() {
         className="relative hidden lg:block lg:pr-8 xl:pr-16"
       >
         <div className="flex items-start gap-5 xl:gap-7">
-          <motion.div variants={panelVariant} className="mt-10 w-[190px] shrink-0 -rotate-1 xl:w-[240px]">
+          {/* Algo más ancho que el diseño inicial: a 240 px los tres filtros no
+              cabían en una línea y "Operador de maquinaria" truncaba. */}
+          <motion.div variants={panelVariant} className="mt-10 w-[205px] shrink-0 -rotate-1 xl:w-[268px]">
             <TalentPanel />
           </motion.div>
           <motion.div variants={panelVariant} className="w-[300px] shrink-0 xl:w-[380px]">

@@ -39,6 +39,12 @@ class Settings(BaseSettings):
         validación el síntoma aparece mucho después y es difícil de diagnosticar.
         """
         url = value.strip()
+        # Railway, Supabase y Neon entregan la URL sin driver (`postgresql://` o
+        # `postgres://`), que SQLAlchemy resolvería a psycopg2; el proyecto usa psycopg 3.
+        for bare_scheme in ("postgresql://", "postgres://"):
+            if url.startswith(bare_scheme):
+                url = "postgresql+psycopg://" + url[len(bare_scheme):]
+                break
         if url.startswith("jdbc:"):
             raise ValueError(
                 "DATABASE_URL está en formato JDBC (empieza con 'jdbc:'), que "

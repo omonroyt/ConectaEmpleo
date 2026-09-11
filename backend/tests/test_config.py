@@ -1,4 +1,4 @@
-"""`Settings`: producción no arranca con un `JWT_SECRET` débil.
+"""`Settings` listo para producción: `JWT_SECRET` fuerte y `DATABASE_URL` de Railway tal cual.
 
 No toca la base de datos: construye `Settings` directamente, sin leer
 `backend/.env` (`_env_file=None`) y con un `DATABASE_URL` válido explícito, para
@@ -34,3 +34,9 @@ def test_production_accepts_a_long_jwt_secret() -> None:
 
 def test_local_keeps_the_example_secret() -> None:
     assert _settings(environment="local", jwt_secret=DEV_JWT_SECRET).jwt_secret == DEV_JWT_SECRET
+
+
+@pytest.mark.parametrize("bare_scheme", ["postgresql://", "postgres://"])
+def test_database_url_without_driver_gets_psycopg(bare_scheme: str) -> None:
+    settings = Settings(_env_file=None, database_url=f"{bare_scheme}u:p@postgres.railway.internal:5432/railway")
+    assert settings.database_url == "postgresql+psycopg://u:p@postgres.railway.internal:5432/railway"

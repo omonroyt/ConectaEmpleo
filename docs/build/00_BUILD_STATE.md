@@ -214,7 +214,7 @@ nadie de fuera abra cuentas y gaste, el registro se cierra y el jurado entra con
 - Entrevista corta en producción (`INTERVIEW_DEMO_MODE=true`, 6 preguntas: HA_01–03 y SA_01–03). Por
   eso la vacante de auxiliar administrativo de las empresas del jurado pide `ADMIN_SA_02` en vez de
   `ADMIN_SA_07`: nadie sale penalizado por algo que no se le preguntó.
-- Una sola contraseña para las 8 cuentas del jurado, entregada fuera del repo. Correos en `monroy.group`.
+- Una sola contraseña para las 8 cuentas del jurado, entregada fuera del repo. Correos en `conectaempleo.xyz`.
 
 **Verificación.** `ruff check .` limpio. `pytest`: 204 aprobadas, 4 omitidas y 8 fallidas, todas en
 `tests/test_voice.py`; fallan igual sin estos cambios, porque la base local ya tiene ~4,000 caracteres

@@ -3,13 +3,13 @@
 Crea 5 candidatos listos para presentar su entrevista y 3 empresas verificadas,
 cada una con las 3 vacantes de la demo y su ranking ya calculado.
 
-- **Candidatos** (`candidato1..5@monroy.group`): familia `ADMIN_ASSISTANT` y
+- **Candidatos** (`candidato1..5@conectaempleo.xyz`): familia `ADMIN_ASSISTANT` y
   `status="CV_READY"`, así que al entrar su siguiente paso es la entrevista
   (`candidates.service.compute_status_view`). El CV es genérico a propósito
   --un solo puesto de auxiliar administrativo, sin empresa ni logros
   concretos-- para que cada jurado conteste con su propia experiencia sin
   contradecir un historial ajeno.
-- **Empresas** (`empresa1..3@monroy.group`): la vacante de auxiliar
+- **Empresas** (`empresa1..3@conectaempleo.xyz`): la vacante de auxiliar
   administrativo pide solo competencias que cubre la entrevista corta
   (`INTERVIEW_DEMO_MODE=true`: las 3 primeras técnicas y las 3 primeras
   conductuales del banco), para que nadie salga penalizado por algo que no se
@@ -57,7 +57,7 @@ from app.seeds.demo import (
     use_seed_settings,
 )
 
-EMAIL_DOMAIN = "monroy.group"
+EMAIL_DOMAIN = "conectaempleo.xyz"
 CANDIDATE_COUNT = 5
 JURY_FAMILY = "ADMIN_ASSISTANT"
 MIN_PASSWORD_LENGTH = 10

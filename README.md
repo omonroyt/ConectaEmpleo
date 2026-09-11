@@ -198,7 +198,7 @@ Durante la evaluación del hackatón la demo funciona con **acceso por invitaci�
 |---|---|
 | `ENVIRONMENT` | `production`. Apaga el modo debug y activa la protección de `JWT_SECRET`. |
 | `JWT_SECRET` | Uno propio de 32 caracteres o más: `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Con el valor de ejemplo, el backend no arranca. |
-| `CORS_ORIGINS` | El dominio del frontend, por ejemplo `https://monroy.group`. |
+| `CORS_ORIGINS` | El dominio del frontend, por ejemplo `https://conectaempleo.xyz`. |
 | `REGISTRATION_ENABLED` | `false`: `POST /auth/register` responde 403. |
 | `INTERVIEW_DEMO_MODE` | `true`: entrevista de 6 preguntas. |
 | `AI_ADAPTER`, `ANTHROPIC_API_KEY` | `agentic` y la clave de Anthropic. |
@@ -216,7 +216,7 @@ python -m app.seeds.demo    # 15 candidatos evaluados y la empresa demo, sin gas
 python -m app.seeds.jury    # 5 candidatos y 3 empresas para el jurado
 ```
 
-La semilla del jurado crea `candidato1@monroy.group` a `candidato5@monroy.group`, listos para presentar la entrevista como auxiliares administrativos, y `empresa1@monroy.group` a `empresa3@monroy.group`, con sus vacantes y el ranking ya calculado. Cuando un jurado termina su entrevista, el ranking se recalcula solo y puede encontrarse, anónimo, en la vacante de auxiliar administrativo de cualquiera de las empresas. En producción, esa misma semilla deja sin acceso las cuentas `@demo.mx`.
+La semilla del jurado crea `candidato1@conectaempleo.xyz` a `candidato5@conectaempleo.xyz`, listos para presentar la entrevista como auxiliares administrativos, y `empresa1@conectaempleo.xyz` a `empresa3@conectaempleo.xyz`, con sus vacantes y el ranking ya calculado. Cuando un jurado termina su entrevista, el ranking se recalcula solo y puede encontrarse, anónimo, en la vacante de auxiliar administrativo de cualquiera de las empresas. En producción, esa misma semilla deja sin acceso las cuentas `@demo.mx`.
 
 > [!TIP]
 > Si el gasto se sale de control, `AI_MODE=demo` y `VOICE_ENABLED=false` lo cortan con solo reiniciar el backend.

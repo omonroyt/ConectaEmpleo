@@ -1,0 +1,10 @@
+# Fuera del contexto de build: dependencias, builds y variables locales.
+node_modules/
+dist/
+output/
+.vite/
+test-results/
+.env
+.env.*
+!.env.example
+*.log

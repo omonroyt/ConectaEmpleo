@@ -10,8 +10,11 @@ sea completo desde el inicio y las tareas futuras no tengan que tocar este archi
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Valor de ejemplo de `.env.example`. Sirve en local; en producción se rechaza.
+DEV_JWT_SECRET = "change-me-in-every-environment"
 
 
 class Settings(BaseSettings):
@@ -53,9 +56,37 @@ class Settings(BaseSettings):
         return url
 
     # --- Identidad / JWT ---
-    jwt_secret: str = "change-me-in-every-environment"
+    jwt_secret: str = DEV_JWT_SECRET
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60
+
+    @model_validator(mode="after")
+    def _reject_weak_jwt_secret_in_production(self) -> "Settings":
+        """No deja arrancar producción con el secreto de ejemplo o con uno corto.
+
+        `DEV_JWT_SECRET` está publicado en `.env.example`: con él cualquiera puede
+        firmar tokens válidos y entrar como cualquier usuario. HS256 pide al menos
+        32 bytes de clave.
+        """
+        if self.environment != "production":
+            return self
+        secret = self.jwt_secret.strip()
+        if secret == DEV_JWT_SECRET or len(secret) < 32:
+            raise ValueError(
+                "JWT_SECRET no sirve para producción: es el valor de ejemplo o tiene "
+                "menos de 32 caracteres. Genera uno con "
+                "'python -c \"import secrets; print(secrets.token_urlsafe(48))\"' "
+                "y defínelo como variable de entorno del servidor."
+            )
+        return self
+
+    # --- Registro y cuentas del jurado ---
+    # Durante la evaluación del hackatón en producción: `false` cierra
+    # `POST /auth/register` (403) y solo entran las cuentas sembradas.
+    registration_enabled: bool = True
+    # Contraseña común de las cuentas de `python -m app.seeds.jury`. Solo la lee
+    # esa semilla; nunca se versiona.
+    jury_password: str = ""
 
     # --- CORS ---
     # :5183 es el puerto fijo que usa `frontend/scripts/e2e-smoke.mjs` (Playwright)

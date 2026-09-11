@@ -137,7 +137,7 @@ uvicorn app.main:app --reload --port 8000
 `GET http://localhost:8000/health` debe responder `{"status": "ok", "database": "up", ...}`. La documentación interactiva vive en `http://localhost:8000/docs`. Las dos semillas son idempotentes: correrlas de nuevo no duplica nada. Detalle completo en [`backend/README.md`](backend/README.md).
 
 > [!IMPORTANT]
-> Las claves de Anthropic y ElevenLabs van solo en `backend/.env`, que git ignora; el frontend nunca las recibe. En producción define un `JWT_SECRET` propio: el valor de `.env.example` es solo para desarrollo.
+> Las claves de Anthropic y ElevenLabs van solo en `backend/.env`, que git ignora; el frontend nunca las recibe. En producción, además, el backend no arranca sin un `JWT_SECRET` propio (ver [Producción](#producción)).
 
 ### 3. Frontend
 
@@ -166,7 +166,7 @@ Ninguno corre migraciones ni semillas: eso se hace a mano la primera vez (pasos 
 
 ### Usuarios demo
 
-Los tres usan la contraseña `demo1234`.
+Solo existen en local, y los tres usan la contraseña `demo1234`. En producción las semillas les ponen una contraseña aleatoria: ahí se entra con las cuentas del jurado (ver [Producción](#producción)).
 
 | Email | Rol | Estado |
 |---|---|---|
@@ -188,6 +188,39 @@ npm run e2e:smoke                   # recorrido en Chromium contra el mock (defa
 E2E_TARGET=http npm run e2e:smoke   # el mismo recorrido contra el backend real, ya corriendo
 ```
 
+## Producción
+
+Durante la evaluación del hackatón la demo funciona con **acceso por invitación**: el registro está cerrado y el jurado entra con cuentas ya creadas. Así nadie de fuera consume las APIs de IA y de voz.
+
+**Backend.** Estas variables van en el panel del hosting, nunca en el repo:
+
+| Variable | Valor en producción |
+|---|---|
+| `ENVIRONMENT` | `production`. Apaga el modo debug y activa la protección de `JWT_SECRET`. |
+| `JWT_SECRET` | Uno propio de 32 caracteres o más: `python -c "import secrets; print(secrets.token_urlsafe(48))"`. Con el valor de ejemplo, el backend no arranca. |
+| `CORS_ORIGINS` | El dominio del frontend, por ejemplo `https://monroy.group`. |
+| `REGISTRATION_ENABLED` | `false`: `POST /auth/register` responde 403. |
+| `INTERVIEW_DEMO_MODE` | `true`: entrevista de 6 preguntas. |
+| `AI_ADAPTER`, `ANTHROPIC_API_KEY` | `agentic` y la clave de Anthropic. |
+| `VOICE_ENABLED`, `ELEVENLABS_API_KEY`, `TTS_CHARACTER_BUDGET` | `true`, la clave de ElevenLabs y los caracteres que tengas disponibles en esa cuenta. |
+| `JURY_PASSWORD` | La contraseña común de las cuentas del jurado. Solo la lee la semilla. |
+
+**Frontend.** Se construye con `VITE_API_MODE=http`, `VITE_API_URL=https://<tu-api>/api/v1` y `VITE_REGISTRATION_ENABLED=false`.
+
+**Datos**, en este orden:
+
+```bash
+python -m alembic upgrade head
+python -m app.seeds.run     # catálogo
+python -m app.seeds.demo    # 15 candidatos evaluados y la empresa demo, sin gastar tokens
+python -m app.seeds.jury    # 5 candidatos y 3 empresas para el jurado
+```
+
+La semilla del jurado crea `candidato1@monroy.group` a `candidato5@monroy.group`, listos para presentar la entrevista como auxiliares administrativos, y `empresa1@monroy.group` a `empresa3@monroy.group`, con sus vacantes y el ranking ya calculado. Cuando un jurado termina su entrevista, el ranking se recalcula solo y puede encontrarse, anónimo, en la vacante de auxiliar administrativo de cualquiera de las empresas. En producción, esa misma semilla deja sin acceso las cuentas `@demo.mx`.
+
+> [!TIP]
+> Si el gasto se sale de control, `AI_MODE=demo` y `VOICE_ENABLED=false` lo cortan con solo reiniciar el backend.
+
 ## Documentación
 
 | Documento | Qué encontrarás |
@@ -200,6 +233,33 @@ E2E_TARGET=http npm run e2e:smoke   # el mismo recorrido contra el backend real,
 | [Guía UX/UI](docs/Conecta_Empleo_Guia_UX_UI_Frontend_Prompt_Madre_v3.md) | Dirección visual y de interacción |
 | [Pantallas](docs/pantallas/) | Capturas de las 45 pantallas, en desktop y mobile |
 | [Tablero de construcción](docs/build/00_BUILD_STATE.md) | Bitácora de cómo se construyó, tarea por tarea |
+
+## Equipo
+
+Las doce personas detrás de Conecta Empleo en el Hackatón IA UTEL × Hostinger:
+
+<table>
+  <tr>
+    <td>Adriana Chable León</td>
+    <td>Maira Franco Vargas</td>
+    <td>Sebastián García Hernández</td>
+  </tr>
+  <tr>
+    <td>Evelin Annel García Yañez</td>
+    <td>Carlos Aquiles González Arellano</td>
+    <td>Erixel Jijón Rodríguez</td>
+  </tr>
+  <tr>
+    <td>Oscar Monroy Tellez</td>
+    <td>Luis Adrián Morales Orozco</td>
+    <td>Abril Moyano Barradas</td>
+  </tr>
+  <tr>
+    <td>Zully Lorenza Pliego Soto</td>
+    <td>Karla Rosa Torres Flores</td>
+    <td>Arturo Antonio Viveros Tevera</td>
+  </tr>
+</table>
 
 <br>
 

@@ -4,12 +4,13 @@ import { Menu, X } from "lucide-react";
 import { Logo } from "@/components/brand/Logo";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
+import { signUpPath } from "@/lib/registration";
 
 const NAV_LINKS = [
   { label: "Inicio", href: "#inicio" },
   { label: "Cómo funciona", href: "#como-funciona" },
-  { label: "Talento", href: "/register?role=CANDIDATE" },
-  { label: "Empresas", href: "/register?role=COMPANY" },
+  { label: "Talento", href: signUpPath("CANDIDATE") },
+  { label: "Empresas", href: signUpPath("COMPANY") },
 ] as const;
 
 /**
@@ -77,7 +78,7 @@ export function LandingTopBar() {
           <Button
             variant="secondary"
             size="md"
-            onClick={() => navigate("/register?role=CANDIDATE")}
+            onClick={() => navigate(signUpPath("CANDIDATE"))}
             className="!border-white/20 !bg-white/[.06] !text-text-on-dark hover:!border-white/40 hover:!bg-white/[.1]"
           >
             Busco empleo
@@ -90,7 +91,7 @@ export function LandingTopBar() {
           >
             Iniciar sesión
           </Button>
-          <Button size="md" arrow onClick={() => navigate("/register?role=COMPANY")}>
+          <Button size="md" arrow onClick={() => navigate(signUpPath("COMPANY"))}>
             Publicar vacante
           </Button>
         </div>
@@ -127,7 +128,7 @@ export function LandingTopBar() {
           <div className="mt-4 flex flex-col gap-3">
             <Button
               variant="secondary"
-              onClick={() => navigate("/register?role=CANDIDATE")}
+              onClick={() => navigate(signUpPath("CANDIDATE"))}
               className="!w-full !border-white/20 !bg-white/[.06] !text-text-on-dark"
             >
               Busco empleo
@@ -139,7 +140,7 @@ export function LandingTopBar() {
             >
               Iniciar sesión
             </Button>
-            <Button arrow onClick={() => navigate("/register?role=COMPANY")} className="!w-full">
+            <Button arrow onClick={() => navigate(signUpPath("COMPANY"))} className="!w-full">
               Publicar vacante
             </Button>
           </div>

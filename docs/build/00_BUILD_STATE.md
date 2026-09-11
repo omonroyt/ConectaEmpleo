@@ -4,7 +4,7 @@
 > Lo actualiza cada subagente al cerrar su tarea. No releer `docs/0*.md` ni la guía UX: todo lo necesario está condensado en `docs/build/`.
 
 - Orquestador: Fable 5.1 / Opus 5 · Constructores: Sonnet 5 (Opus 5 en F4 y F7)
-- Última actualización: 2026-09-11 (limpieza del repo antes de producción)
+- Última actualización: 2026-09-11 (acceso por invitación para el jurado y protección de JWT_SECRET)
 
 ## Estado actual
 
@@ -188,6 +188,43 @@ Detectada al construir el frontend contra el contrato de `02_API_CONTRACT.md`. C
 8. **No inventes decisiones de producto.** Si la spec no cubre algo, elige la opción más simple que no contradiga la spec y anótala en la bitácora.
 
 ## Bitácora (más reciente arriba)
+
+### 2026-09-11 — Orquestador (Opus) — acceso por invitación para el jurado
+
+**Por qué.** La demo pasa a producción consumiendo APIs reales (Anthropic y ElevenLabs). Para que
+nadie de fuera abra cuentas y gaste, el registro se cierra y el jurado entra con cuentas sembradas.
+
+**Qué se construyó.**
+- `JWT_SECRET`: con `ENVIRONMENT=production`, `Settings` rechaza el valor de ejemplo o uno de menos
+  de 32 caracteres y el backend no arranca (`tests/test_config.py`).
+- Registro cerrable: con `REGISTRATION_ENABLED=false`, `POST /auth/register` responde 403
+  `REGISTRATION_CLOSED` (`tests/test_registration_closed.py`). En el frontend, con
+  `VITE_REGISTRATION_ENABLED=false`, los botones de alta llevan al login y `/register` redirige ahí
+  (`src/lib/registration.ts`).
+- `app/seeds/jury.py`: 5 candidatos `ADMIN_ASSISTANT` en `CV_READY` (entran directo a la entrevista,
+  con un CV genérico) y 3 empresas con las 3 vacantes y su ranking. Contraseña común desde
+  `JURY_PASSWORD`; en producción, además, deja con contraseña aleatoria las cuentas `@demo.mx`.
+- Las semillas fuerzan `AI_MODE=demo` e `INTERVIEW_DEMO_MODE=false` (`use_seed_settings`): sembrar
+  nunca gasta tokens y el ranking demo sale igual en cualquier entorno. `demo1234` solo existe en local.
+- Ranking vivo: al terminar `PROFILE_BUILD`, `refresh_rankings_after_evaluation` corre un `MATCH_RUN`
+  por cada vacante abierta de la familia del candidato. `run_match` ahora mueve la etapa de finalistas
+  de los resultados anteriores al nuevo; antes, volver a correr el matching vaciaba la shortlist.
+
+**Decisiones.**
+- Entrevista corta en producción (`INTERVIEW_DEMO_MODE=true`, 6 preguntas: HA_01–03 y SA_01–03). Por
+  eso la vacante de auxiliar administrativo de las empresas del jurado pide `ADMIN_SA_02` en vez de
+  `ADMIN_SA_07`: nadie sale penalizado por algo que no se le preguntó.
+- Una sola contraseña para las 8 cuentas del jurado, entregada fuera del repo. Correos en `monroy.group`.
+
+**Verificación.** `ruff check .` limpio. `pytest`: 204 aprobadas, 4 omitidas y 8 fallidas, todas en
+`tests/test_voice.py`; fallan igual sin estos cambios, porque la base local ya tiene ~4,000 caracteres
+de voz reales comiteados y esas pruebas asumen el contador en cero. `npm run build` en verde. Semillas
+demo y del jurado corridas en local: los 5 candidatos quedan con `next_step=INTERVIEW` y cada empresa
+tiene sus 3 vacantes con ranking. El build con `VITE_REGISTRATION_ENABLED=false`, recorrido en
+Chromium: `/register` y los botones de alta terminan en el login y ya no aparece "Crear cuenta".
+
+**Para desplegar.** Sección "Producción" del README: variables del backend, build del frontend y el
+orden de las semillas.
 
 ### 2026-09-11 — Orquestador (Opus) — limpieza del repo antes de producción
 

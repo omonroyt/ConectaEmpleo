@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { BarChart3, ShieldCheck, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { useMotionSafe } from "@/lib/motion";
+import { signUpPath } from "@/lib/registration";
 
 const FEATURES = [
   {
@@ -70,7 +71,7 @@ export function HeroLeft() {
         <Button
           size="lg"
           arrow
-          onClick={() => navigate("/register?role=COMPANY")}
+          onClick={() => navigate(signUpPath("COMPANY"))}
           className="w-full sm:w-auto"
         >
           Publicar vacante
@@ -78,7 +79,7 @@ export function HeroLeft() {
         <Button
           variant="secondary"
           size="lg"
-          onClick={() => navigate("/register?role=CANDIDATE")}
+          onClick={() => navigate(signUpPath("CANDIDATE"))}
           className="!w-full !border-white/25 !bg-transparent !text-text-on-dark hover:!border-white/50 hover:!bg-white/[.06] sm:!w-auto"
         >
           Ver talento verificado

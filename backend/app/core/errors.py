@@ -52,6 +52,15 @@ class ForbiddenRoleError(DomainError):
     default_message = "Tu cuenta no tiene permiso para esta acción."
 
 
+class RegistrationClosedError(DomainError):
+    status_code = status.HTTP_403_FORBIDDEN
+    code = "REGISTRATION_CLOSED"
+    default_message = (
+        "El registro está cerrado durante la evaluación del hackatón. "
+        "Entra con la cuenta que te compartimos."
+    )
+
+
 class UnlockRequiredError(DomainError):
     status_code = status.HTTP_403_FORBIDDEN
     code = "UNLOCK_REQUIRED"

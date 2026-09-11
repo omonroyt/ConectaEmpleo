@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import uuid
 from dataclasses import asdict
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -179,12 +180,59 @@ def build_vacancy_context(db: Session, vacancy: Vacancy) -> engine.VacancyMatchC
 # ---------------------------------------------------------------------------
 
 
+def _take_shortlist_stages(
+    db: Session, *, vacancy_id: uuid.UUID, candidate_ids: list[uuid.UUID]
+) -> dict[uuid.UUID, tuple[str, datetime | None]]:
+    """Retira la etapa de finalistas de los resultados anteriores de la vacante
+    para pasarla al run nuevo.
+
+    La etapa vive en cada `MatchResult`; sin esto, recalcular el ranking (a mano
+    o al evaluarse alguien nuevo) vaciaría la lista de finalistas de la empresa.
+    Se *mueve* en vez de copiarse para que cada persona siga apareciendo una sola
+    vez en `get_shortlist`, que lee todos los runs de la vacante. Quien ya no es
+    elegible conserva su etapa en el resultado viejo.
+    """
+
+    previous = db.execute(
+        select(MatchResult)
+        .where(
+            MatchResult.vacancy_id == vacancy_id,
+            MatchResult.shortlist_stage.is_not(None),
+            MatchResult.candidate_id.in_(candidate_ids),
+        )
+        .order_by(MatchResult.shortlisted_at.asc().nulls_first())
+    ).scalars().all()
+    stages: dict[uuid.UUID, tuple[str, datetime | None]] = {}
+    for result in previous:  # si hubiera varias, gana la última que marcó la empresa
+        stages[result.candidate_id] = (result.shortlist_stage, result.shortlisted_at)
+        result.shortlist_stage = None
+        result.shortlisted_at = None
+    return stages
+
+
+def open_vacancy_ids_for_candidate(db: Session, *, candidate_id: uuid.UUID) -> list[uuid.UUID]:
+    """Vacantes abiertas en cuyo ranking entra este candidato según RB-01: ya
+    `EVALUATED` y de la misma familia laboral. Columnas explícitas (I-05)."""
+
+    row = db.execute(
+        select(CandidateProfile.status, CandidateProfile.job_family_id).where(CandidateProfile.id == candidate_id)
+    ).first()
+    if row is None or row.status != "EVALUATED" or row.job_family_id is None:
+        return []
+    return list(
+        db.execute(
+            select(Vacancy.id).where(Vacancy.job_family_id == row.job_family_id, Vacancy.status == "OPEN")
+        ).scalars().all()
+    )
+
+
 def run_match(db: Session, *, vacancy_id: uuid.UUID) -> MatchRun:
     vacancy = db.get(Vacancy, vacancy_id)
     if vacancy is None:
         raise NotFoundError("La vacante ya no existe.")
 
     candidate_ids = eligible_candidate_ids_for_vacancy(db, vacancy)
+    shortlist_stages = _take_shortlist_stages(db, vacancy_id=vacancy.id, candidate_ids=candidate_ids)
 
     match_run = MatchRun(
         vacancy_id=vacancy.id,
@@ -208,6 +256,7 @@ def run_match(db: Session, *, vacancy_id: uuid.UUID) -> MatchRun:
     computations.sort(key=lambda pair: (-pair[1].total_score, str(pair[0])))
 
     for position, (candidate_id, computed) in enumerate(computations, start=1):
+        stage, shortlisted_at = shortlist_stages.get(candidate_id, (None, None))
         db.add(
             MatchResult(
                 match_run_id=match_run.id,
@@ -220,6 +269,8 @@ def run_match(db: Session, *, vacancy_id: uuid.UUID) -> MatchRun:
                 gaps=list(computed.gaps),
                 explanation_text=None,
                 rank_position=position,
+                shortlist_stage=stage,
+                shortlisted_at=shortlisted_at,
                 extra={
                     "evidence_counts": computed.evidence_counts,
                     "years_experience": computed.years_experience,

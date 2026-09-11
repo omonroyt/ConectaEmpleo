@@ -3,6 +3,7 @@ import { createBrowserRouter, Navigate, Outlet, useLocation, type RouteObject } 
 import { NotFoundPage } from "@/app/NotFoundPage";
 import { candidateRoutes } from "@/features/candidate/candidate.routes";
 import { employerRoutes } from "@/features/employer/employer.routes";
+import { registrationEnabled } from "@/lib/registration";
 import { useSessionStore, homePathForRole } from "@/store/session";
 import type { Role } from "@/api/types";
 
@@ -46,6 +47,12 @@ function RedirectIfAuthenticated({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/** Con el registro cerrado, `/register?role=X` lleva al login con el mismo rol. */
+function RegistrationClosedRedirect() {
+  const { search } = useLocation();
+  return <Navigate to={`/login${search}`} replace />;
+}
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -71,23 +78,25 @@ export const router = createBrowserRouter([
       },
     ],
   },
-  {
-    path: "/register",
-    element: (
-      <RedirectIfAuthenticated>
-        <Outlet />
-      </RedirectIfAuthenticated>
-    ),
-    children: [
-      {
-        index: true,
-        lazy: async () => {
-          const { Component } = await import("@/features/auth/RegisterPage");
-          return { Component };
-        },
-      },
-    ],
-  },
+  registrationEnabled
+    ? {
+        path: "/register",
+        element: (
+          <RedirectIfAuthenticated>
+            <Outlet />
+          </RedirectIfAuthenticated>
+        ),
+        children: [
+          {
+            index: true,
+            lazy: async () => {
+              const { Component } = await import("@/features/auth/RegisterPage");
+              return { Component };
+            },
+          },
+        ],
+      }
+    : { path: "/register", element: <RegistrationClosedRedirect /> },
   { path: "/candidate", element: <RequireRole role="CANDIDATE" />, children: candidateRoutes },
   { path: "/employer", element: <RequireRole role="COMPANY" />, children: employerRoutes },
   ...devRoutes,

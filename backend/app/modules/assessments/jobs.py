@@ -13,7 +13,9 @@ como exige el contrato (`interviews.complete(id) → JobRef`). El job de
 `PROFILE_BUILD` se crea y corre **desde aquí** una vez que la evaluación
 terminó bien -- por eso "encadenados": el frontend nunca necesita conocer el
 segundo `job_id`, pero ambos quedan en la tabla `jobs` para auditoría
-(`GET /admin/ai-invocations`/`jobs` de B13).
+(`GET /admin/ai-invocations`/`jobs` de B13). Si el perfil quedó construido, al
+final se recalcula el ranking de las vacantes abiertas de su familia (un
+`MATCH_RUN` por vacante).
 """
 
 from __future__ import annotations
@@ -26,6 +28,8 @@ from app.core.jobs import Job, create_job, run_job
 from app.database import SessionLocal
 from app.modules.assessments import service
 from app.modules.interviews.models import InterviewSession
+from app.modules.matching import service as matching_service
+from app.modules.matching.jobs import create_match_run_job, match_run_worker
 
 
 def create_evaluate_job(db: Session, *, session_id: uuid.UUID) -> Job:
@@ -73,3 +77,26 @@ def run_interview_pipeline(evaluate_job_id: uuid.UUID, session_id: uuid.UUID) ->
         db.close()
 
     run_job(profile_job_id, profile_build_worker)
+    refresh_rankings_after_evaluation(profile_job_id, session_id)
+
+
+def refresh_rankings_after_evaluation(profile_job_id: uuid.UUID, session_id: uuid.UUID) -> None:
+    """Tras `PROFILE_BUILD`, recalcula el ranking de las vacantes abiertas de la
+    familia del candidato: quien acaba de evaluarse aparece en el talento
+    compatible sin que la empresa tenga que volver a correr el matching. Es el
+    mismo job `MATCH_RUN` que dispara `POST /vacancies/{id}/match-runs`, uno por
+    vacante; el cálculo es determinista y no llama a la IA."""
+
+    db = SessionLocal()
+    try:
+        profile_job = db.get(Job, profile_job_id)
+        session = db.get(InterviewSession, session_id)
+        if profile_job is None or profile_job.status != "DONE" or session is None:
+            return
+        vacancy_ids = matching_service.open_vacancy_ids_for_candidate(db, candidate_id=session.candidate_id)
+        match_job_ids = [create_match_run_job(db, vacancy_id=vacancy_id).id for vacancy_id in vacancy_ids]
+    finally:
+        db.close()
+
+    for job_id in match_job_ids:
+        run_job(job_id, match_run_worker)

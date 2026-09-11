@@ -444,3 +444,54 @@ def test_candidate_marketplace_list_and_apply(client: TestClient, db_session: Se
     open_detail = client.get(f"/api/v1/vacancies/open/{vacancy_id}", headers=_auth(candidate_token))
     assert open_detail.status_code == 200
     assert open_detail.json()["applied"] is True
+
+
+# ---------------------------------------------------------------------------
+# Ranking recalculado: entra quien se acaba de evaluar y los finalistas se conservan
+# ---------------------------------------------------------------------------
+
+
+def test_rerun_includes_newly_evaluated_and_keeps_the_shortlist(
+    client: TestClient, db_session: Session, unique_email: str, admin_family_id: uuid.UUID
+) -> None:
+    from app.modules.marketplace import service as marketplace_service
+    from app.modules.matching import service as matching_service
+    from app.modules.vacancies.models import Vacancy
+
+    _, vacancy_id = _register_company_and_vacancy(
+        client, db_session, email=f"empresa4.{unique_email}", family_id=admin_family_id
+    )
+    vacancy = db_session.get(Vacancy, vacancy_id)
+    _, first_id = _make_evaluated_candidate(
+        client, db_session, email=f"cand4a.{unique_email}", family_id=admin_family_id,
+        hard_answer=LEVEL4_ANSWER, soft_answer=LEVEL4_ANSWER,
+    )
+
+    first_run = matching_service.run_match(db_session, vacancy_id=vacancy_id)
+    first_result = db_session.execute(
+        select(MatchResult).where(MatchResult.match_run_id == first_run.id, MatchResult.candidate_id == first_id)
+    ).scalars().one()
+    marketplace_service.set_shortlist_stage(
+        db_session, result=first_result, company_id=vacancy.company_id, stage="FINALIST"
+    )
+
+    # Alguien más termina su evaluación: la vacante abierta es de las que se recalculan.
+    _, second_id = _make_evaluated_candidate(
+        client, db_session, email=f"cand4b.{unique_email}", family_id=admin_family_id,
+        hard_answer=LEVEL4_ANSWER, soft_answer=LEVEL2_ANSWER,
+    )
+    assert vacancy_id in matching_service.open_vacancy_ids_for_candidate(db_session, candidate_id=second_id)
+
+    second_run = matching_service.run_match(db_session, vacancy_id=vacancy_id)
+    new_results = {
+        row.candidate_id: row
+        for row in db_session.execute(select(MatchResult).where(MatchResult.match_run_id == second_run.id)).scalars()
+    }
+    assert second_id in new_results
+    assert new_results[first_id].shortlist_stage == "FINALIST"
+
+    # Se movió, no se copió: la persona aparece una sola vez entre los finalistas.
+    db_session.refresh(first_result)
+    assert first_result.shortlist_stage is None
+    shortlist = marketplace_service.get_shortlist(db_session, vacancy=vacancy, company_id=vacancy.company_id)
+    assert [entry.match_result_id for entry in shortlist] == [new_results[first_id].id]

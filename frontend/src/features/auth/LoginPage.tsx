@@ -8,6 +8,7 @@ import { useLogin } from "@/api/hooks";
 import { ApiClientError } from "@/api";
 import { homePathForRole } from "@/store/session";
 import { useMotionSafe } from "@/lib/motion";
+import { registrationEnabled } from "@/lib/registration";
 import { loginSchema, fieldErrorsFrom, type LoginFormValues } from "@/features/auth/auth.schemas";
 
 type AudienceRole = "CANDIDATE" | "COMPANY";
@@ -132,16 +133,23 @@ export function Component() {
           </motion.div>
         </motion.form>
 
-        <motion.p variants={fadeUp} className="text-center text-sm text-text-on-dark-secondary">
-          ¿Aún no tienes cuenta?{" "}
-          <button
-            type="button"
-            onClick={() => navigate(`/register?role=${audience}`)}
-            className="font-medium text-primary-on-dark underline-offset-2 transition-colors hover:text-text-on-dark hover:underline"
-          >
-            Crear cuenta
-          </button>
-        </motion.p>
+        {registrationEnabled ? (
+          <motion.p variants={fadeUp} className="text-center text-sm text-text-on-dark-secondary">
+            ¿Aún no tienes cuenta?{" "}
+            <button
+              type="button"
+              onClick={() => navigate(`/register?role=${audience}`)}
+              className="font-medium text-primary-on-dark underline-offset-2 transition-colors hover:text-text-on-dark hover:underline"
+            >
+              Crear cuenta
+            </button>
+          </motion.p>
+        ) : (
+          <motion.p variants={fadeUp} className="text-center text-sm text-text-on-dark-secondary">
+            El acceso es por invitación durante la evaluación del hackatón. Entra con la cuenta que te
+            compartimos.
+          </motion.p>
+        )}
       </motion.div>
     </AuthLayout>
   );

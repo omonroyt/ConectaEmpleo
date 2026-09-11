@@ -30,6 +30,8 @@ discrimina de verdad, sin inventar evaluaciones.
 
 from __future__ import annotations
 
+import os
+import secrets
 import uuid
 from datetime import date
 
@@ -37,6 +39,7 @@ import structlog
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.config import get_settings
 from app.database import SessionLocal
 from app.modules.assessments import service as assessments_service
 from app.modules.candidates import service as candidates_service
@@ -69,18 +72,46 @@ from app.modules.vacancies.schemas import Location as VacancyLocation
 
 logger = structlog.get_logger("seeds.demo")
 
-DEMO_PASSWORD = "demo1234"
+# Contraseña de las cuentas demo **solo en local**: la publica el README. En
+# producción cada cuenta demo recibe una aleatoria que nadie conoce; ahí el
+# jurado entra con sus propias cuentas (`python -m app.seeds.jury`).
+LOCAL_DEMO_PASSWORD = "demo1234"
+
+
+def use_seed_settings() -> None:
+    """Fija la configuración con la que corren las semillas, sea cual sea el entorno.
+
+    Nunca gastan tokens: "entrevistan" con el `DeterministicAdapter` (ver el
+    docstring del módulo), y con `AI_ADAPTER=agentic` sembrar haría cientos de
+    llamadas reales. Y siempre con la entrevista completa: con
+    `INTERVIEW_DEMO_MODE=true`, pensado para el jurado, los 15 candidatos
+    quedarían con cobertura parcial y un ranking distinto al de local.
+    """
+    os.environ["AI_MODE"] = "demo"
+    os.environ["INTERVIEW_DEMO_MODE"] = "false"
+    get_settings.cache_clear()
+
+
+def demo_password() -> str:
+    if get_settings().environment == "production":
+        return secrets.token_urlsafe(24)
+    return LOCAL_DEMO_PASSWORD
+
 
 # ---------------------------------------------------------------------------
 # Helpers de identidad / perfil
 # ---------------------------------------------------------------------------
 
 
-def _get_or_create_user(db: Session, *, email: str, role: str) -> tuple[User, bool]:
+def _get_or_create_user(
+    db: Session, *, email: str, role: str, password: str | None = None
+) -> tuple[User, bool]:
     existing = db.execute(select(User).where(User.email == email)).scalar_one_or_none()
     if existing is not None:
         return existing, False
-    user = identity_service.register_user(db, RegisterInput(email=email, password=DEMO_PASSWORD, role=role))
+    user = identity_service.register_user(
+        db, RegisterInput(email=email, password=password or demo_password(), role=role)
+    )
     return user, True
 
 
@@ -435,24 +466,36 @@ VACANCY_SPECS = [
 ]
 
 
-def _seed_company(db: Session) -> Company:
-    user, created = _get_or_create_user(db, email="empresa@demo.mx", role="COMPANY")
+DEMO_COMPANY = dict(
+    email="empresa@demo.mx",
+    legal_name="Logística del Bajío S.A. de C.V.",
+    trade_name="Logística del Bajío",
+    industry="Logística y transporte",
+    size="51-200",
+    city="León",
+    state="Guanajuato",
+    description=(
+        "Operador logístico regional del Bajío: almacenaje, distribución y "
+        "manejo de flotillas para clientes industriales."
+    ),
+)
+
+
+def seed_company(db: Session, spec: dict, *, password: str | None = None) -> Company:
+    user, created = _get_or_create_user(db, email=spec["email"], role="COMPANY", password=password)
     company = companies_service.get_company_by_user_id(db, user_id=user.id)
     if created or not company.legal_name:
         companies_service.apply_patch(
             db,
             company,
             CompanyPatch(
-                legal_name="Logística del Bajío S.A. de C.V.",
-                trade_name="Logística del Bajío",
-                industry="Logística y transporte",
-                size="51-200",
-                location=CompanyLocation(city="León", state="Guanajuato"),
+                legal_name=spec["legal_name"],
+                trade_name=spec["trade_name"],
+                industry=spec["industry"],
+                size=spec["size"],
+                location=CompanyLocation(city=spec["city"], state=spec["state"]),
                 work_mode="ONSITE",
-                description=(
-                    "Operador logístico regional del Bajío: almacenaje, distribución y "
-                    "manejo de flotillas para clientes industriales."
-                ),
+                description=spec["description"],
             ),
         )
         company.verification_status = "VERIFIED"
@@ -462,7 +505,7 @@ def _seed_company(db: Session) -> Company:
     return company
 
 
-def _seed_vacancy(db: Session, company: Company, spec: dict) -> Vacancy:
+def seed_vacancy(db: Session, company: Company, spec: dict) -> Vacancy:
     family = db.execute(select(JobFamily).where(JobFamily.code == spec["family"])).scalar_one()
     existing = db.execute(
         select(Vacancy).where(Vacancy.company_id == company.id, Vacancy.title == spec["title"])
@@ -493,7 +536,7 @@ def _seed_vacancy(db: Session, company: Company, spec: dict) -> Vacancy:
     return vacancy
 
 
-def _seed_match_run(db: Session, vacancy: Vacancy) -> None:
+def seed_match_run(db: Session, vacancy: Vacancy) -> None:
     existing = db.execute(select(MatchRun.id).where(MatchRun.vacancy_id == vacancy.id)).first()
     if existing is not None:
         logger.info("demo_match_run_already_exists", vacancy=vacancy.title)
@@ -502,7 +545,7 @@ def _seed_match_run(db: Session, vacancy: Vacancy) -> None:
     match_run = matching_service.run_match(db, vacancy_id=vacancy.id)
     # Calienta `explanation_text` de los primeros resultados para que la demo
     # no dependa de una llamada a IA en vivo al abrir el detalle
-    # (`AI_ADAPTER` sigue siendo `deterministic` por defecto -> costo cero).
+    # (`use_seed_settings` fuerza el adaptador determinista -> costo cero).
     results, _total = matching_service.list_results(db, match_run_id=match_run.id, limit=3, offset=0)
     for result in results:
         marketplace_service.ensure_explanation(db, result)
@@ -519,6 +562,7 @@ def _seed_fresh_candidate(db: Session) -> None:
 
 
 def main() -> None:
+    use_seed_settings()
     db = SessionLocal()
     try:
         print("=== Seed de demo (B13) ===")
@@ -527,10 +571,10 @@ def main() -> None:
         _seed_fresh_candidate(db)
 
         print("-- Empresa demo + 3 vacantes --")
-        company = _seed_company(db)
+        company = seed_company(db, DEMO_COMPANY)
         vacancies_by_family: dict[str, Vacancy] = {}
         for spec in VACANCY_SPECS:
-            vacancy = _seed_vacancy(db, company, spec)
+            vacancy = seed_vacancy(db, company, spec)
             vacancies_by_family[spec["family"]] = vacancy
             print(f"   vacante {spec['family']}: {vacancy.title} ({vacancy.status})")
 
@@ -541,7 +585,7 @@ def main() -> None:
 
         print("-- Match runs por vacante --")
         for family_code, vacancy in vacancies_by_family.items():
-            _seed_match_run(db, vacancy)
+            seed_match_run(db, vacancy)
             print(f"   match run listo para {family_code}")
 
         print("=== Seed de demo completo ===")

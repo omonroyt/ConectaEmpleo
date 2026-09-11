@@ -1,84 +1,122 @@
+<div align="center">
+
 # Conecta Empleo
 
-Marketplace de talento verificado por IA para empresas que necesitan contratar personal sin contar con una infraestructura robusta de reclutamiento.
+**Marketplace de talento verificado por IA para empresas que contratan sin un área de reclutamiento.**
 
-## Contexto
+![Hackatón IA UTEL × Hostinger · septiembre 2026](https://img.shields.io/badge/Hackat%C3%B3n%20IA-UTEL%20%C3%97%20Hostinger%20%C2%B7%20septiembre%202026-173CFF?style=for-the-badge)
 
-Conecta Empleo transforma un proceso de selección basado principalmente en información autodeclarada en uno sustentado en **evidencia, compatibilidad y evaluación estructurada**.
+![React 19](https://img.shields.io/badge/React-19-149ECA?style=flat-square&logo=react&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript-estricto-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Python%203.12-009688?style=flat-square&logo=fastapi&logoColor=white)
+![PostgreSQL 16](https://img.shields.io/badge/PostgreSQL-16-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Claude Sonnet 5](https://img.shields.io/badge/IA-Claude%20Sonnet%205-D97757?style=flat-square&logo=anthropic&logoColor=white)
+![ElevenLabs](https://img.shields.io/badge/Voz-ElevenLabs-111111?style=flat-square&logo=elevenlabs&logoColor=white)
 
-La plataforma analiza la información de las personas candidatas, crea currículums cuando es necesario, realiza entrevistas adaptativas y evalúa habilidades técnicas y conductuales mediante rúbricas. A partir de ello, genera evidencia verificable y construye un **Perfil de Talento Verificado**.
+</div>
 
-Las empresas configuran sus vacantes y un agente de IA compara sus requisitos contra la base de candidatos para generar un ranking explicable de compatibilidad. El alcance está pensado como un MVP enfocado en demostrar esta propuesta de valor durante el Hackatón IA.
+<br>
 
-## Problema
+<p align="center">
+  <img src="docs/pantallas/01-publica-landing-desktop.png" alt="Portada de Conecta Empleo con el ranking de talento compatible, un perfil verificado y el comparador de candidatos" width="100%">
+</p>
 
-Muchas empresas, especialmente las que no disponen de equipos o herramientas especializadas de reclutamiento, enfrentan procesos lentos, poco estandarizados y difíciles de validar. Los currículums tradicionales no siempre permiten comprobar habilidades, experiencia o compatibilidad real con una vacante.
+> Un currículum dice lo que una persona **afirma** saber. Conecta Empleo lo convierte en **evidencia**: entrevista a cada candidato con IA, evalúa sus respuestas con rúbricas y entrega a la empresa un ranking anónimo y explicable de quién encaja mejor con su vacante.
 
-## Propuesta de valor
+## Sobre el proyecto
 
-- Evalúa talento con criterios y rúbricas estructuradas.
-- Genera evidencia para respaldar los perfiles de las personas candidatas.
-- Facilita la creación de un currículum cuando la persona no cuenta con uno.
-- Ayuda a las empresas a identificar candidatos compatibles mediante un ranking explicable.
-- Reduce la incertidumbre en las primeras etapas de contratación.
+Conecta Empleo se construyó para el **Hackatón IA de UTEL y Hostinger, en septiembre de 2026**. Es un MVP hecho en cerca de una semana con una idea en el centro: que una pyme pueda tener lo que hoy solo tienen las grandes empresas, un proceso de selección con criterios claros, evidencia y explicaciones.
 
-## Funcionalidades esperadas del MVP
+## El problema
 
-### Para candidatos
+Muchas pymes contratan sin reclutadores ni herramientas especializadas. Filtran currículums a mano, y casi todo lo que filtran es autodeclarado: nadie comprueba las habilidades hasta la entrevista final, cuando equivocarse ya salió caro.
 
-- Registro y captura de información profesional.
-- Creación asistida de currículum.
-- Entrevista adaptativa.
-- Evaluación de habilidades técnicas y conductuales.
-- Consulta de Perfil de Talento Verificado y su evidencia.
+Del otro lado están las personas candidatas. En México la tasa de informalidad laboral es de 56.2 % (INEGI, julio de 2026): mucha gente con años de experiencia nunca ha tenido un currículum que la respalde.
+
+## Cómo funciona
+
+```mermaid
+flowchart LR
+    A["CV subido o creado<br/>conversando con Sofía"] --> B["Entrevista adaptativa<br/>por voz o texto"]
+    B --> C["Evaluación<br/>con rúbricas"]
+    C --> D["Perfil de Talento<br/>Verificado"]
+    D --> E["Ranking anónimo<br/>y explicable"]
+    E --> F["La empresa desbloquea<br/>a sus finalistas"]
+```
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/pantallas/17-candidato-entrevista-en-curso-desktop.png" alt="Entrevista con IA en curso: la pregunta arriba, el orbe de voz al centro y el campo de respuesta abajo"></td>
+    <td width="50%"><img src="docs/pantallas/21-candidato-perfil-talento-verificado-maria-desktop.png" alt="Perfil de Talento Verificado con el porcentaje de evidencia y el resumen generado por IA"></td>
+  </tr>
+  <tr>
+    <td><b>La entrevista.</b> Preguntas que se adaptan a cada respuesta, por voz o por texto, frente a un orbe que reacciona a quien habla.</td>
+    <td><b>El perfil verificado.</b> Lo que la persona demostró, con qué evidencia y qué le falta para crecer.</td>
+  </tr>
+</table>
+
+### Para personas candidatas
+
+- Suben su CV o lo construyen conversando con **Sofía**, la perfiladora con IA.
+- Hacen una entrevista adaptativa por voz o por texto.
+- Reciben su **Perfil de Talento Verificado**, con la evidencia detrás de cada habilidad.
+- Exploran vacantes abiertas y se postulan.
 
 ### Para empresas
 
-- Creación y configuración de vacantes.
-- Definición de requisitos y criterios de evaluación.
-- Búsqueda de talento en la base de perfiles verificados.
-- Ranking de compatibilidad con explicación de resultados.
+- Publican una vacante y definen el perfil ideal con requisitos y pesos; la plataforma advierte cuando un requisito puede ser discriminatorio.
+- Reciben un ranking de talento compatible, con tarjetas anónimas y la explicación de cada porcentaje.
+- Comparan candidatos lado a lado, arman su lista de finalistas y solo entonces desbloquean su identidad.
 
-## Principios del proyecto
+## Lo que no negociamos
 
-- **Evidencia antes que declaración:** las recomendaciones se respaldan con resultados y señales de evaluación.
-- **Explicabilidad:** empresas y candidatos deben poder entender los factores que influyen en una compatibilidad.
-- **Evaluación estructurada:** se usan criterios consistentes para reducir la subjetividad.
-- **MVP enfocado:** se prioriza validar el valor central de la solución dentro del contexto del hackatón.
+| Principio | Cómo se garantiza |
+|---|---|
+| **Anonimato en el primer filtro** | Nombre, foto, edad y género nunca viajan en la tarjeta anónima ni a la IA. Lo impiden los tipos y los DTO, no un condicional en la interfaz. |
+| **La IA apoya, no decide** | Ningún score aparece sin su explicación y ningún texto presenta a la IA como juez: nunca "apto" ni "reprobado". |
+| **Un porcentaje auditable** | El match lo calcula código determinista; la IA solo redacta la explicación sobre ese desglose. |
+| **"Verificada" significa verificada** | Una habilidad solo se marca así con evidencia documental aceptada, nunca por autodeclaración ni por decisión de un agente. |
 
-## Estado del proyecto
+## Impacto estimado
 
-**Operativo de punta a punta.** Backend (FastAPI + PostgreSQL) y frontend (Vite + React) están
-completos y probados juntos: `pytest` (172+ pruebas), `ruff`, `npm run typecheck`/`build`, y un
-recorrido real en navegador (`npm run e2e:smoke`) contra el backend real, ambos journeys (candidato
-y empresa), en verde. Detalle completo del proceso de construcción en `docs/build/00_BUILD_STATE.md`
-(tarea B13 — integración final).
+| Horas humanas por vacante | Costo por contratación | Costo de IA por candidato |
+|:---:|:---:|:---:|
+| **−83 %**<br><sub>de 20 h a 3.35 h</sub> | **−59 %**<br><sub>de 20,000 a 8,206 MXN</sub> | **US$0.86**<br><sub>por texto · US$1.18 con voz</sub> |
 
-Capturas actuales de las 45 pantallas (desktop y mobile) en `docs/pantallas/`.
+<sub>Cifras estimadas en el documento integral del proyecto. El costo de IA sale de las llamadas reales al modelo registradas durante las pruebas.</sub>
 
-Stack: FastAPI + PostgreSQL 16 + SQLAlchemy 2.0 + Alembic + JWT (backend) · Vite 6 + React 19 +
-TypeScript + Tailwind v4 (frontend) · Claude (Anthropic) como proveedor de IA, con un
-`DeterministicAdapter` sin costo para desarrollo/CI y un `AgenticAdapter` real para demo en vivo.
+## Stack
+
+| Capa | Tecnología |
+|---|---|
+| **Frontend** | Vite 6, React 19, TypeScript estricto, Tailwind CSS v4, Motion y three.js para el orbe de la entrevista. SPA estática lista para Hostinger. |
+| **Backend** | FastAPI, PostgreSQL 16, SQLAlchemy 2.0, Alembic y autenticación con JWT. |
+| **IA** | Claude Sonnet 5 (Anthropic) en un sistema multiagente, con un adaptador determinista sin costo para desarrollo y CI. |
+| **Voz** | ElevenLabs para transcribir y sintetizar, con una salvaguarda de cuota que pasa la entrevista a texto antes de agotarla. |
+
+## Estado
+
+**Operativo de punta a punta.** 205 pruebas de backend en verde y un recorrido real en navegador que cubre los dos journeys, candidato y empresa: 50/50 pasos contra el mock y 83/83 contra el backend real. La bitácora completa de la construcción está en [`docs/build/00_BUILD_STATE.md`](docs/build/00_BUILD_STATE.md).
 
 ## Arranque en local
 
-Requisitos: Docker Desktop, Python 3.12, Node 20+.
+Requisitos: Docker Desktop, Python 3.12 y Node 20+.
 
 ### 1. Base de datos
 
 ```bash
 cd backend
-docker compose up -d   # Postgres 16 en el puerto 5433 (no 5432, ver nota abajo)
+docker compose up -d   # Postgres 16 en el puerto 5433
 ```
 
-> **`DATABASE_URL` heredado**: si tu shell ya exporta una variable `DATABASE_URL` de otro proyecto
-> (por ejemplo una URL JDBC de Supabase), esa variable **gana sobre `backend/.env`**
-> (`pydantic-settings`: entorno real > `.env`). Verifica con `echo $DATABASE_URL` y, si hace falta,
-> exporta la correcta explícitamente en cada terminal antes de correr algo del backend:
-> `export DATABASE_URL="postgresql+psycopg://conecta:conecta@localhost:5433/conecta"`.
->
-> **Puerto 5433, no 5432**: `docker-compose.yml` mapea el contenedor a 5433 a propósito — en Windows
-> un PostgreSQL nativo ya escuchando en 5432 puede interceptar silenciosamente las conexiones.
+<details>
+<summary><b>Dos trampas del entorno que conviene conocer</b></summary>
+<br>
+
+- **`DATABASE_URL` heredado.** Si tu shell ya exporta una `DATABASE_URL` de otro proyecto (por ejemplo, una URL JDBC de Supabase), esa variable **gana sobre `backend/.env`** (`pydantic-settings`: entorno real > `.env`). Verifica con `echo $DATABASE_URL` y, si hace falta, exporta la correcta en cada terminal antes de correr algo del backend: `export DATABASE_URL="postgresql+psycopg://conecta:conecta@localhost:5433/conecta"`.
+- **Puerto 5433, no 5432.** `docker-compose.yml` mapea el contenedor a 5433 a propósito: en Windows, un PostgreSQL nativo que ya escucha en 5432 puede interceptar las conexiones sin avisar.
+
+</details>
 
 ### 2. Backend
 
@@ -96,34 +134,25 @@ export DATABASE_URL="postgresql+psycopg://conecta:conecta@localhost:5433/conecta
 uvicorn app.main:app --reload --port 8000
 ```
 
-`GET http://localhost:8000/health` debe responder `{"status": "ok", "database": "up", ...}`.
-Documentación interactiva en `http://localhost:8000/docs`. Ambos seeds son idempotentes: correrlos
-de nuevo no duplica nada. Detalle completo en `backend/README.md`.
+`GET http://localhost:8000/health` debe responder `{"status": "ok", "database": "up", ...}`. La documentación interactiva vive en `http://localhost:8000/docs`. Las dos semillas son idempotentes: correrlas de nuevo no duplica nada. Detalle completo en [`backend/README.md`](backend/README.md).
+
+> [!IMPORTANT]
+> Las claves de Anthropic y ElevenLabs van solo en `backend/.env`, que git ignora; el frontend nunca las recibe. En producción define un `JWT_SECRET` propio: el valor de `.env.example` es solo para desarrollo.
 
 ### 3. Frontend
 
 ```bash
 cd frontend
 npm install
-cp .env.example .env   # y edita VITE_API_MODE=http (el backend real ya está corriendo)
+cp .env.example .env   # y cambia a VITE_API_MODE=http si el backend ya está corriendo
 npm run dev            # http://localhost:5173
 ```
 
-Con `VITE_API_MODE=mock` el frontend funciona standalone contra un mock en memoria (sin backend) —
-útil para desarrollo de UI aislado. Detalle completo en `frontend/README.md`.
+Con `VITE_API_MODE=mock` el frontend funciona solo, contra un mock en memoria y sin backend: útil para trabajar la interfaz de forma aislada. Detalle completo en [`frontend/README.md`](frontend/README.md).
 
-### 4. Usuarios demo (contraseña `demo1234` para los tres)
+### Todo junto
 
-| Email | Rol | Estado |
-|---|---|---|
-| `candidato@demo.mx` | CANDIDATE | `DRAFT`, perfil nuevo — recorre el golden path completo en vivo |
-| `maria@demo.mx` | CANDIDATE | `EVALUATED`, familia `WAREHOUSE_SUPERVISOR`, mejor evaluada de su familia |
-| `empresa@demo.mx` | COMPANY | Empresa verificada, 3 vacantes `OPEN` con ranking ya poblado |
-
-### Script de conveniencia
-
-`scripts/dev.ps1` (PowerShell) o `scripts/dev.sh` (Bash) levantan Postgres + backend + frontend
-juntos, cada uno en su propia ventana/proceso, para no repetir estos pasos a mano cada vez:
+`scripts/dev.ps1` (PowerShell) o `scripts/dev.sh` (Bash) levantan Postgres, backend y frontend a la vez, cada uno en su propia ventana o proceso:
 
 ```powershell
 ./scripts/dev.ps1
@@ -133,31 +162,47 @@ juntos, cada uno en su propia ventana/proceso, para no repetir estos pasos a man
 bash scripts/dev.sh
 ```
 
-Ninguno de los dos corre migraciones ni semillas — eso es manual la primera vez (pasos 1-3 arriba),
-para poder diagnosticar cada paso por separado si algo falla.
+Ninguno corre migraciones ni semillas: eso se hace a mano la primera vez (pasos 1 a 3), para poder diagnosticar cada paso por separado si algo falla.
 
-## Verificación completa
+### Usuarios demo
+
+Los tres usan la contraseña `demo1234`.
+
+| Email | Rol | Estado |
+|---|---|---|
+| `candidato@demo.mx` | Candidato | Perfil nuevo (`DRAFT`): recorre el golden path completo en vivo |
+| `maria@demo.mx` | Candidata | Ya evaluada (`EVALUATED`), familia `WAREHOUSE_SUPERVISOR`, la mejor evaluada de su familia |
+| `empresa@demo.mx` | Empresa | Empresa verificada con 3 vacantes abiertas y su ranking ya calculado |
+
+## Verificación
 
 ```bash
-# Backend (con DATABASE_URL explícito, ver nota arriba)
+# Backend (con DATABASE_URL explícito, ver las trampas del entorno)
 cd backend && pytest -q && ruff check .
 
 # Frontend
 cd frontend
 npm run typecheck && npm run build
-npm run smoke:mock          # 22 pasos contra el mock
-npm run e2e:smoke           # 50 pasos en Chromium contra el mock (default)
-E2E_TARGET=http npm run e2e:smoke   # mismo recorrido contra el backend real (backend ya corriendo)
+npm run smoke:mock                  # 22 pasos contra el mock
+npm run e2e:smoke                   # recorrido en Chromium contra el mock (default)
+E2E_TARGET=http npm run e2e:smoke   # el mismo recorrido contra el backend real, ya corriendo
 ```
 
-## Equipo
+## Documentación
 
-Pendiente de agregar integrantes, roles y formas de contacto.
+| Documento | Qué encontrarás |
+|---|---|
+| [Product Brief](docs/01_Product_Brief_Conecta_Empleo.md) | Visión, problema y propuesta de valor |
+| [PRD](docs/02_PRD_Conecta_Empleo.md) | Requisitos del producto y alcance del MVP |
+| [Historias de usuario](docs/03_Historias_Usuario_y_Criterios_Aceptacion.md) | Historias y criterios de aceptación |
+| [Arquitectura del backend](docs/04_Arquitectura_Tecnica_Backend.md) | API, modelo de datos, seguridad y despliegue |
+| [Sistema multiagente](docs/05_Arquitectura_Sistema_Multiagente.md) | Los agentes de IA, sus contratos y el failover |
+| [Guía UX/UI](docs/Conecta_Empleo_Guia_UX_UI_Frontend_Prompt_Madre_v3.md) | Dirección visual y de interacción |
+| [Pantallas](docs/pantallas/) | Capturas de las 45 pantallas, en desktop y mobile |
+| [Tablero de construcción](docs/build/00_BUILD_STATE.md) | Bitácora de cómo se construyó, tarea por tarea |
 
-## Contribución
+<br>
 
-Por ahora, las contribuciones se coordinan con el equipo del proyecto. Cuando se establezca el flujo de trabajo, aquí se documentarán las convenciones, el proceso de revisión y las pautas para colaborar.
-
-## Licencia
-
-Pendiente de definir.
+<div align="center">
+<sub>Hecho para el Hackatón IA UTEL × Hostinger · septiembre de 2026</sub>
+</div>

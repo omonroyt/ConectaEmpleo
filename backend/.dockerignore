@@ -1,0 +1,14 @@
+# Fuera del contexto de build y de la imagen: secretos, entornos y artefactos locales.
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+storage/
+tests/
+scripts/

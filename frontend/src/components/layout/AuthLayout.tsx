@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { Link } from "react-router";
 import { BrandBackground, type BrandAsset } from "@/components/brand/BrandBackground";
 import { Logo } from "@/components/brand/Logo";
 import { Eyebrow, Surface } from "@/components/ui";
@@ -77,9 +78,17 @@ export function AuthLayout({
           className="pointer-events-none absolute -right-24 top-1/4 hidden size-96 rounded-full bg-primary-2/15 blur-[120px] md:block"
           aria-hidden="true"
         />
-        <Surface tone="dark">
-          <div className="glass relative w-full max-w-[27rem] rounded-xl p-6 sm:p-8">{children}</div>
-        </Surface>
+        <div className="flex w-full flex-col items-center gap-5">
+          <Surface tone="dark">
+            <div className="glass relative w-full max-w-[27rem] rounded-xl p-6 sm:p-8">{children}</div>
+          </Surface>
+          <Link
+            to="/privacidad"
+            className="rounded-sm text-xs text-text-on-dark-secondary/70 underline-offset-4 transition-colors duration-fast ease-standard hover:text-text-on-dark hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-2"
+          >
+            Aviso de privacidad
+          </Link>
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import { motion } from "motion/react";
+import { Link } from "react-router";
 import { useMotionSafe } from "@/lib/motion";
 import { HeroBackground } from "@/features/auth/landing/HeroBackground";
 import { HeroLeft } from "@/features/auth/landing/HeroLeft";
@@ -29,6 +30,17 @@ export function Component() {
           <HeroLeft />
           <PanelsStack />
         </motion.div>
+
+        {/* Pie mínimo: el hero manda, así que solo lo imprescindible y en el tono más bajo. */}
+        <footer className="mx-auto flex w-full max-w-[1440px] flex-wrap items-center justify-between gap-x-6 gap-y-2 px-6 pb-5 text-xs text-text-on-dark-secondary/75 sm:px-8 lg:px-10">
+          <p>© {new Date().getFullYear()} Conecta Empleo</p>
+          <Link
+            to="/privacidad"
+            className="rounded-sm underline-offset-4 transition-colors duration-fast ease-standard hover:text-text-on-dark hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-primary-2"
+          >
+            Aviso de privacidad
+          </Link>
+        </footer>
       </div>
     </div>
   );

@@ -62,6 +62,13 @@ export const router = createBrowserRouter([
     },
   },
   {
+    path: "/privacidad",
+    lazy: async () => {
+      const { Component } = await import("@/features/legal/PrivacyPage");
+      return { Component };
+    },
+  },
+  {
     path: "/login",
     element: (
       <RedirectIfAuthenticated>

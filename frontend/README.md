@@ -10,7 +10,6 @@ npm run dev             # servidor de desarrollo (http://localhost:5173)
 npm run typecheck       # tsc --noEmit
 npm run build           # typecheck + build de producción (dist/)
 npm run preview         # sirve dist/ localmente
-npm run optimize:backgrounds  # regenera los WebP de fondo de marca
 npm run smoke:mock     # 22 pasos, golden path contra el mock
 npm run smoke:interview # 13 pasos, entrevista + evaluación contra el mock
 npm run e2e:smoke       # Playwright/Chromium, ambos journeys — ver abajo
@@ -57,12 +56,6 @@ src/
     shared/     # stubs P2
 ```
 
-## Regenerar los fondos de marca
+## Imágenes
 
-Los PNG originales viven en la raíz del repo (`../fondo_*.png`, ignorados por git) y no deben moverse ni borrarse: son el origen del que se regeneran los WebP.
-
-```bash
-npm run optimize:backgrounds
-```
-
-Esto lee los 8 PNG y escribe 16 archivos en `public/assets/brand/backgrounds/` (`<asset>.webp` a 1600px y `<asset>-mobile.webp` a 900px, calidad 78).
+Los fondos de marca están en `public/assets/brand/backgrounds/` (8 assets, cada uno como `<asset>.webp` a 1600px y `<asset>-mobile.webp` a 900px) y la foto del usuario demo de la landing en `public/assets/demo/`. Esos WebP son los archivos fuente: los PNG de los que salieron ya no están en el repo, así que para cambiar una imagen se reemplaza su WebP.

@@ -45,7 +45,7 @@ frontend/
     components/ui/*                        # design system (§5)
     components/layout/*                    # AppShell, CandidateShell, EmployerShell, AuthLayout, BottomNav, Sidebar, ImmersiveLayout
     components/brand/BrandBackground.tsx · components/brand/Logo.tsx
-    components/interview/AudioOrb/*        # extraído de PRUEBA - ORB/src/orb (§9)
+    components/interview/AudioOrb/*        # Audio Orb con three.js (§9)
     features/auth/*                        # landing, login, registro (ambos roles)
     features/candidate/**                  # rutas + pantallas del candidato
     features/employer/**                   # rutas + pantallas de empresa
@@ -153,9 +153,9 @@ Mapa de uso (regla 80 % UI limpia / 20 % marca; ante la duda, sin fondo):
 | Detalle anónimo, comparar, perfil ideal | ninguno (superficie clara) | — |
 | Card destacada / preview de vacante | cards | accent, máximo 1–2 por pantalla |
 
-## 9. Audio Orb (extracción de `PRUEBA - ORB/src/orb`)
+## 9. Audio Orb (`src/components/interview/AudioOrb/`)
 
-Copiar **solo** estos archivos a `src/components/interview/AudioOrb/`: `AudioOrb.tsx`, `AudioOrb.css`, `AudioAnalyzer.ts`, `OrbRenderer.ts`, `orbShaders.ts`, `orbStates.ts`, `orbConfig.ts`, `index.ts` (y `AudioAnalyzer.test.ts` solo si se agrega vitest; si no, omitir). No copiar `src/demo`, `src/examples`, `main.tsx`, estilos globales ni audio de muestra. Dependencia: `three` + `@types/three`. API existente que se conserva tal cual:
+El Orb vive completo en `src/components/interview/AudioOrb/`: `AudioOrb.tsx`, `AudioOrb.css`, `AudioAnalyzer.ts`, `OrbRenderer.ts`, `orbShaders.ts`, `orbStates.ts`, `orbConfig.ts`, `index.ts`. Es la única copia: el repo de prueba del que se extrajo en F0 ya no forma parte del proyecto. Dependencia: `three` + `@types/three`. API que se conserva tal cual:
 
 ```ts
 type OrbState = "idle" | "listening" | "thinking" | "speaking";

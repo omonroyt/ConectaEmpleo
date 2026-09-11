@@ -28,8 +28,10 @@ Modelo de orquestación: un orquestador (Fable/Opus) redacta tareas cerradas; co
 
 ## Activos
 
-- Fondos de marca: `frontend/public/assets/brand/backgrounds/*.webp` (originales PNG en raíz están ignorados por git y se borrarán al confirmar).
-- `PRUEBA - ORB/` es el repo fuente del Audio Orb (ignorado por git). El componente vive en `frontend/src/components/interview/AudioOrb/`.
+- Imágenes: fondos de marca en `frontend/public/assets/brand/backgrounds/*.webp` y foto del usuario demo en `frontend/public/assets/demo/`. Los WebP son los archivos fuente; los PNG originales ya no existen.
+- Audio Orb: `frontend/src/components/interview/AudioOrb/`. Es la única copia; el repo de prueba del que se extrajo ya no forma parte del proyecto.
+- Capturas actuales de las 45 pantallas (desktop y mobile): `docs/pantallas/`.
+- El vídeo demo (`video-demo/`, lo genera `frontend/scripts/record-demo.mjs`) no se versiona.
 
 ## Skills disponibles
 

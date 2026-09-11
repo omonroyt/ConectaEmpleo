@@ -54,6 +54,8 @@ recorrido real en navegador (`npm run e2e:smoke`) contra el backend real, ambos 
 y empresa), en verde. Detalle completo del proceso de construcción en `docs/build/00_BUILD_STATE.md`
 (tarea B13 — integración final).
 
+Capturas actuales de las 45 pantallas (desktop y mobile) en `docs/pantallas/`.
+
 Stack: FastAPI + PostgreSQL 16 + SQLAlchemy 2.0 + Alembic + JWT (backend) · Vite 6 + React 19 +
 TypeScript + Tailwind v4 (frontend) · Claude (Anthropic) como proveedor de IA, con un
 `DeterministicAdapter` sin costo para desarrollo/CI y un `AgenticAdapter` real para demo en vivo.

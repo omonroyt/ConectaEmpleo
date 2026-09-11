@@ -4,7 +4,7 @@
 > Lo actualiza cada subagente al cerrar su tarea. No releer `docs/0*.md` ni la guía UX: todo lo necesario está condensado en `docs/build/`.
 
 - Orquestador: Fable 5.1 / Opus 5 · Constructores: Sonnet 5 (Opus 5 en F4 y F7)
-- Última actualización: 2026-09-09 (B14 — capa de comprensión del entrevistador)
+- Última actualización: 2026-09-11 (limpieza del repo antes de producción)
 
 ## Estado actual
 
@@ -102,8 +102,7 @@ propias capturas de Playwright antes de cerrar.
 
 **Verificación de cierre.** `typecheck`, `build`, `smoke:mock` (22), `smoke:interview` (13) y
 `e2e:smoke` (50 pasos en Chromium, 390 px y 1280 px) en verde, sin errores de consola. Capturas del
-estado posterior en `pantallas-a-modificar/pantallas-actualizadas/`, con los mismos nombres que las
-del estado anterior para poder compararlas una a una.
+estado posterior en `docs/pantallas/`; las del estado anterior se retiraron del repo el 2026-09-11.
 
 **Qué queda fuera.** No se tocó funcionalidad, rutas, contratos de API ni la lógica de matching. La
 cobertura de competencias y la transcripción de la entrevista se siguen registrando en el backend
@@ -189,6 +188,25 @@ Detectada al construir el frontend contra el contrato de `02_API_CONTRACT.md`. C
 8. **No inventes decisiones de producto.** Si la spec no cubre algo, elige la opción más simple que no contradiga la spec y anótala en la bitácora.
 
 ## Bitácora (más reciente arriba)
+
+### 2026-09-11 — Orquestador (Opus) — limpieza del repo antes de producción
+
+Commit: `chore: limpiar la raíz del repo antes de producción`.
+
+- Se borraron de la raíz los 8 `fondo_*.png` y `usuario_demo.png`: ya se servían como WebP desde
+  `frontend/public/assets/brand/backgrounds/` y `frontend/public/assets/demo/`. Con ellos salieron
+  `frontend/scripts/optimize-backgrounds.mjs`, `optimize-demo-user.mjs`, el script
+  `optimize:backgrounds` y la devDependency `sharp`, que solo existían para regenerar esos WebP.
+  **Los WebP son ahora el origen**: para cambiar una imagen se reemplaza su WebP.
+- Se borró `PRUEBA - ORB/`. Antes se comprobó que `frontend/src/components/interview/AudioOrb/` es
+  idéntico byte a byte a su `src/orb` y que todo el código importa el Orb por
+  `@/components/interview/AudioOrb`: nada apuntaba fuera de `frontend/`.
+- `pantallas-a-modificar/` desaparece. Las capturas posteriores al rediseño (45 pantallas, desktop y
+  mobile) pasan a `docs/pantallas/`, con su índice en `README.md`; las del estado anterior se
+  retiraron.
+- `video-demo/` (lo genera `frontend/scripts/record-demo.mjs`) queda fuera de git por decisión del
+  usuario.
+- Verificación: `npm run build` en verde después de quitar `sharp`.
 
 ### 2026-09-09 — B14 (Opus) — capa de comprensión del entrevistador
 

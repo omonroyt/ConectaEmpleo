@@ -1,12 +1,6 @@
-# Pantallas a modificar
+# Pantallas actuales
 
-## Comparación antes / después
-
-- Las imágenes de **esta carpeta** son el estado **anterior** al rediseño visual.
-- `pantallas-actualizadas/` contiene el estado **posterior**, con exactamente los mismos
-  nombres de archivo, para poder abrir las dos versiones de una pantalla lado a lado.
-
-Capturas de todas las pantallas de la SPA (`frontend/`) corriendo en `VITE_API_MODE=mock`.
+Capturas de todas las pantallas de la SPA (`frontend/`) corriendo en `VITE_API_MODE=mock`, con el rediseño visual de la fase R aplicado.
 Cada pantalla tiene dos archivos: `-desktop.png` (1280×800, página completa) y `-mobile.png` (390×844, página completa).
 
 | # | Archivo | Ruta | Notas |

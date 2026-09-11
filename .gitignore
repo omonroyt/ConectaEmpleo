@@ -1,8 +1,5 @@
-# Repo de prueba del Orb: fuente de componente, no se versiona (src/orb ya extraído a frontend/)
-/PRUEBA - ORB/
-
-# Fondos originales en raíz: se movieron a frontend/public/assets/brand/backgrounds/*.webp
-/fondo_*.png
+# Vídeo demo que genera frontend/scripts/record-demo.mjs: se comparte fuera del repo
+/video-demo/
 
 # Node
 node_modules/

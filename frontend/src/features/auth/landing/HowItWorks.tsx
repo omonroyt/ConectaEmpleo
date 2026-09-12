@@ -72,7 +72,8 @@ export const HowItWorks = forwardRef<HTMLElement, HowItWorksProps>(function HowI
       initial="hidden"
       animate="visible"
       variants={staggerContainer(0.06, 0.05)}
-      className="relative z-10 mx-auto flex w-full max-w-[1440px] flex-col gap-10 px-6 pb-16 pt-6 sm:px-8 sm:pb-20 lg:px-10"
+      data-seccion="como-funciona"
+      className="relative z-10 mx-auto flex w-full max-w-[1440px] scroll-mt-16 flex-col gap-10 px-6 pb-16 pt-8 sm:px-8 sm:pb-20 lg:px-10"
     >
       <motion.div variants={fadeUp} className="flex flex-col gap-3">
         <Eyebrow tone="accent">Cómo funciona</Eyebrow>

@@ -36,8 +36,12 @@ export function Component() {
   return (
     <div id="inicio" className="relative overflow-x-clip bg-bg-dark">
       <HeroBackground />
-      <div className="relative z-10 flex min-h-dvh flex-col">
-        <LandingTopBar onHowItWorks={() => setShowHowItWorks(true)} />
+      {/* La barra vive fuera de la columna del hero: `sticky` solo se sujeta
+          dentro de su bloque contenedor, así que ahí dentro desaparecía al
+          desplazarse a "Cómo funciona". El hero descuenta su alto (4rem) para
+          que la portada siga midiendo exactamente una ventana. */}
+      <LandingTopBar onHowItWorks={() => setShowHowItWorks(true)} />
+      <div className="relative z-10 flex min-h-[calc(100dvh-4rem-1px)] flex-col">
 
         <motion.div
           initial="hidden"

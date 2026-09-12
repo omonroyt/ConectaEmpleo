@@ -1,8 +1,11 @@
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
 import { Link } from "react-router";
+import { useReducedMotion } from "@/lib/a11y";
 import { useMotionSafe } from "@/lib/motion";
 import { HeroBackground } from "@/features/auth/landing/HeroBackground";
 import { HeroLeft } from "@/features/auth/landing/HeroLeft";
+import { HowItWorks } from "@/features/auth/landing/HowItWorks";
 import { LandingTopBar } from "@/features/auth/landing/LandingTopBar";
 import { PanelsStack } from "@/features/auth/landing/PanelsStack";
 
@@ -14,12 +17,27 @@ import { PanelsStack } from "@/features/auth/landing/PanelsStack";
  */
 export function Component() {
   const { pageSequence } = useMotionSafe();
+  const reduced = useReducedMotion();
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const howItWorksRef = useRef<HTMLElement>(null);
+
+  // La sección no existe hasta que se pide: así la portada sigue cabiendo en
+  // una pantalla sin barra de desplazamiento. Al montarla, se baja hasta ella.
+  useEffect(() => {
+    if (!showHowItWorks) return;
+    howItWorksRef.current?.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+  }, [reduced, showHowItWorks]);
+
+  const hideHowItWorks = () => {
+    setShowHowItWorks(false);
+    window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
+  };
 
   return (
-    <div id="inicio" className="relative min-h-dvh overflow-x-clip bg-bg-dark">
+    <div id="inicio" className="relative overflow-x-clip bg-bg-dark">
       <HeroBackground />
       <div className="relative z-10 flex min-h-dvh flex-col">
-        <LandingTopBar />
+        <LandingTopBar onHowItWorks={() => setShowHowItWorks(true)} />
 
         <motion.div
           initial="hidden"
@@ -42,6 +60,8 @@ export function Component() {
           </Link>
         </footer>
       </div>
+
+      {showHowItWorks && <HowItWorks ref={howItWorksRef} onHide={hideHowItWorks} />}
     </div>
   );
 }
